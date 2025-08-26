@@ -1,0 +1,15 @@
+{
+    "extends": "solhint:recommended",
+    "rules": {
+        "max-line-length": "off",
+        "no-empty-blocks": "off",
+        "reason-string": ["warn", { "maxLength": 64 }],
+        "compiler-version": "off",
+        "func-visibility": ["warn", { "ignoreConstructors": true }],
+        "not-rely-on-time": "off",
+        "gas-custom-errors": "off",
+        "avoid-low-level-calls": "off",
+        "no-inline-assembly": "off",
+        "one-contract-per-file": "off"
+    }
+}

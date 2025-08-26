@@ -1,0 +1,4 @@
+{
+    "*.{ts,js,mjs,json,jsonc,md}": "pnpm prettier -u --no-error-on-unmatched-pattern --write",
+    "*.{ts,js}": "pnpm eslint --fix"
+}

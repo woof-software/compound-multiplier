@@ -1,0 +1,42 @@
+{
+    "plugins": ["prettier-plugin-solidity"],
+    "overrides": [
+        {
+            "files": "*.sol",
+            "options": {
+                "parser": "slang",
+                "printWidth": 120,
+                "tabWidth": 4,
+                "useTabs": false,
+                "singleQuote": false,
+                "bracketSpacing": true,
+                "explicitTypes": "preserve",
+                "compiler": "0.8.29"
+            }
+        },
+        {
+            "files": ["*.ts", "*.js", "eslint.config.mjs"],
+            "options": {
+                "trailingComma": "none",
+                "printWidth": 120,
+                "tabWidth": 4,
+                "useTabs": false,
+                "singleQuote": false,
+                "bracketSpacing": true,
+                "semi": true
+            }
+        },
+        {
+            "files": ["*.json", "*.jsonc"],
+            "options": {
+                "tabWidth": 4
+            }
+        },
+        {
+            "files": "contracts/outdated-requires-because-of-imports/**/*.sol",
+            "options": {
+                "compiler": "0.7.3"
+            }
+        }
+    ]
+}

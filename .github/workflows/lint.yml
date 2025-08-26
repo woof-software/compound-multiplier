@@ -1,0 +1,32 @@
+name: Linting
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: "package.json"
+          cache: "pnpm"
+      - uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Install dependencies
+        run: GH_ACTION=true pnpm install --frozen-lockfile
+
+      - name: Compile contracts with types
+        run: pnpm compileh && pnpm compilef
+
+      - name: Run linters
+        run: |
+          pnpm prettier --no-error-on-unmatched-pattern --check -u "*"
+          if [ -n "$(find contracts -name '*.sol' -print -quit)" ]; then
+              pnpm solhint "contracts/**/*.sol"
+          fi
+          pnpm eslint .

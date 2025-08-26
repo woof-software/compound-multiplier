@@ -1,0 +1,5 @@
+{
+    "*": "pnpm prettier -u --write",
+    "*.sol": "pnpm solhint --fix",
+    "*.(ts,js)": "pnpm eslint --fix"
+}

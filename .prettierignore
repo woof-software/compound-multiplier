@@ -1,0 +1,17 @@
+/pnpm-lock.yaml
+/docs/
+/abi/
+/contracts-exposed/
+*.log*
+/cache/
+/artifacts/
+/typechain/
+/typechain-types/
+/out/
+/cache_forge/
+/lib/
+/coverage/
+/coverage.json
+/ignition/deployments/
+gas-report.*
+/.openzeppelin/

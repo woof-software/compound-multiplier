@@ -1,0 +1,14 @@
+{
+    "recommendations": [
+        "Soulcode.vscode-unwanted-extensions",
+        "NomicFoundation.hardhat-solidity",
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint",
+        "streetsidesoftware.code-spell-checker",
+        "hbenl.vscode-mocha-test-adapter",
+        "hbenl.vscode-test-explorer",
+        "ms-vscode.test-adapter-converter",
+        "ryanluker.vscode-coverage-gutters",
+        "ms-vscode.live-server"
+    ]
+}

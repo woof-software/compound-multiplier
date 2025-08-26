@@ -1,0 +1,52 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.30;
+
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IMorphoBase } from "../interfaces/IMorpho.sol";
+import { ICometMultiplierPlugin } from "../interfaces/ICometMultiplierPlugin.sol";
+
+contract MorphoFlashLoan is ICometMultiplierPlugin {
+    /// @notice Callback selector: keccak256("onMorphoFlashLoan(bytes)") = 0x5fc7f2e0
+    bytes4 public constant CALLBACK_SELECTOR = 0x5fc7f2e0;
+
+    // bytes32(uint256(keccak256("MorphoPlugin.plugin")) - 1);
+    bytes32 public constant SLOT_PLUGIN = 0xc090fc4683624cfc3884e9d8de5eca132f2d0ec062aff75d43c0465d5ceeab23;
+
+    /**
+     * @notice Initiates a flash loan from Morpho
+     * @param token The address of the token to borrow
+     * @param amount The amount of token to borrow
+     */
+    function takeFlashLoan(address token, uint256 amount) external returns (uint256 returnAmount) {
+        address morpho = abi.decode(plugins[CALLBACK_SELECTOR].config, (address));
+        assembly {
+            tstore(SLOT_PLUGIN, morpho)
+        }
+        morpho.flashLoan(token, amount, abi.encode(token, amount));
+    }
+
+    /**
+     * @notice Repays a flash loan during the callback
+     * @param morpho The address of the Morpho contract
+     * @param data The callback data passed by Morpho
+     */
+    function payFlashLoan(address morpho, bytes calldata data) internal {
+        (address token, uint256 amount) = unpackData(data);
+
+        require(msg.sender == morpho, "MorphoFlashLoan: Invalid callback sender");
+
+        IERC20(token).transfer(msg.sender, amount);
+    }
+
+    /**
+     * @notice Decodes the flash loan callback data
+     * @param data The calldata passed to onMorphoFlashLoan
+     * @return token The token address
+     * @return amount The amount borrowed
+     */
+    function unpackData(bytes calldata data) internal pure returns (address token, uint256 amount) {
+        // Remove the 4-byte selector
+        bytes memory params = abi.decode(data[4:], (bytes));
+        (token, amount) = abi.decode(params, (address, uint256));
+    }
+}

@@ -1,0 +1,13 @@
+## CODEOWNERS
+
+# Pattern: <glob> <owner1> <owner2> ...
+
+# All files are owned by repo admins team.
+
+- @repo-admins
+
+# Examples (uncomment & adjust as needed):
+
+# contracts/ @repo-admins
+
+# scripts/ @repo-admins

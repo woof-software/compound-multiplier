@@ -1,0 +1,17 @@
+pnpm gen:abi
+pnpm prettier -u --no-error-on-unmatched-pattern --write "abi/**/*"
+if [ -d "abi/" ]; then
+    git add abi/
+fi
+if ! git diff --cached --quiet; then
+    git commit -m "chore(abi): update";
+fi
+
+pnpm gen:docs
+pnpm prettier -u --no-error-on-unmatched-pattern --write "docs/**/*"
+if [ -d "docs/" ]; then
+    git add docs/
+fi
+if ! git diff --cached --quiet; then
+    git commit -m "chore(contract-docs): update";
+fi

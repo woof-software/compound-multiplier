@@ -1,0 +1,47 @@
+node_modules/
+.env
+
+# Any logging files.
+*.log*
+
+# Hardhat.
+/cache/
+/artifacts/
+
+# TypeChain.
+/typechain/
+/typechain-types/
+
+# Foundry.
+/out/
+/cache_forge/
+
+# `solidity-coverage`.
+/coverage/
+/coverage.json
+
+# The Hardhat Ignition default folder for deployments against a local node.
+/ignition/deployments/chain-31337/
+
+# `hardhat-gas-reporter`.
+gas-report.*
+
+# Track of all the contract versions deployed in local or unlisted networks using `@openzeppelin/hardhat-upgrades`.
+/.openzeppelin/unknown-*.json
+
+# `hardhat-exposed`
+contracts-exposed/
+
+# The project installation flag.
+/scripts/project-config/setup/.installed
+
+# `solc` output files.
+*.abi
+*.bin
+*.bin-runtime
+
+# A file of custom folder attributes in macOS.
+.DS_Store
+
+# The project settings for IntelliJ IDE.
+/.idea/

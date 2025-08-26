@@ -1,0 +1,42 @@
+{
+  "Testing file": {
+    "scope": "typescript",
+    "prefix": "sstest",
+    "body": [
+      "import { loadFixture } from \"@nomicfoundation/hardhat-toolbox/network-helpers\";",
+      "import hre from \"hardhat\";",
+      "const { ethers } = hre;",
+      "",
+      "import { expect } from \"chai\";",
+      "",
+      "describe(\"${1:ContractName}\", () => {",
+      "    describe(\"# Initialization\", () => {",
+      "        it(\"initializes\", async () => {",
+      "            $0",
+      "        });",
+      "    });",
+      "});",
+    ],
+    "description": "Prints a sceleton for a testing file",
+  },
+  "Describe": {
+    "scope": "typescript",
+    "prefix": "ssdescribe",
+    "body": ["describe(\"$1\", () => {$0});"],
+  },
+  "Context": {
+    "scope": "typescript",
+    "prefix": "sscontext",
+    "body": ["context(\"$1\", () => {$0});"],
+  },
+  "Async it": {
+    "scope": "typescript",
+    "prefix": "ssit",
+    "body": ["it(\"$1\", async () => {$0});"],
+  },
+  "Async it with should": {
+    "scope": "typescript",
+    "prefix": "ssits",
+    "body": ["it(\"should $1\", async () => {$0});"],
+  },
+}
