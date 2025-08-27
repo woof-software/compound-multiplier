@@ -2,8 +2,6 @@
 
 pragma solidity >=0.8.0;
 
-import {IVault as IEVCVault} from "./IVault.sol";
-
 // Full interface of EVault and all it's modules
 
 /// @title IInitialize
@@ -12,66 +10,6 @@ interface IInitialize {
     /// @notice Initialization of the newly deployed proxy contract
     /// @param proxyCreator Account which created the proxy or should be the initial governor
     function initialize(address proxyCreator) external;
-}
-
-/// @title IERC20
-/// @notice Interface of the EVault's Initialize module
-interface IERC20 {
-    /// @notice Vault share token (eToken) name, ie "Euler Vault: DAI"
-    /// @return The name of the eToken
-    function name() external view returns (string memory);
-
-    /// @notice Vault share token (eToken) symbol, ie "eDAI"
-    /// @return The symbol of the eToken
-    function symbol() external view returns (string memory);
-
-    /// @notice Decimals, the same as the asset's or 18 if the asset doesn't implement `decimals()`
-    /// @return The decimals of the eToken
-    function decimals() external view returns (uint8);
-
-    /// @notice Sum of all eToken balances
-    /// @return The total supply of the eToken
-    function totalSupply() external view returns (uint256);
-
-    /// @notice Balance of a particular account, in eTokens
-    /// @param account Address to query
-    /// @return The balance of the account
-    function balanceOf(address account) external view returns (uint256);
-
-    /// @notice Retrieve the current allowance
-    /// @param holder The account holding the eTokens
-    /// @param spender Trusted address
-    /// @return The allowance from holder for spender
-    function allowance(address holder, address spender) external view returns (uint256);
-
-    /// @notice Transfer eTokens to another address
-    /// @param to Recipient account
-    /// @param amount In shares.
-    /// @return True if transfer succeeded
-    function transfer(address to, uint256 amount) external returns (bool);
-
-    /// @notice Transfer eTokens from one address to another
-    /// @param from This address must've approved the to address
-    /// @param to Recipient account
-    /// @param amount In shares
-    /// @return True if transfer succeeded
-    function transferFrom(address from, address to, uint256 amount) external returns (bool);
-
-    /// @notice Allow spender to access an amount of your eTokens
-    /// @param spender Trusted address
-    /// @param amount Use max uint for "infinite" allowance
-    /// @return True if approval succeeded
-    function approve(address spender, uint256 amount) external returns (bool);
-}
-
-/// @title IToken
-/// @notice Interface of the EVault's Token module
-interface IToken is IERC20 {
-    /// @notice Transfer the full eToken balance of an address to another
-    /// @param from This address must've approved the to address
-    /// @param to Recipient account
-    /// @return True if transfer succeeded
-    function transferFromMax(address from, address to) external returns (bool);
 }
 
 /// @title IERC4626
@@ -275,10 +213,11 @@ interface ILiquidation {
     /// @return maxRepay Max amount of debt that can be repaid, in asset units
     /// @return maxYield Yield in collateral corresponding to max allowed amount of debt to be repaid, in collateral
     /// balance (shares for vaults)
-    function checkLiquidation(address liquidator, address violator, address collateral)
-        external
-        view
-        returns (uint256 maxRepay, uint256 maxYield);
+    function checkLiquidation(
+        address liquidator,
+        address violator,
+        address collateral
+    ) external view returns (uint256 maxRepay, uint256 maxYield);
 
     /// @notice Attempts to perform a liquidation
     /// @param violator Address that may be in collateral violation
@@ -288,50 +227,6 @@ interface ILiquidation {
     /// @param minYieldBalance The minimum acceptable amount of collateral to be transferred from violator to sender, in
     /// collateral balance units (shares for vaults)
     function liquidate(address violator, address collateral, uint256 repayAssets, uint256 minYieldBalance) external;
-}
-
-/// @title IRiskManager
-/// @notice Interface of the EVault's RiskManager module
-interface IRiskManager is IEVCVault {
-    /// @notice Retrieve account's total liquidity
-    /// @param account Account holding debt in this vault
-    /// @param liquidation Flag to indicate if the calculation should be performed in liquidation vs account status
-    /// check mode, where different LTV values might apply.
-    /// @return collateralValue Total risk adjusted value of all collaterals in unit of account
-    /// @return liabilityValue Value of debt in unit of account
-    function accountLiquidity(address account, bool liquidation)
-        external
-        view
-        returns (uint256 collateralValue, uint256 liabilityValue);
-
-    /// @notice Retrieve account's liquidity per collateral
-    /// @param account Account holding debt in this vault
-    /// @param liquidation Flag to indicate if the calculation should be performed in liquidation vs account status
-    /// check mode, where different LTV values might apply.
-    /// @return collaterals Array of collaterals enabled
-    /// @return collateralValues Array of risk adjusted collateral values corresponding to items in collaterals array.
-    /// In unit of account
-    /// @return liabilityValue Value of debt in unit of account
-    function accountLiquidityFull(address account, bool liquidation)
-        external
-        view
-        returns (address[] memory collaterals, uint256[] memory collateralValues, uint256 liabilityValue);
-
-    /// @notice Release control of the account on EVC if no outstanding debt is present
-    function disableController() external;
-
-    /// @notice Checks the status of an account and reverts if account is not healthy
-    /// @param account The address of the account to be checked
-    /// @return magicValue Must return the bytes4 magic value 0xb168c58f (which is a selector of this function) when
-    /// account status is valid, or revert otherwise.
-    /// @dev Only callable by EVC during status checks
-    function checkAccountStatus(address account, address[] calldata collaterals) external returns (bytes4);
-
-    /// @notice Checks the status of the vault and reverts if caps are exceeded
-    /// @return magicValue Must return the bytes4 magic value 0x4b3d1223 (which is a selector of this function) when
-    /// account status is valid, or revert otherwise.
-    /// @dev Only callable by EVC during status checks
-    function checkVaultStatus() external returns (bytes4);
 }
 
 /// @title IBalanceForwarder
@@ -413,7 +308,9 @@ interface IGovernance {
     /// @return targetTimestamp The timestamp when the liquidation LTV is considered fully converged
     /// @return rampDuration The time it takes for the liquidation LTV to converge from the initial value to the fully
     /// converged value
-    function LTVFull(address collateral)
+    function LTVFull(
+        address collateral
+    )
         external
         view
         returns (
@@ -529,30 +426,28 @@ interface IGovernance {
 /// @custom:security-contact security@euler.xyz
 /// @author Euler Labs (https://www.eulerlabs.com/)
 /// @notice Interface of the EVault, an EVC enabled lending vault
-interface IEVault is
-    IInitialize,
-    IToken,
-    IVault,
-    IBorrowing,
-    ILiquidation,
-    IRiskManager,
-    IBalanceForwarder,
-    IGovernance
-{
+interface IEVault is IInitialize, IVault, IBorrowing, ILiquidation, IBalanceForwarder, IGovernance {
     /// @notice Fetch address of the `Initialize` module
     function MODULE_INITIALIZE() external view returns (address);
+
     /// @notice Fetch address of the `Token` module
     function MODULE_TOKEN() external view returns (address);
+
     /// @notice Fetch address of the `Vault` module
     function MODULE_VAULT() external view returns (address);
+
     /// @notice Fetch address of the `Borrowing` module
     function MODULE_BORROWING() external view returns (address);
+
     /// @notice Fetch address of the `Liquidation` module
     function MODULE_LIQUIDATION() external view returns (address);
+
     /// @notice Fetch address of the `RiskManager` module
     function MODULE_RISKMANAGER() external view returns (address);
+
     /// @notice Fetch address of the `BalanceForwarder` module
     function MODULE_BALANCE_FORWARDER() external view returns (address);
+
     /// @notice Fetch address of the `Governance` module
     function MODULE_GOVERNANCE() external view returns (address);
 }

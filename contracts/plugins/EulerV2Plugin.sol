@@ -7,6 +7,8 @@ import { IEulerDToken } from "../interfaces/IEulerDToken.sol";
 import { IEulerMarkets } from "../interfaces/IEulerMarkets.sol";
 import { ICometMultiplierPlugin } from "../interfaces/ICometMultiplierPlugin.sol";
 import { IComet } from "../interfaces/IComet.sol";
+import { IEVault } from "../interfaces/IEVault.sol";
+import "hardhat/console.sol";
 
 contract EulerV2Plugin is ICometMultiplierPlugin {
     // keccak256("onEulerFlashLoan(bytes)") = 0xc4850ea8
@@ -19,57 +21,59 @@ contract EulerV2Plugin is ICometMultiplierPlugin {
      * @param baseAsset The address of the token to borrow
      * @param amount The amount of the token to borrow
      */
-    function takeFlashLoan(address baseAsset, uint256 amount, bytes memory config) public {
-        address euler;
-        address markets;
+    function takeFlashLoan(
+        address baseAsset,
+        address flp,
+        uint256 amount,
+        bytes memory config,
+        bytes memory swapData
+    ) public {
+        console.log("Taking flash loan of %s from Euler", amount);
+        (address euler, address markets) = abi.decode(config, (address, address));
 
-        assembly {
-            euler := mload(add(config, 20))
-            markets := mload(add(config, 40))
-        }
-
+        console.log("euler: %s", euler);
+        console.log("markets: %s", markets);
         uint256 snapshot = IERC20(baseAsset).balanceOf(address(this));
-        bytes memory data = abi.encode(euler, baseAsset, amount, snapshot);
+        console.log("snapshot: %s", snapshot);
+        bytes memory data = abi.encode(flp, baseAsset, amount, snapshot, swapData);
+        console.logBytes(data);
 
-        bytes32 flid = keccak256(data);
+        bytes32 flid = keccak256(abi.encode(data, block.timestamp));
+        console.logBytes32(flid);
         bytes32 slot = SLOT_PLUGIN;
 
         assembly {
             tstore(slot, flid)
         }
 
-        IEulerDToken _dToken = dToken(baseAsset, markets);
-        _dToken.flashLoan(amount, data);
+        console.log("flashloan id stored");
+        console.log("flp: %s", flp);
+        IEVault(flp).flashLoan(amount, data);
+        console.log("flashloan taken");
     }
 
-    /**
-     * @dev Helper function that returns the context of the flash loan for a given token
-     * @param token The address of the token of the flash loan
-     * @param markets The address of the Euler Markets contract
-     * @return _dToken The dToken contract for the given token
-     */
-    function dToken(address token, address markets) internal view returns (IEulerDToken _dToken) {
-        _dToken = IEulerDToken(IEulerMarkets(markets).underlyingToDToken(token));
-    }
-
-    function onFlashLoan(bytes calldata data) external returns (address, uint256) {
-        bytes32 flid = keccak256(abi.encodePacked(data, block.timestamp));
+    function onFlashLoan(bytes calldata data) external returns (address, uint256, bytes memory) {
+        console.log("onFlashLoan called");
+        bytes32 flid = keccak256(abi.encode(data, block.timestamp));
         bytes32 flidExpected;
-        bytes32 slot;
+        bytes32 slot = SLOT_PLUGIN;
         assembly {
             flidExpected := tload(slot)
             tstore(slot, 0)
         }
 
+        console.logBytes32(flid);
+        console.logBytes32(flidExpected);
+
         require(flid == flidExpected, InvalidFlashLoanId());
 
-        (address euler, address baseAseet, uint256 debt, uint256 snapshot) = abi.decode(
+        (address flp, address baseAseet, uint256 debt, uint256 snapshot, bytes memory swapData) = abi.decode(
             data,
-            (address, address, uint256, uint256)
+            (address, address, uint256, uint256, bytes)
         );
 
-        require(euler == msg.sender, UnauthorizedCallback());
+        require(flp == msg.sender, UnauthorizedCallback());
         require(IERC20(baseAseet).balanceOf(address(this)) == snapshot + debt, InvalidAmountOut());
-        return (euler, debt);
+        return (flp, debt, swapData);
     }
 }

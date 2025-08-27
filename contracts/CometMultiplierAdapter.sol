@@ -15,6 +15,8 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
+import "hardhat/console.sol";
+
 contract CometMultiplierAdapter is Ownable, ICometMultiplierAdapter {
     using SafeERC20 for IERC20;
 
@@ -24,8 +26,7 @@ contract CometMultiplierAdapter is Ownable, ICometMultiplierAdapter {
 
     IAggregationRouterV6 public router;
 
-    mapping(address => mapping(address => bytes4)) public selectors;
-    mapping(bytes4 => uint256) public leverages;
+    mapping(address => mapping(address => Asset)) public assets;
     mapping(bytes4 => Plugin) public plugins;
 
     constructor(IAggregationRouterV6 _router, Plugin[] memory _plugins) Ownable(msg.sender) {
@@ -39,32 +40,50 @@ contract CometMultiplierAdapter is Ownable, ICometMultiplierAdapter {
     }
 
     fallback() external payable {
+        if (msg.sender == address(router)) {
+            return;
+        }
+        console.log("I am fallback");
         Plugin memory plugin = plugins[msg.sig];
         require(plugin.endpoint != address(0), UnknownCallbackSelector());
 
         (bool ok, bytes memory payload) = plugin.endpoint.delegatecall(msg.data);
 
-        require(ok, FlashLoanFailed());
-        (address flp, uint256 debt) = abi.decode(payload, (address, uint256));
-
-        bytes memory data;
-        bytes32 slot = SLOT_ADAPTER;
-        assembly {
-            data := tload(slot)
-            tstore(slot, 0)
+        if (!ok) {
+            assembly {
+                let size := returndatasize()
+                returndatacopy(0, 0, size)
+                revert(0, size)
+            }
         }
 
-        (
-            uint256 initialAmount,
-            address market,
-            address baseAsset,
-            address collateralAsset,
-            uint256 minAmountOut,
-            bytes memory swapData
-        ) = abi.decode(data, (uint256, address, address, address, uint256, bytes));
+        (address flp, uint256 debt, bytes memory swapData) = abi.decode(payload, (address, uint256, bytes));
+
+        console.log("debt: %s", debt);
+        console.log("flp: %s", flp);
+
+        uint256 initialAmount;
+        address market;
+        address baseAsset;
+        address collateralAsset;
+        uint256 minAmountOut;
+
+        bytes32 slot = SLOT_ADAPTER;
+
+        assembly {
+            initialAmount := tload(slot)
+            market := tload(add(slot, 0x20))
+            baseAsset := tload(add(slot, 0x40))
+            collateralAsset := tload(add(slot, 0x60))
+            minAmountOut := tload(add(slot, 0x80))
+            tstore(slot, 0)
+            tstore(add(slot, 0x20), 0)
+            tstore(add(slot, 0x40), 0)
+            tstore(add(slot, 0x60), 0)
+            tstore(add(slot, 0x80), 0)
+        }
 
         uint256 amountOut = _executeSwap(baseAsset, collateralAsset, debt, minAmountOut, swapData);
-
         uint256 totalAmount = amountOut + initialAmount;
 
         IERC20(collateralAsset).approve(market, totalAmount);
@@ -89,13 +108,13 @@ contract CometMultiplierAdapter is Ownable, ICometMultiplierAdapter {
     function addAsset(
         address market,
         address collateralAsset,
+        address flp,
         bytes4 pluginSelector,
         uint256 leverage
     ) external onlyOwner {
         require(plugins[pluginSelector].endpoint != address(0), InvalidPluginSelector());
         require(leverage <= LEVERAGE_PRECISION && leverage > 0, InvalidLeverage());
-        selectors[market][collateralAsset] = pluginSelector;
-        leverages[pluginSelector] = leverage;
+        assets[market][collateralAsset] = Asset({ pluginSelector: pluginSelector, leverage: leverage, flp: flp });
 
         emit AssetAdded(market, collateralAsset, pluginSelector);
     }
@@ -108,15 +127,14 @@ contract CometMultiplierAdapter is Ownable, ICometMultiplierAdapter {
         bytes calldata swapData,
         uint256 minAmountOut
     ) external {
-        bytes4 selector = selectors[market][collateralAsset];
-        Plugin memory plugin = plugins[selector];
+        Asset memory asset = assets[market][collateralAsset];
+        Plugin memory plugin = plugins[asset.pluginSelector];
         require(plugin.endpoint != address(0), UnsupportedAsset());
-        require(leverage <= leverages[selector] && leverage > 0, InvalidLeverage());
+        require(leverage <= asset.leverage && leverage > 0, InvalidLeverage());
 
-        address priceFeed = IComet(market).getAssetInfoByAddress(collateralAsset).priceFeed;
-        require(priceFeed != address(0), UnsupportedPriceFeed());
-
-        uint256 baseAmount = (initialAmount * IComet(market).getPrice(priceFeed) * LEVERAGE_PRECISION) / leverage;
+        IComet.AssetInfo memory info = IComet(market).getAssetInfoByAddress(collateralAsset);
+        uint256 baseAmount = (((initialAmount * IComet(market).getPrice(info.priceFeed)) / info.scale) *
+            LEVERAGE_PRECISION) / leverage;
 
         IERC20(collateralAsset).transferFrom(msg.sender, address(this), initialAmount);
 
@@ -124,23 +142,32 @@ contract CometMultiplierAdapter is Ownable, ICometMultiplierAdapter {
 
         bytes32 slot = SLOT_ADAPTER;
 
-        bytes memory data = abi.encode(initialAmount, market, baseAsset, collateralAsset, minAmountOut, swapData);
-
         assembly {
-            tstore(slot, data)
+            tstore(slot, initialAmount)
+            tstore(add(slot, 0x20), market)
+            tstore(add(slot, 0x40), baseAsset)
+            tstore(add(slot, 0x60), collateralAsset)
+            tstore(add(slot, 0x80), minAmountOut)
         }
 
         (bool ok, ) = plugin.endpoint.delegatecall(
             abi.encodeWithSelector(
                 ICometMultiplierPlugin.takeFlashLoan.selector,
                 baseAsset,
+                asset.flp,
                 baseAmount,
-                swapData,
-                plugin.config
+                plugin.config,
+                swapData
             )
         );
 
-        require(ok, FlashLoanFailed());
+        if (!ok) {
+            assembly {
+                let size := returndatasize()
+                returndatacopy(0, 0, size)
+                revert(0, size)
+            }
+        }
     }
 
     function _executeSwap(
@@ -154,21 +181,17 @@ contract CometMultiplierAdapter is Ownable, ICometMultiplierAdapter {
             return amount;
         }
 
-        IAggregationRouterV6.SwapDescription memory desc = IAggregationRouterV6.SwapDescription({
-            srcToken: IERC20(srcToken),
-            dstToken: IERC20(dstToken),
-            srcReceiver: address(this),
-            dstReceiver: address(this),
-            amount: amount,
-            minReturnAmount: minAmountOut,
-            flags: 0
-        });
+        IERC20(srcToken).approve(address(router), amount);
+        (bool ok, bytes memory data) = address(router).call(swapData);
+        if (!ok) {
+            assembly {
+                let size := returndatasize()
+                returndatacopy(0, 0, size)
+                revert(0, size)
+            }
+        }
 
-        (returnAmount, ) = router.swap{ value: msg.value }(
-            IAggregationExecutor(payable(address(this))),
-            desc,
-            swapData
-        );
+        (returnAmount, ) = abi.decode(data, (uint256, uint256));
 
         require(returnAmount >= minAmountOut, InsufficiantAmountOut());
     }

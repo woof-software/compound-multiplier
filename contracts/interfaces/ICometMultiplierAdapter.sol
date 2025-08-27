@@ -17,6 +17,12 @@ interface ICometMultiplierAdapter {
         bytes config;
     }
 
+    struct Asset {
+        uint256 leverage;
+        address flp;
+        bytes4 pluginSelector;
+    }
+
     function executeMultiplier(
         address baseAsset, // Compound V3 market address
         address collateralAsset, // Token to use as collateral
