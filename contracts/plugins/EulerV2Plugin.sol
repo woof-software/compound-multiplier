@@ -22,38 +22,30 @@ contract EulerV2Plugin is ICometMultiplierPlugin {
      * @param amount The amount of the token to borrow
      */
     function takeFlashLoan(
+        address user,
         address baseAsset,
         address flp,
         uint256 amount,
-        bytes memory config,
+        bytes memory,
         bytes memory swapData
     ) public {
-        console.log("Taking flash loan of %s from Euler", amount);
-        (address euler, address markets) = abi.decode(config, (address, address));
-
-        console.log("euler: %s", euler);
-        console.log("markets: %s", markets);
         uint256 snapshot = IERC20(baseAsset).balanceOf(address(this));
-        console.log("snapshot: %s", snapshot);
-        bytes memory data = abi.encode(flp, baseAsset, amount, snapshot, swapData);
-        console.logBytes(data);
-
+        bytes memory data = abi.encode(user, flp, baseAsset, amount, snapshot, swapData);
         bytes32 flid = keccak256(abi.encode(data, block.timestamp));
-        console.logBytes32(flid);
         bytes32 slot = SLOT_PLUGIN;
 
         assembly {
             tstore(slot, flid)
         }
 
-        console.log("flashloan id stored");
-        console.log("flp: %s", flp);
         IEVault(flp).flashLoan(amount, data);
-        console.log("flashloan taken");
     }
 
-    function onFlashLoan(bytes calldata data) external returns (address, uint256, bytes memory) {
-        console.log("onFlashLoan called");
+    function repayFlashLoan(address flp, address baseAsset, uint256 amount) external {
+        IERC20(baseAsset).transfer(flp, amount);
+    }
+
+    function onFlashLoan(bytes calldata data) external returns (address, address, uint256, bytes memory) {
         bytes32 flid = keccak256(abi.encode(data, block.timestamp));
         bytes32 flidExpected;
         bytes32 slot = SLOT_PLUGIN;
@@ -62,18 +54,13 @@ contract EulerV2Plugin is ICometMultiplierPlugin {
             tstore(slot, 0)
         }
 
-        console.logBytes32(flid);
-        console.logBytes32(flidExpected);
-
         require(flid == flidExpected, InvalidFlashLoanId());
 
-        (address flp, address baseAseet, uint256 debt, uint256 snapshot, bytes memory swapData) = abi.decode(
-            data,
-            (address, address, uint256, uint256, bytes)
-        );
+        (address user, address flp, address baseAseet, uint256 debt, uint256 snapshot, bytes memory swapData) = abi
+            .decode(data, (address, address, address, uint256, uint256, bytes));
 
         require(flp == msg.sender, UnauthorizedCallback());
         require(IERC20(baseAseet).balanceOf(address(this)) == snapshot + debt, InvalidAmountOut());
-        return (flp, debt, swapData);
+        return (user, flp, debt, swapData);
     }
 }

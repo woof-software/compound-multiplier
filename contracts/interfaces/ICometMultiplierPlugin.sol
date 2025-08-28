@@ -12,6 +12,7 @@ interface ICometMultiplierPlugin {
     function SLOT_PLUGIN() external view returns (bytes32);
 
     function takeFlashLoan(
+        address user,
         address market,
         address flp,
         uint256 amount,
@@ -19,5 +20,5 @@ interface ICometMultiplierPlugin {
         bytes memory swapData
     ) external;
 
-    function onFlashLoan(bytes calldata data) external returns (address endpoint, uint256 debt, bytes memory swapData);
+    function repayFlashLoan(address flp, address baseAsset, uint256 amount) external;
 }

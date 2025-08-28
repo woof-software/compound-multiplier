@@ -14,6 +14,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 
 import "hardhat/console.sol";
 
@@ -21,6 +22,7 @@ contract CometMultiplierAdapter is Ownable, ICometMultiplierAdapter {
     using SafeERC20 for IERC20;
 
     uint256 constant LEVERAGE_PRECISION = 10_000;
+    uint256 constant MAX_LEVERAGE = 50_000;
 
     bytes32 constant SLOT_ADAPTER = bytes32(uint256(keccak256("CometMultiplierAdapter.adapter")) - 1);
 
@@ -40,27 +42,17 @@ contract CometMultiplierAdapter is Ownable, ICometMultiplierAdapter {
     }
 
     fallback() external payable {
-        if (msg.sender == address(router)) {
-            return;
-        }
-        console.log("I am fallback");
         Plugin memory plugin = plugins[msg.sig];
         require(plugin.endpoint != address(0), UnknownCallbackSelector());
 
         (bool ok, bytes memory payload) = plugin.endpoint.delegatecall(msg.data);
 
-        if (!ok) {
-            assembly {
-                let size := returndatasize()
-                returndatacopy(0, 0, size)
-                revert(0, size)
-            }
-        }
+        _catch(ok);
 
-        (address flp, uint256 debt, bytes memory swapData) = abi.decode(payload, (address, uint256, bytes));
-
-        console.log("debt: %s", debt);
-        console.log("flp: %s", flp);
+        (address user, address flp, uint256 debt, bytes memory swapData) = abi.decode(
+            payload,
+            (address, address, uint256, bytes)
+        );
 
         uint256 initialAmount;
         address market;
@@ -88,10 +80,13 @@ contract CometMultiplierAdapter is Ownable, ICometMultiplierAdapter {
 
         IERC20(collateralAsset).approve(market, totalAmount);
 
-        IComet(market).supplyTo(msg.sender, collateralAsset, totalAmount);
-        IComet(market).withdrawFrom(msg.sender, address(this), baseAsset, debt);
+        IComet(market).supplyTo(user, collateralAsset, totalAmount);
+        IComet(market).withdrawFrom(user, address(this), baseAsset, debt);
+        (bool done, ) = plugin.endpoint.delegatecall(
+            abi.encodeWithSelector(ICometMultiplierPlugin.repayFlashLoan.selector, flp, baseAsset, debt)
+        );
 
-        IERC20(baseAsset).transfer(flp, debt);
+        _catch(done);
     }
 
     receive() external payable {}
@@ -113,7 +108,7 @@ contract CometMultiplierAdapter is Ownable, ICometMultiplierAdapter {
         uint256 leverage
     ) external onlyOwner {
         require(plugins[pluginSelector].endpoint != address(0), InvalidPluginSelector());
-        require(leverage <= LEVERAGE_PRECISION && leverage > 0, InvalidLeverage());
+        require(leverage > LEVERAGE_PRECISION && leverage <= MAX_LEVERAGE, InvalidLeverage());
         assets[market][collateralAsset] = Asset({ pluginSelector: pluginSelector, leverage: leverage, flp: flp });
 
         emit AssetAdded(market, collateralAsset, pluginSelector);
@@ -123,25 +118,29 @@ contract CometMultiplierAdapter is Ownable, ICometMultiplierAdapter {
         address market,
         address collateralAsset,
         uint256 initialAmount,
-        uint256 leverage,
+        uint256 leverageBps,
         bytes calldata swapData,
         uint256 minAmountOut
     ) external {
         Asset memory asset = assets[market][collateralAsset];
         Plugin memory plugin = plugins[asset.pluginSelector];
         require(plugin.endpoint != address(0), UnsupportedAsset());
-        require(leverage <= asset.leverage && leverage > 0, InvalidLeverage());
+        require(leverageBps >= LEVERAGE_PRECISION && leverageBps <= asset.leverage, InvalidLeverage());
 
-        IComet.AssetInfo memory info = IComet(market).getAssetInfoByAddress(collateralAsset);
-        uint256 baseAmount = (((initialAmount * IComet(market).getPrice(info.priceFeed)) / info.scale) *
-            LEVERAGE_PRECISION) / leverage;
+        IComet comet = IComet(market);
+        IComet.AssetInfo memory info = comet.getAssetInfoByAddress(collateralAsset);
+
+        uint256 baseScale = comet.baseScale();
+        uint256 price = comet.getPrice(info.priceFeed);
+        uint256 initialValueBase = Math.mulDiv(Math.mulDiv(initialAmount, price, 1e8), baseScale, info.scale);
+
+        uint256 deltaBps = leverageBps - LEVERAGE_PRECISION;
+        uint256 baseAmount = Math.mulDiv(initialValueBase, deltaBps, LEVERAGE_PRECISION);
 
         IERC20(collateralAsset).transferFrom(msg.sender, address(this), initialAmount);
 
-        address baseAsset = IComet(market).baseToken();
-
+        address baseAsset = comet.baseToken();
         bytes32 slot = SLOT_ADAPTER;
-
         assembly {
             tstore(slot, initialAmount)
             tstore(add(slot, 0x20), market)
@@ -153,6 +152,7 @@ contract CometMultiplierAdapter is Ownable, ICometMultiplierAdapter {
         (bool ok, ) = plugin.endpoint.delegatecall(
             abi.encodeWithSelector(
                 ICometMultiplierPlugin.takeFlashLoan.selector,
+                msg.sender,
                 baseAsset,
                 asset.flp,
                 baseAmount,
@@ -161,13 +161,7 @@ contract CometMultiplierAdapter is Ownable, ICometMultiplierAdapter {
             )
         );
 
-        if (!ok) {
-            assembly {
-                let size := returndatasize()
-                returndatacopy(0, 0, size)
-                revert(0, size)
-            }
-        }
+        _catch(ok);
     }
 
     function _executeSwap(
@@ -183,16 +177,20 @@ contract CometMultiplierAdapter is Ownable, ICometMultiplierAdapter {
 
         IERC20(srcToken).approve(address(router), amount);
         (bool ok, bytes memory data) = address(router).call(swapData);
-        if (!ok) {
+        _catch(ok);
+
+        (returnAmount, ) = abi.decode(data, (uint256, uint256));
+
+        require(returnAmount >= minAmountOut, InsufficiantAmountOut());
+    }
+
+    function _catch(bool success) internal pure {
+        if (success) {
             assembly {
                 let size := returndatasize()
                 returndatacopy(0, 0, size)
                 revert(0, size)
             }
         }
-
-        (returnAmount, ) = abi.decode(data, (uint256, uint256));
-
-        require(returnAmount >= minAmountOut, InsufficiantAmountOut());
     }
 }

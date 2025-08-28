@@ -1,7 +1,7 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
 import { Contract } from "ethers";
-import { CometMultiplierAdapter, EulerV2Plugin, IComet, IERC20, IEulerMarkets } from "../typechain-types";
+import { CometMultiplierAdapter, EulerV2Plugin, IComet, IERC20, IEulerMarkets, MorphoPlugin } from "../typechain-types";
 import axios from "axios";
 
 (BigInt.prototype as any).toJSON = function () {
@@ -29,12 +29,13 @@ async function get1inchSwapData(
   return res.data.tx.data;
 }
 
-describe("Euler Plugin", function () {
+describe("Morpho", function () {
   let adapter: CometMultiplierAdapter;
-  let plugin: EulerV2Plugin;
+  let plugin: MorphoPlugin;
   let comet: IComet;
   let weth: IERC20;
   let usdc: IERC20;
+  let eulerMarkets: IEulerMarkets;
   
   let user: any;
   const WETH_ADDRESS = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
@@ -42,7 +43,7 @@ describe("Euler Plugin", function () {
   const COMET_USDC_MARKET = "0xc3d688B66703497DAA19211EEdff47f25384cdc3";
   const ONE_INCH_ROUTER_V6 = "0x111111125421cA6dc452d289314280a0f8842A65";
 
-  const USDC_EVAULT = "0x797DD80692c3b2dAdabCe8e30C07fDE5307D48a9";
+  const MORPHO = "0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb";
 
   before(async () => {
     [user] = await ethers.getSigners();
@@ -51,13 +52,14 @@ describe("Euler Plugin", function () {
     usdc = await ethers.getContractAt("IERC20", USDC_ADDRESS);
     comet = await ethers.getContractAt("IComet", COMET_USDC_MARKET);
 
-    const EulerPlugin = await ethers.getContractFactory("EulerV2Plugin");
+    const EulerPlugin = await ethers.getContractFactory("MorphoPlugin");
     plugin = await EulerPlugin.deploy();
 
     const Adapter = await ethers.getContractFactory("CometMultiplierAdapter");
     adapter = await Adapter.deploy(ONE_INCH_ROUTER_V6, [
-      { endpoint: await plugin.getAddress(), config: "0x" },
+      { endpoint: await plugin.getAddress(),  config: "0x"},
     ]);
+
 
     const whale = await ethers.getImpersonatedSigner("0xF04a5cC80B1E94C69B48f5ee68a08CD2F09A7c3E");
 
@@ -75,7 +77,7 @@ describe("Euler Plugin", function () {
     await weth.connect(user).approve(await adapter.getAddress(), initialAmount);
 
     const CALLBACK_SELECTOR = await plugin.CALLBACK_SELECTOR();
-    await adapter.connect(user).addAsset(await comet.getAddress(), await weth.getAddress(), USDC_EVAULT, CALLBACK_SELECTOR, leverage);
+    await adapter.connect(user).addAsset(await comet.getAddress(), await weth.getAddress(), MORPHO, CALLBACK_SELECTOR, leverage);
 
     const swapData = await get1inchSwapData(
       await usdc.getAddress(),
