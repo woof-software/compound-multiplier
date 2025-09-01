@@ -2,10 +2,10 @@ import { ethers } from "hardhat";
 import { expect } from "chai";
 import {
   CometMultiplierAdapter,
-  MorphoPlugin,
-  OneInchV6SwapPlugin,
   IComet,
   IERC20,
+  UniswapV3Plugin,
+  OneInchV6SwapPlugin,
 } from "../typechain-types";
 import axios from "axios";
 
@@ -28,21 +28,20 @@ async function get1inchSwapData(
   return res.data.tx.data;
 }
 
-describe("Morpho", function () {
+describe("UniswapV3", function () {
   let adapter: CometMultiplierAdapter;
-  let loanPlugin: MorphoPlugin;
+  let loanPlugin: UniswapV3Plugin;
   let swapPlugin: OneInchV6SwapPlugin;
   let comet: IComet;
   let weth: IERC20;
   let usdc: IERC20;
-
   let user: any;
 
   const WETH_ADDRESS = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
   const USDC_ADDRESS = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
   const COMET_USDC_MARKET = "0xc3d688B66703497DAA19211EEdff47f25384cdc3";
   const ONE_INCH_ROUTER_V6 = "0x111111125421cA6dc452d289314280a0f8842A65";
-  const MORPHO = "0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb";
+  const UNI_V3_USDC_WETH_005 = "0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640";
   const WETH_WHALE = "0xF04a5cC80B1E94C69B48f5ee68a08CD2F09A7c3E";
 
   before(async () => {
@@ -52,34 +51,27 @@ describe("Morpho", function () {
     usdc = await ethers.getContractAt("IERC20", USDC_ADDRESS);
     comet = await ethers.getContractAt("IComet", COMET_USDC_MARKET);
 
-    const LoanFactory = await ethers.getContractFactory("MorphoPlugin");
-    loanPlugin = await LoanFactory.deploy();
+    const LoanFactory = await ethers.getContractFactory("UniswapV3Plugin");
+    loanPlugin = (await LoanFactory.deploy()) as UniswapV3Plugin;
 
     const SwapFactory = await ethers.getContractFactory("OneInchV6SwapPlugin");
-    swapPlugin = await SwapFactory.deploy();
+    swapPlugin = (await SwapFactory.deploy()) as OneInchV6SwapPlugin;
 
-    const Adapter = await ethers.getContractFactory("CometMultiplierAdapter");
-    adapter = await Adapter.deploy([
+    const AdapterFactory = await ethers.getContractFactory("CometMultiplierAdapter");
+    adapter = (await AdapterFactory.deploy([
       { endpoint: await loanPlugin.getAddress(), config: "0x" },
       {
         endpoint: await swapPlugin.getAddress(),
-        config: ethers.AbiCoder.defaultAbiCoder().encode(
-          ["address"],
-          [ONE_INCH_ROUTER_V6]
-        ),
+        config: ethers.AbiCoder.defaultAbiCoder().encode(["address"], [ONE_INCH_ROUTER_V6]),
       },
-    ]);
+    ])) as CometMultiplierAdapter;
 
     const whale = await ethers.getImpersonatedSigner(WETH_WHALE);
-    await ethers.provider.send("hardhat_setBalance", [
-      whale.address,
-      "0xffffffffffffffffffffff",
-    ]);
-
+    await ethers.provider.send("hardhat_setBalance", [whale.address, "0xffffffffffffffffffffff"]);
     await weth.connect(whale).transfer(user.address, ethers.parseEther("10"));
   });
 
-  it("should execute multiplier using real market and 1inch", async () => {
+  it("should execute multiplier using Uniswap V3 flash + 1inch swap", async () => {
     const initialAmount = ethers.parseEther("0.1");
     const leverage = 30000;
     const minAmountOut = 1;
@@ -94,7 +86,7 @@ describe("Morpho", function () {
       .addAsset(
         await comet.getAddress(),
         await weth.getAddress(),
-        MORPHO,
+        UNI_V3_USDC_WETH_005,
         leverage,
         SWAP_SELECTOR,
         LOAN_SELECTOR
@@ -108,12 +100,7 @@ describe("Morpho", function () {
     );
 
     const allowAbi = ["function allow(address, bool)"];
-    const cometAsSigner = new ethers.Contract(
-      await comet.getAddress(),
-      allowAbi,
-      user
-    ) as any;
-
+    const cometAsSigner = new ethers.Contract(await comet.getAddress(), allowAbi, user) as any;
     await cometAsSigner.connect(user).allow(await adapter.getAddress(), true);
 
     await expect(

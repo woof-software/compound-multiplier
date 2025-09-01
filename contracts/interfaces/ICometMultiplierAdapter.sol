@@ -6,6 +6,7 @@ interface ICometMultiplierAdapter {
     error UnsupportedAsset();
     error UnsupportedPriceFeed();
     error UnknownCallbackSelector();
+    error UnknownSwapPlugin();
     error InvalidPluginSelector();
     error InvalidLeverage();
     error CallbackFailed();
@@ -20,7 +21,8 @@ interface ICometMultiplierAdapter {
     struct Asset {
         uint256 leverage;
         address flp;
-        bytes4 pluginSelector;
+        bytes4 loanSelector;
+        bytes4 swapSelector;
     }
 
     function executeMultiplier(

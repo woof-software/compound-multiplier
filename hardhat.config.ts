@@ -95,6 +95,7 @@ const config: HardhatUserConfig = {
                 count: envs.NUMBER_OF_ACCOUNTS ? +envs.NUMBER_OF_ACCOUNTS : 20
             },
             forking: {
+                blockNumber: 23270214,
                 url: envs.FORKING_URL ?? "",
                 enabled: enableForking
             }

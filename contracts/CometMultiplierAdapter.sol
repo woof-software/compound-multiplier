@@ -2,6 +2,7 @@
 pragma solidity ^0.8.30;
 import { IComet } from "./interfaces/IComet.sol";
 import { ICometMultiplierAdapter } from "./interfaces/ICometMultiplierAdapter.sol";
+import { ICometSwapPlugin } from "./interfaces/ICometSwapPlugin.sol";
 import { ICometMultiplierPlugin } from "./interfaces/ICometMultiplierPlugin.sol";
 import { IAggregationRouterV6, IAggregationExecutor } from "./interfaces/IAggregationRouterV6.sol";
 
@@ -26,19 +27,15 @@ contract CometMultiplierAdapter is Ownable, ICometMultiplierAdapter {
 
     bytes32 constant SLOT_ADAPTER = bytes32(uint256(keccak256("CometMultiplierAdapter.adapter")) - 1);
 
-    IAggregationRouterV6 public router;
-
     mapping(address => mapping(address => Asset)) public assets;
     mapping(bytes4 => Plugin) public plugins;
 
-    constructor(IAggregationRouterV6 _router, Plugin[] memory _plugins) Ownable(msg.sender) {
+    constructor(Plugin[] memory _plugins) Ownable(msg.sender) {
         for (uint256 i = 0; i < _plugins.length; i++) {
             Plugin memory plugin = _plugins[i];
             bytes4 pluginSelector = ICometMultiplierPlugin(plugin.endpoint).CALLBACK_SELECTOR();
             plugins[pluginSelector] = plugin;
         }
-
-        router = _router;
     }
 
     fallback() external payable {
@@ -75,7 +72,7 @@ contract CometMultiplierAdapter is Ownable, ICometMultiplierAdapter {
             tstore(add(slot, 0x80), 0)
         }
 
-        uint256 amountOut = _executeSwap(baseAsset, collateralAsset, debt, minAmountOut, swapData);
+        uint256 amountOut = _executeSwap(baseAsset, collateralAsset, market, debt, minAmountOut, swapData);
         uint256 totalAmount = amountOut + initialAmount;
 
         IERC20(collateralAsset).approve(market, totalAmount);
@@ -104,14 +101,23 @@ contract CometMultiplierAdapter is Ownable, ICometMultiplierAdapter {
         address market,
         address collateralAsset,
         address flp,
-        bytes4 pluginSelector,
-        uint256 leverage
+        uint256 leverage,
+        bytes4 swapSelector,
+        bytes4 loanSelector
     ) external onlyOwner {
-        require(plugins[pluginSelector].endpoint != address(0), InvalidPluginSelector());
+        require(
+            plugins[loanSelector].endpoint != address(0) && plugins[swapSelector].endpoint != address(0),
+            InvalidPluginSelector()
+        );
         require(leverage > LEVERAGE_PRECISION && leverage <= MAX_LEVERAGE, InvalidLeverage());
-        assets[market][collateralAsset] = Asset({ pluginSelector: pluginSelector, leverage: leverage, flp: flp });
+        assets[market][collateralAsset] = Asset({
+            loanSelector: loanSelector,
+            swapSelector: swapSelector,
+            leverage: leverage,
+            flp: flp
+        });
 
-        emit AssetAdded(market, collateralAsset, pluginSelector);
+        emit AssetAdded(market, collateralAsset, loanSelector);
     }
 
     function executeMultiplier(
@@ -123,7 +129,7 @@ contract CometMultiplierAdapter is Ownable, ICometMultiplierAdapter {
         uint256 minAmountOut
     ) external {
         Asset memory asset = assets[market][collateralAsset];
-        Plugin memory plugin = plugins[asset.pluginSelector];
+        Plugin memory plugin = plugins[asset.loanSelector];
         require(plugin.endpoint != address(0), UnsupportedAsset());
         require(leverageBps >= LEVERAGE_PRECISION && leverageBps <= asset.leverage, InvalidLeverage());
 
@@ -167,25 +173,40 @@ contract CometMultiplierAdapter is Ownable, ICometMultiplierAdapter {
     function _executeSwap(
         address srcToken,
         address dstToken,
+        address market,
         uint256 amount,
         uint256 minAmountOut,
         bytes memory swapData
-    ) internal returns (uint256 returnAmount) {
+    ) internal returns (uint256 amountOut) {
         if (srcToken == dstToken) {
             return amount;
         }
 
-        IERC20(srcToken).approve(address(router), amount);
-        (bool ok, bytes memory data) = address(router).call(swapData);
+        Asset memory asset = assets[market][dstToken];
+        Plugin memory plugin = plugins[asset.swapSelector];
+        require(plugin.endpoint != address(0), UnknownSwapPlugin());
+
+        bytes memory _calldata = abi.encodeWithSelector(
+            ICometSwapPlugin.executeSwap.selector,
+            srcToken,
+            dstToken,
+            amount,
+            minAmountOut,
+            plugin.config,
+            swapData
+        );
+
+        (bool ok, bytes memory data) = address(plugin.endpoint).delegatecall(_calldata);
+
         _catch(ok);
 
-        (returnAmount, ) = abi.decode(data, (uint256, uint256));
+        amountOut = abi.decode(data, (uint256));
 
-        require(returnAmount >= minAmountOut, InsufficiantAmountOut());
+        require(amountOut >= minAmountOut, InsufficiantAmountOut());
     }
 
     function _catch(bool success) internal pure {
-        if (success) {
+        if (!success) {
             assembly {
                 let size := returndatasize()
                 returndatacopy(0, 0, size)
