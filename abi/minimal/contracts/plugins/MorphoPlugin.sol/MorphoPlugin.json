@@ -1,0 +1,10 @@
+[
+    "error InvalidAmountOut()",
+    "error InvalidFlashLoanId()",
+    "error UnauthorizedCallback()",
+    "function CALLBACK_SELECTOR() view returns (bytes4)",
+    "function SLOT_PLUGIN() view returns (bytes32)",
+    "function onMorphoFlashLoan(uint256,bytes) returns (address, address, uint256, bytes)",
+    "function repayFlashLoan(address,address,uint256)",
+    "function takeFlashLoan(address,address,address,uint256,bytes,bytes)"
+]

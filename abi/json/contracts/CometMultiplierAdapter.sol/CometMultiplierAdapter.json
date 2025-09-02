@@ -1,0 +1,356 @@
+[
+    {
+        "inputs": [
+            {
+                "internalType": "contract IAggregationRouterV6",
+                "name": "_router",
+                "type": "address"
+            },
+            {
+                "components": [
+                    {
+                        "internalType": "address",
+                        "name": "endpoint",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "bytes",
+                        "name": "config",
+                        "type": "bytes"
+                    }
+                ],
+                "internalType": "struct ICometMultiplierAdapter.Plugin[]",
+                "name": "_plugins",
+                "type": "tuple[]"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "constructor"
+    },
+    {
+        "inputs": [],
+        "name": "CallbackFailed",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "FlashLoanFailed",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "InsufficiantAmountOut",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "InvalidLeverage",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "InvalidPluginSelector",
+        "type": "error"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "owner",
+                "type": "address"
+            }
+        ],
+        "name": "OwnableInvalidOwner",
+        "type": "error"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "account",
+                "type": "address"
+            }
+        ],
+        "name": "OwnableUnauthorizedAccount",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "UnknownCallbackSelector",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "UnsupportedAsset",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "UnsupportedPriceFeed",
+        "type": "error"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "market",
+                "type": "address"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "collateralAsset",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "bytes4",
+                "name": "pluginSelector",
+                "type": "bytes4"
+            }
+        ],
+        "name": "AssetAdded",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "previousOwner",
+                "type": "address"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "newOwner",
+                "type": "address"
+            }
+        ],
+        "name": "OwnershipTransferred",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "plugin",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "bytes4",
+                "name": "pluginSelector",
+                "type": "bytes4"
+            }
+        ],
+        "name": "PluginAdded",
+        "type": "event"
+    },
+    {
+        "stateMutability": "payable",
+        "type": "fallback"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "market",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "collateralAsset",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "flp",
+                "type": "address"
+            },
+            {
+                "internalType": "bytes4",
+                "name": "pluginSelector",
+                "type": "bytes4"
+            },
+            {
+                "internalType": "uint256",
+                "name": "leverage",
+                "type": "uint256"
+            }
+        ],
+        "name": "addAsset",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "plugin",
+                "type": "address"
+            },
+            {
+                "internalType": "bytes",
+                "name": "config",
+                "type": "bytes"
+            }
+        ],
+        "name": "addPlugin",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "assets",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "leverage",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "flp",
+                "type": "address"
+            },
+            {
+                "internalType": "bytes4",
+                "name": "pluginSelector",
+                "type": "bytes4"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "market",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "collateralAsset",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "initialAmount",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "leverageBps",
+                "type": "uint256"
+            },
+            {
+                "internalType": "bytes",
+                "name": "swapData",
+                "type": "bytes"
+            },
+            {
+                "internalType": "uint256",
+                "name": "minAmountOut",
+                "type": "uint256"
+            }
+        ],
+        "name": "executeMultiplier",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "owner",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bytes4",
+                "name": "",
+                "type": "bytes4"
+            }
+        ],
+        "name": "plugins",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "endpoint",
+                "type": "address"
+            },
+            {
+                "internalType": "bytes",
+                "name": "config",
+                "type": "bytes"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "renounceOwnership",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "router",
+        "outputs": [
+            {
+                "internalType": "contract IAggregationRouterV6",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "newOwner",
+                "type": "address"
+            }
+        ],
+        "name": "transferOwnership",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "stateMutability": "payable",
+        "type": "receive"
+    }
+]

@@ -1,0 +1,4 @@
+[
+    "error SafeERC20FailedDecreaseAllowance(address spender, uint256 currentAllowance, uint256 requestedDecrease)",
+    "error SafeERC20FailedOperation(address token)"
+]
