@@ -6,11 +6,22 @@ interface ICometMultiplierAdapter {
     error UnsupportedAsset();
     error UnsupportedPriceFeed();
     error UnknownCallbackSelector();
+    error UnknownSwapPlugin();
+    error UnknownMarket();
     error InvalidPluginSelector();
     error InvalidLeverage();
     error CallbackFailed();
     error FlashLoanFailed();
     error InsufficiantAmountOut();
+    error InvalidMode();
+    error AlreadyExists();
+    error NothingToDeleverage();
+    error InvalidAmountOut();
+
+    enum Mode {
+        EXECUTE,
+        WITHDRAW
+    }
 
     struct Plugin {
         address endpoint;
@@ -18,21 +29,21 @@ interface ICometMultiplierAdapter {
     }
 
     struct Asset {
-        uint256 leverage;
         address flp;
-        bytes4 pluginSelector;
+        bytes4 loanSelector;
+        bytes4 swapSelector;
     }
 
     function executeMultiplier(
-        address baseAsset, // Compound V3 market address
-        address collateralAsset, // Token to use as collateral
-        uint256 initialAmount, // User's initial collateral
-        uint256 leverage, // Leverage in basis points
-        bytes calldata swapData, // 1inch swap calldata. Optional, can be empty in case we swap assets using LST/LRT protocol
-        uint256 minAmountOut // Slippage protection
+        address market,
+        address collateralAsset,
+        uint256 initialAmount,
+        uint256 leverage,
+        bytes calldata swapData,
+        uint256 minAmountOut
     ) external;
 
-    event AssetAdded(address indexed market, address indexed collateralAsset, bytes4 pluginSelector);
+    event AssetAdded(address indexed collateralAsset, bytes4 pluginSelector);
 
     event PluginAdded(address indexed plugin, bytes4 pluginSelector);
 }

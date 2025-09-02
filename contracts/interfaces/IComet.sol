@@ -124,7 +124,7 @@ interface IComet {
 
     function borrowBalanceOf(address account) external view returns (uint256);
 
-    function collateralBalanceOf(address account, address asset) external view virtual returns (uint128);
+    function collateralBalanceOf(address account, address asset) external view returns (uint128);
 
     function pause(
         bool supplyPaused,

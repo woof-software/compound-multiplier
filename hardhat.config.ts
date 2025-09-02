@@ -95,10 +95,11 @@ const config: HardhatUserConfig = {
                 count: envs.NUMBER_OF_ACCOUNTS ? +envs.NUMBER_OF_ACCOUNTS : 20
             },
             forking: {
+                blockNumber: 23270214,
                 url: envs.FORKING_URL ?? "",
-                enabled: enableForking,
-                blockNumber: envs.FORKING_BLOCK_NUMBER ? +envs.FORKING_BLOCK_NUMBER : undefined
-            }
+                enabled: enableForking
+            },
+            hardfork: "pectra"
             // Uncomment if "Error: cannot estimate gas; transaction may fail or may require manual gas limit...".
             // gas: 3E7,
             // gasPrice: 8E9
