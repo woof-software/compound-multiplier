@@ -20,6 +20,18 @@ error UnsupportedPriceFeed()
 error UnknownCallbackSelector()
 ```
 
+### UnknownSwapPlugin
+
+```solidity
+error UnknownSwapPlugin()
+```
+
+### UnknownMarket
+
+```solidity
+error UnknownMarket()
+```
+
 ### InvalidPluginSelector
 
 ```solidity
@@ -50,6 +62,39 @@ error FlashLoanFailed()
 error InsufficiantAmountOut()
 ```
 
+### InvalidMode
+
+```solidity
+error InvalidMode()
+```
+
+### AlreadyExists
+
+```solidity
+error AlreadyExists()
+```
+
+### NothingToDeleverage
+
+```solidity
+error NothingToDeleverage()
+```
+
+### InvalidAmountOut
+
+```solidity
+error InvalidAmountOut()
+```
+
+### Mode
+
+```solidity
+enum Mode {
+  EXECUTE,
+  WITHDRAW
+}
+```
+
 ### Plugin
 
 ```solidity
@@ -63,22 +108,22 @@ struct Plugin {
 
 ```solidity
 struct Asset {
-  uint256 leverage;
   address flp;
-  bytes4 pluginSelector;
+  bytes4 loanSelector;
+  bytes4 swapSelector;
 }
 ```
 
 ### executeMultiplier
 
 ```solidity
-function executeMultiplier(address baseAsset, address collateralAsset, uint256 initialAmount, uint256 leverage, bytes swapData, uint256 minAmountOut) external
+function executeMultiplier(address market, address collateralAsset, uint256 initialAmount, uint256 leverage, bytes swapData, uint256 minAmountOut) external
 ```
 
 ### AssetAdded
 
 ```solidity
-event AssetAdded(address market, address collateralAsset, bytes4 pluginSelector)
+event AssetAdded(address collateralAsset, bytes4 pluginSelector)
 ```
 
 ### PluginAdded

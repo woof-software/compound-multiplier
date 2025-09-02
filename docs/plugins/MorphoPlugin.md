@@ -19,7 +19,7 @@ bytes32 SLOT_PLUGIN
 ### takeFlashLoan
 
 ```solidity
-function takeFlashLoan(address user, address baseAsset, address flp, uint256 amount, bytes, bytes swapData) public
+function takeFlashLoan(struct ICometFlashLoanPlugin.CallbackData data, bytes) public
 ```
 
 ### repayFlashLoan
@@ -31,6 +31,6 @@ function repayFlashLoan(address flp, address baseAsset, uint256 amount) external
 ### onMorphoFlashLoan
 
 ```solidity
-function onMorphoFlashLoan(uint256 debt, bytes data) external returns (address, address, uint256, bytes)
+function onMorphoFlashLoan(uint256, bytes data) external returns (struct ICometFlashLoanPlugin.CallbackData _data)
 ```
 
