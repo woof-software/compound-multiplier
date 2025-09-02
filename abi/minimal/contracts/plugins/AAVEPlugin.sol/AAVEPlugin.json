@@ -1,0 +1,7 @@
+[
+    "error WrongInitiator()",
+    "error WrongPool()",
+    "function CALLBACK_SELECTOR() view returns (bytes4)",
+    "function executeOperation(address,uint256,uint256,address,bytes) returns (bool)",
+    "function takeFlashLoan(address,address,address,uint256,bytes,bytes)"
+]
