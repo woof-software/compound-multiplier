@@ -4,7 +4,7 @@ if [ -d "abi/" ]; then
     git add abi/
 fi
 if ! git diff --cached --quiet; then
-    git commit -m "chore(abi): update";
+    git commit -m "chore(abi): Update";
 fi
 
 pnpm gen:docs
@@ -13,5 +13,5 @@ if [ -d "docs/" ]; then
     git add docs/
 fi
 if ! git diff --cached --quiet; then
-    git commit -m "chore(contract-docs): update";
+    git commit -m "chore(contract-docs): Update";
 fi
