@@ -1,7 +1,0 @@
-[
-    "error WrongInitiator()",
-    "error WrongPool()",
-    "function CALLBACK_SELECTOR() view returns (bytes4)",
-    "function executeOperation(address asset, uint256 amount, uint256 premium, address initiator, bytes params) returns (bool)",
-    "function takeFlashLoan(address user, address market, address flp, uint256 amount, bytes, bytes swapData)"
-]

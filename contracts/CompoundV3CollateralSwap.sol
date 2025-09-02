@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import { ICometMultiplierPlugin } from "./interfaces/ICometMultiplierPlugin.sol";
 import { IComet } from "./interfaces/IComet.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
+import { ICometFlashLoanPlugin } from "./interfaces/ICometFlashLoanPlugin.sol";
 
 contract CompoundV3CollateralSwap {
     struct Plugin {
@@ -48,7 +48,7 @@ contract CompoundV3CollateralSwap {
     constructor(Plugin[] memory plugins_) payable {
         uint256 pluginsLength = plugins_.length;
         for (uint256 i = 0; i < pluginsLength; i++) {
-            bytes4 pluginSelector = ICometMultiplierPlugin(plugins_[i].endpoint).CALLBACK_SELECTOR();
+            bytes4 pluginSelector = ICometFlashLoanPlugin(plugins_[i].endpoint).CALLBACK_SELECTOR();
             plugins[pluginSelector] = plugins_[i];
 
             emit PluginRegistered(pluginSelector, plugins_[i].endpoint, plugins_[i].flp);
@@ -81,7 +81,7 @@ contract CompoundV3CollateralSwap {
 
         (bool ok, ) = plugin.endpoint.delegatecall(
             abi.encodeWithSelector(
-                ICometMultiplierPlugin.takeFlashLoan.selector,
+                ICometFlashLoanPlugin.takeFlashLoan.selector,
                 swapParams.user,
                 asset,
                 plugin.flp,

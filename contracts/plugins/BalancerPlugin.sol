@@ -2,7 +2,6 @@
 pragma solidity 0.8.30;
 
 import { IBalancerVault, IERC20, IFlashLoanRecipient } from "../interfaces/IBalancerVault.sol";
-import { ICometMultiplierPlugin } from "../interfaces/ICometMultiplierPlugin.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract BalancerPlugin is IFlashLoanRecipient {
