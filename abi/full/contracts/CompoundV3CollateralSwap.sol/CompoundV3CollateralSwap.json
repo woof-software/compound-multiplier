@@ -1,7 +1,11 @@
 [
     "constructor(tuple(address endpoint, address flp)[] plugins_) payable",
     "error FlashLoanFailed()",
-    "error InsufficiantAmountOut()",
+    "error InsufficientAmountOut()",
+    "error InvalidAllowedType()",
+    "error InvalidAmountOut()",
+    "error InvalidManager()",
+    "error InvalidOwner()",
     "error NotSufficientLiquidity()",
     "error UnauthorizedCallback()",
     "error UnknownCallbackSelector()",
@@ -9,5 +13,6 @@
     "error ZeroAddress()",
     "event PluginRegistered(bytes4 indexed callbackSelector, address indexed pluginEndpoint, address indexed flp)",
     "function plugins(bytes4) view returns (address endpoint, address flp)",
-    "function swap(tuple(address user, address comet, bytes4 callbackSelector, address[] fromAssets, uint256[] fromAmounts, address[] toAssets, uint256[] flashLoanAmounts, bytes[] swapCalldata, uint256[] minAmountsOut, uint256 maxHealthFactorDropBps, address[] supplementalAssets, uint256[] supplementalAmounts) swapParams)"
+    "function swap(tuple(address user, address comet, bytes4 callbackSelector, address[] fromAssets, uint256[] fromAmounts, address[] toAssets, uint256[] flashLoanAmounts, bytes[] swapCalldata, uint256[] minAmountsOut, uint256 maxHealthFactorDropBps, address[] supplementalAssets, uint256[] supplementalAmounts) swapParams)",
+    "function swapWithApprove(tuple(address user, address comet, bytes4 callbackSelector, address[] fromAssets, uint256[] fromAmounts, address[] toAssets, uint256[] flashLoanAmounts, bytes[] swapCalldata, uint256[] minAmountsOut, uint256 maxHealthFactorDropBps, address[] supplementalAssets, uint256[] supplementalAmounts) swapParams, tuple(uint256 nonce, uint256 expiry, bytes32 r, bytes32 s, address owner, bool isAllowed, address manager, uint8 v) allowParams)"
 ]

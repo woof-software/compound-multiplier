@@ -1,7 +1,11 @@
 [
     "constructor(tuple(address,address)[]) payable",
     "error FlashLoanFailed()",
-    "error InsufficiantAmountOut()",
+    "error InsufficientAmountOut()",
+    "error InvalidAllowedType()",
+    "error InvalidAmountOut()",
+    "error InvalidManager()",
+    "error InvalidOwner()",
     "error NotSufficientLiquidity()",
     "error UnauthorizedCallback()",
     "error UnknownCallbackSelector()",
@@ -9,5 +13,6 @@
     "error ZeroAddress()",
     "event PluginRegistered(bytes4 indexed,address indexed,address indexed)",
     "function plugins(bytes4) view returns (address, address)",
-    "function swap(tuple(address,address,bytes4,address[],uint256[],address[],uint256[],bytes[],uint256[],uint256,address[],uint256[]))"
+    "function swap(tuple(address,address,bytes4,address[],uint256[],address[],uint256[],bytes[],uint256[],uint256,address[],uint256[]))",
+    "function swapWithApprove(tuple(address,address,bytes4,address[],uint256[],address[],uint256[],bytes[],uint256[],uint256,address[],uint256[]),tuple(uint256,uint256,bytes32,bytes32,address,bool,address,uint8))"
 ]

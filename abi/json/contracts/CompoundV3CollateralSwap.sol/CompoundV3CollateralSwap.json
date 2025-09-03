@@ -29,7 +29,27 @@
     },
     {
         "inputs": [],
-        "name": "InsufficiantAmountOut",
+        "name": "InsufficientAmountOut",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "InvalidAllowedType",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "InvalidAmountOut",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "InvalidManager",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "InvalidOwner",
         "type": "error"
     },
     {
@@ -181,6 +201,128 @@
             }
         ],
         "name": "swap",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "address",
+                        "name": "user",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "comet",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "bytes4",
+                        "name": "callbackSelector",
+                        "type": "bytes4"
+                    },
+                    {
+                        "internalType": "address[]",
+                        "name": "fromAssets",
+                        "type": "address[]"
+                    },
+                    {
+                        "internalType": "uint256[]",
+                        "name": "fromAmounts",
+                        "type": "uint256[]"
+                    },
+                    {
+                        "internalType": "address[]",
+                        "name": "toAssets",
+                        "type": "address[]"
+                    },
+                    {
+                        "internalType": "uint256[]",
+                        "name": "flashLoanAmounts",
+                        "type": "uint256[]"
+                    },
+                    {
+                        "internalType": "bytes[]",
+                        "name": "swapCalldata",
+                        "type": "bytes[]"
+                    },
+                    {
+                        "internalType": "uint256[]",
+                        "name": "minAmountsOut",
+                        "type": "uint256[]"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "maxHealthFactorDropBps",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "address[]",
+                        "name": "supplementalAssets",
+                        "type": "address[]"
+                    },
+                    {
+                        "internalType": "uint256[]",
+                        "name": "supplementalAmounts",
+                        "type": "uint256[]"
+                    }
+                ],
+                "internalType": "struct CompoundV3CollateralSwap.SwapParams",
+                "name": "swapParams",
+                "type": "tuple"
+            },
+            {
+                "components": [
+                    {
+                        "internalType": "uint256",
+                        "name": "nonce",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "expiry",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "bytes32",
+                        "name": "r",
+                        "type": "bytes32"
+                    },
+                    {
+                        "internalType": "bytes32",
+                        "name": "s",
+                        "type": "bytes32"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "owner",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "isAllowed",
+                        "type": "bool"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "manager",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint8",
+                        "name": "v",
+                        "type": "uint8"
+                    }
+                ],
+                "internalType": "struct AllowBySig.AllowParams",
+                "name": "allowParams",
+                "type": "tuple"
+            }
+        ],
+        "name": "swapWithApprove",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"

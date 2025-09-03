@@ -1,7 +1,11 @@
 [
-    "error WrongInitiator()",
-    "error WrongPool()",
+    "error InvalidFlashLoanData()",
+    "error InvalidFlashLoanId()",
+    "error SafeERC20FailedOperation(address)",
+    "error UnauthorizedCallback()",
     "function CALLBACK_SELECTOR() view returns (bytes4)",
-    "function executeOperation(address,uint256,uint256,address,bytes) returns (bool)",
-    "function takeFlashLoan(address,address,address,uint256,bytes,bytes)"
+    "function SLOT_PLUGIN() view returns (bytes32)",
+    "function executeOperation(address,uint256,uint256,address,bytes) returns (tuple(uint256,uint256,uint256,address,address,address,bytes))",
+    "function repayFlashLoan(address,address,uint256)",
+    "function takeFlashLoan(tuple(uint256,uint256,uint256,address,address,address,bytes),bytes)"
 ]

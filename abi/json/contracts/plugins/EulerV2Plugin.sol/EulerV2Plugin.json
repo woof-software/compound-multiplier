@@ -1,6 +1,11 @@
 [
     {
         "inputs": [],
+        "name": "InvalidFlashLoanData",
+        "type": "error"
+    },
+    {
+        "inputs": [],
         "name": "InvalidFlashLoanId",
         "type": "error"
     },
@@ -58,6 +63,11 @@
                         "type": "uint256"
                     },
                     {
+                        "internalType": "uint256",
+                        "name": "flashLoanFee",
+                        "type": "uint256"
+                    },
+                    {
                         "internalType": "address",
                         "name": "user",
                         "type": "address"
@@ -69,7 +79,7 @@
                     },
                     {
                         "internalType": "address",
-                        "name": "base",
+                        "name": "asset",
                         "type": "address"
                     },
                     {
@@ -124,6 +134,11 @@
                         "type": "uint256"
                     },
                     {
+                        "internalType": "uint256",
+                        "name": "flashLoanFee",
+                        "type": "uint256"
+                    },
+                    {
                         "internalType": "address",
                         "name": "user",
                         "type": "address"
@@ -135,7 +150,7 @@
                     },
                     {
                         "internalType": "address",
-                        "name": "base",
+                        "name": "asset",
                         "type": "address"
                     },
                     {

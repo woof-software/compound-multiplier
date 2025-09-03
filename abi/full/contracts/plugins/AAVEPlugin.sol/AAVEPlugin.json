@@ -1,7 +1,11 @@
 [
-    "error WrongInitiator()",
-    "error WrongPool()",
+    "error InvalidFlashLoanData()",
+    "error InvalidFlashLoanId()",
+    "error SafeERC20FailedOperation(address token)",
+    "error UnauthorizedCallback()",
     "function CALLBACK_SELECTOR() view returns (bytes4)",
-    "function executeOperation(address asset, uint256 amount, uint256 premium, address initiator, bytes params) returns (bool)",
-    "function takeFlashLoan(address user, address market, address flp, uint256 amount, bytes, bytes swapData)"
+    "function SLOT_PLUGIN() view returns (bytes32)",
+    "function executeOperation(address asset, uint256 amount, uint256 premium, address initiator, bytes params) returns (tuple(uint256 debt, uint256 snapshot, uint256 flashLoanFee, address user, address flp, address asset, bytes swapData) _data)",
+    "function repayFlashLoan(address flp, address asset, uint256 amount)",
+    "function takeFlashLoan(tuple(uint256 debt, uint256 snapshot, uint256 flashLoanFee, address user, address flp, address asset, bytes swapData) data, bytes)"
 ]
