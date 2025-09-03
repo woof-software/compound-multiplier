@@ -25,7 +25,7 @@ function takeFlashLoan(struct ICometFlashLoanPlugin.CallbackData data, bytes) pu
 ### repayFlashLoan
 
 ```solidity
-function repayFlashLoan(address flp, address baseAsset, uint256 amount) external
+function repayFlashLoan(address flp, address asset, uint256 amount) external
 ```
 
 ### onMorphoFlashLoan

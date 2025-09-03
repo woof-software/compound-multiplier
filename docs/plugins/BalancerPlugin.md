@@ -8,16 +8,22 @@
 bytes4 CALLBACK_SELECTOR
 ```
 
+### SLOT_PLUGIN
+
+```solidity
+bytes32 SLOT_PLUGIN
+```
+
 ### takeFlashLoan
 
 ```solidity
-function takeFlashLoan(address user, address baseAsset, address flp, uint256 amount, bytes, bytes swapData) public
+function takeFlashLoan(struct ICometFlashLoanPlugin.CallbackData data, bytes) external
 ```
 
 ### receiveFlashLoan
 
 ```solidity
-function receiveFlashLoan(contract IERC20[] tokens, uint256[] amounts, uint256[] feeAmounts, bytes userData) external
+function receiveFlashLoan(contract IERC20[] tokens, uint256[] amounts, uint256[] feeAmounts, bytes userData) external returns (struct ICometFlashLoanPlugin.CallbackData _data)
 ```
 
 _This function is called by the Vault when a flash loan is received._
@@ -34,6 +40,6 @@ _This function is called by the Vault when a flash loan is received._
 ### repayFlashLoan
 
 ```solidity
-function repayFlashLoan(address flp, address baseAsset, uint256 amount) external
+function repayFlashLoan(address flp, address asset, uint256 amount) external
 ```
 

@@ -96,10 +96,16 @@ error UnknownCallbackSelector()
 error FlashLoanFailed()
 ```
 
-### InsufficiantAmountOut
+### InsufficientAmountOut
 
 ```solidity
-error InsufficiantAmountOut()
+error InsufficientAmountOut()
+```
+
+### InvalidAmountOut
+
+```solidity
+error InvalidAmountOut()
 ```
 
 ### constructor
@@ -112,6 +118,18 @@ constructor(struct CompoundV3CollateralSwap.Plugin[] plugins_) public payable
 
 ```solidity
 function swap(struct CompoundV3CollateralSwap.SwapParams swapParams) external
+```
+
+### swapWithApprove
+
+```solidity
+function swapWithApprove(struct CompoundV3CollateralSwap.SwapParams swapParams, struct AllowBySig.AllowParams allowParams) external
+```
+
+### _swap
+
+```solidity
+function _swap(struct CompoundV3CollateralSwap.SwapParams swapParams) internal
 ```
 
 ### fallback

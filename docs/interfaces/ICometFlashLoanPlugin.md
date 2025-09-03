@@ -14,15 +14,22 @@ error UnauthorizedCallback()
 error InvalidFlashLoanId()
 ```
 
+### InvalidFlashLoanData
+
+```solidity
+error InvalidFlashLoanData()
+```
+
 ### CallbackData
 
 ```solidity
 struct CallbackData {
   uint256 debt;
   uint256 snapshot;
+  uint256 flashLoanFee;
   address user;
   address flp;
-  address base;
+  address asset;
   bytes swapData;
 }
 ```
@@ -48,6 +55,6 @@ function takeFlashLoan(struct ICometFlashLoanPlugin.CallbackData data, bytes con
 ### repayFlashLoan
 
 ```solidity
-function repayFlashLoan(address flp, address baseAsset, uint256 amount) external
+function repayFlashLoan(address flp, address asset, uint256 amount) external
 ```
 
