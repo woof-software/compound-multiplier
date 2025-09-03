@@ -7,26 +7,13 @@ import {
   IComet,
   IERC20,
 } from "../typechain-types";
-import axios from "axios";
+import { get1inchSwapData } from "./utils/oneinch";
 
 (BigInt.prototype as any).toJSON = function () {
   return this.toString();
 };
 
-async function get1inchSwapData(
-  fromToken: string,
-  toToken: string,
-  amount: string,
-  userAddress: string,
-  slippage: string = "1"
-): Promise<string> {
-  const apiKey = process.env.ONE_INCH_API_KEY;
-  const url = `https://api.1inch.dev/swap/v6.1/1/swap?src=${fromToken}&dst=${toToken}&amount=${amount}&from=${userAddress}&slippage=${slippage}&disableEstimate=true&includeTokensInfo=true`;
-  const res = await axios.get(url, {
-    headers: { Authorization: `Bearer ${apiKey}` },
-  });
-  return res.data.tx.data;
-}
+let opts = { maxFeePerGas: 3_000_000_000 };
 
 describe("Morpho", function () {
   let adapter: CometMultiplierAdapter;
@@ -53,10 +40,10 @@ describe("Morpho", function () {
     comet = await ethers.getContractAt("IComet", COMET_USDC_MARKET);
 
     const LoanFactory = await ethers.getContractFactory("MorphoPlugin");
-    loanPlugin = await LoanFactory.deploy();
+    loanPlugin = await LoanFactory.deploy(opts);
 
     const SwapFactory = await ethers.getContractFactory("OneInchV6SwapPlugin");
-    swapPlugin = await SwapFactory.deploy();
+    swapPlugin = await SwapFactory.deploy(opts);
 
     const Adapter = await ethers.getContractFactory("CometMultiplierAdapter");
     adapter = await Adapter.deploy([
@@ -68,7 +55,7 @@ describe("Morpho", function () {
           [ONE_INCH_ROUTER_V6]
         ),
       },
-    ]);
+    ], opts);
 
     const whale = await ethers.getImpersonatedSigner(WETH_WHALE);
     await ethers.provider.send("hardhat_setBalance", [
@@ -76,13 +63,13 @@ describe("Morpho", function () {
       "0xffffffffffffffffffffff",
     ]);
 
-    await weth.connect(whale).transfer(user.address, ethers.parseEther("10"));
+    await weth.connect(whale).transfer(user.address, ethers.parseEther("10"), opts);
   });
 
   it("should execute multiplier using real market and 1inch", async () => {
     const initialAmount = ethers.parseEther("0.1");
-    const leverage = 30000;
-    const minAmountOut = 1;
+    const leverageBps = 30_000n;
+    const minAmountOut = 1n;
 
     await weth.connect(user).approve(await adapter.getAddress(), initialAmount);
 
@@ -91,21 +78,24 @@ describe("Morpho", function () {
 
     await adapter
       .connect(user)
-      .addAsset(
+      .addMarket(await comet.getAddress(), {
+        loanSelector: LOAN_SELECTOR,
+        swapSelector: SWAP_SELECTOR,
+        flp: MORPHO,
+      });
+
+    await adapter
+      .connect(user)
+      .addCollateral(
         await comet.getAddress(),
         await weth.getAddress(),
-        MORPHO,
-        leverage,
-        SWAP_SELECTOR,
-        LOAN_SELECTOR
+        {
+          loanSelector: LOAN_SELECTOR,
+          swapSelector: SWAP_SELECTOR,
+          flp: MORPHO,
+        },
+        Number(leverageBps)
       );
-
-    const swapData = await get1inchSwapData(
-      await usdc.getAddress(),
-      await weth.getAddress(),
-      "867801528",
-      await adapter.getAddress()
-    );
 
     const allowAbi = ["function allow(address, bool)"];
     const cometAsSigner = new ethers.Contract(
@@ -113,8 +103,24 @@ describe("Morpho", function () {
       allowAbi,
       user
     ) as any;
+    await cometAsSigner.allow(await adapter.getAddress(), true);
 
-    await cometAsSigner.connect(user).allow(await adapter.getAddress(), true);
+    const info = await comet.getAssetInfoByAddress(await weth.getAddress());
+    const price = await comet.getPrice(info.priceFeed);
+    const baseScale = await comet.baseScale();
+    const scale = info.scale;
+
+    const initialValueBase =
+      (initialAmount * price * baseScale) / (scale * 1_00000000n);
+    const delta = leverageBps - 10_000n;
+    const baseAmount = (initialValueBase * delta) / 10_000n;
+
+    const swapData = await get1inchSwapData(
+      await usdc.getAddress(),
+      await weth.getAddress(),
+      baseAmount.toString(),
+      await adapter.getAddress()
+    );
 
     await expect(
       adapter
@@ -123,7 +129,7 @@ describe("Morpho", function () {
           await comet.getAddress(),
           await weth.getAddress(),
           initialAmount,
-          leverage,
+          Number(leverageBps),
           swapData,
           minAmountOut
         )

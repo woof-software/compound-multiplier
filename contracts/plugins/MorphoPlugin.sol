@@ -22,7 +22,7 @@ contract MorphoPlugin is ICometFlashLoanPlugin {
         assembly {
             tstore(slot, flid)
         }
-        IMorphoBase(data.flp).flashLoan(data.base, data.debt, _data);
+        IMorphoBase(data.flp).flashLoan(data.asset, data.debt, _data);
     }
 
     function repayFlashLoan(address flp, address baseAsset, uint256 amount) external {
@@ -30,7 +30,7 @@ contract MorphoPlugin is ICometFlashLoanPlugin {
     }
 
     function onMorphoFlashLoan(uint256, bytes calldata data) external returns (CallbackData memory _data) {
-        bytes32 flid = keccak256(abi.encode(data, block.timestamp));
+        bytes32 flid = keccak256(data);
         bytes32 flidExpected;
         bytes32 slot = SLOT_PLUGIN;
         assembly {

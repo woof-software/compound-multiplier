@@ -17,6 +17,8 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
 
+import "hardhat/console.sol";
+
 contract CometMultiplierAdapter is Ownable, Pausable, ReentrancyGuard, ICometMultiplierAdapter {
     using SafeERC20 for IERC20;
 
@@ -50,48 +52,58 @@ contract CometMultiplierAdapter is Ownable, Pausable, ReentrancyGuard, ICometMul
 
         ICometFlashLoanPlugin.CallbackData memory data = abi.decode(payload, (ICometFlashLoanPlugin.CallbackData));
 
-        require(IERC20(data.base).balanceOf(address(this)) == data.snapshot + data.debt, InvalidAmountOut());
+        require(IERC20(data.asset).balanceOf(address(this)) == data.snapshot + data.debt, InvalidAmountOut());
 
         (uint256 amount, address market, address collateral, uint256 minAmountOut, Mode mode) = _tload();
 
         bool done;
 
         if (mode == Mode.EXECUTE) {
-            uint256 totalAmount = _executeSwap(data.base, collateral, data.debt, minAmountOut, data.swapData) + amount;
+            uint256 totalAmount = _executeSwap(data.asset, collateral, data.debt, minAmountOut, data.swapData) + amount;
 
             IERC20(collateral).approve(market, totalAmount);
 
             IComet(market).supplyTo(data.user, collateral, totalAmount);
-            IComet(market).withdrawFrom(data.user, address(this), data.base, data.debt);
-            (done, ) = endpoint.delegatecall(
-                abi.encodeWithSelector(ICometFlashLoanPlugin.repayFlashLoan.selector, data.flp, data.base, data.debt)
-            );
+            IComet(market).withdrawFrom(data.user, address(this), data.asset, data.debt + data.fee);
 
+            (done, ) = endpoint.delegatecall(
+                abi.encodeWithSelector(
+                    ICometFlashLoanPlugin.repayFlashLoan.selector,
+                    data.flp,
+                    data.asset,
+                    data.debt + data.fee
+                )
+            );
             _catch(done);
 
             return;
         }
         if (mode == Mode.WITHDRAW) {
-            IERC20(data.base).approve(market, data.debt);
-            IComet(market).supplyTo(data.user, data.base, data.debt);
+            IERC20(data.asset).approve(market, data.debt);
 
+            IComet(market).supplyTo(data.user, data.asset, data.debt);
             IComet(market).withdrawFrom(data.user, address(this), collateral, type(uint256).max);
 
             require(
-                _executeSwap(collateral, data.base, amount, minAmountOut, data.swapData) >= data.debt,
+                _executeSwap(collateral, data.asset, amount, minAmountOut, data.swapData) >= data.debt,
                 InsufficiantAmountOut()
             );
 
             (done, ) = endpoint.delegatecall(
-                abi.encodeWithSelector(ICometFlashLoanPlugin.repayFlashLoan.selector, data.flp, data.base, data.debt)
+                abi.encodeWithSelector(
+                    ICometFlashLoanPlugin.repayFlashLoan.selector,
+                    data.flp,
+                    data.asset,
+                    data.debt + data.fee
+                )
             );
             _catch(done);
 
-            uint256 leftoverBase = IERC20(data.base).balanceOf(address(this));
-            if (leftoverBase > 0) IERC20(data.base).safeTransfer(data.user, leftoverBase);
+            uint256 baseLeft = IERC20(data.asset).balanceOf(address(this));
+            if (baseLeft > 0) IERC20(data.asset).safeTransfer(data.user, baseLeft);
 
-            uint256 leftoverColl = IERC20(collateral).balanceOf(address(this));
-            if (leftoverColl > 0) IERC20(collateral).safeTransfer(data.user, leftoverColl);
+            uint256 collateralLeft = IERC20(collateral).balanceOf(address(this));
+            if (collateralLeft > 0) IERC20(collateral).safeTransfer(data.user, collateralLeft);
 
             return;
         }
@@ -148,16 +160,20 @@ contract CometMultiplierAdapter is Ownable, Pausable, ReentrancyGuard, ICometMul
 
         address baseAsset = comet.baseToken();
         _tstore(initialAmount, market, collateralAsset, minAmountOut, Mode.EXECUTE);
+
+        IERC20(collateralAsset).safeTransferFrom(msg.sender, address(this), initialAmount);
         _takeFlashLoan(
             plugin.endpoint,
             ICometFlashLoanPlugin.CallbackData(
-                (levereged * (leverage - LEVERAGE_PRECISION)) / LEVERAGE_PRECISION,
+                levereged,
+                0,
                 IERC20(baseAsset).balanceOf(address(this)),
                 msg.sender,
                 asset.flp,
                 baseAsset,
                 swapData
-            )
+            ),
+            plugin.config
         );
     }
 
@@ -183,12 +199,14 @@ contract CometMultiplierAdapter is Ownable, Pausable, ReentrancyGuard, ICometMul
             loanPlugin.endpoint,
             ICometFlashLoanPlugin.CallbackData(
                 repayAmount,
+                0,
                 IERC20(baseAsset).balanceOf(address(this)),
                 msg.sender,
                 assets[baseAsset].flp,
                 baseAsset,
                 swapData
-            )
+            ),
+            loanPlugin.config
         );
     }
 
@@ -251,8 +269,14 @@ contract CometMultiplierAdapter is Ownable, Pausable, ReentrancyGuard, ICometMul
         return Math.mulDiv(initialValueBase, leverage - LEVERAGE_PRECISION, LEVERAGE_PRECISION);
     }
 
-    function _takeFlashLoan(address endpoint, ICometFlashLoanPlugin.CallbackData memory data) internal {
-        (bool ok, ) = endpoint.delegatecall(abi.encodeWithSelector(ICometFlashLoanPlugin.takeFlashLoan.selector, data));
+    function _takeFlashLoan(
+        address endpoint,
+        ICometFlashLoanPlugin.CallbackData memory data,
+        bytes memory config
+    ) internal {
+        (bool ok, ) = endpoint.delegatecall(
+            abi.encodeWithSelector(ICometFlashLoanPlugin.takeFlashLoan.selector, data, config)
+        );
 
         _catch(ok);
     }

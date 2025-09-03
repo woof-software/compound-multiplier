@@ -14,7 +14,7 @@ contract UniswapV3Plugin is ICometFlashLoanPlugin {
 
     function takeFlashLoan(CallbackData memory data, bytes memory) public {
         bytes memory _data = abi.encode(data);
-        bytes32 flid = keccak256(abi.encode(data, block.timestamp));
+        bytes32 flid = keccak256(_data);
 
         bytes32 slot = SLOT_PLUGIN;
         assembly {
@@ -25,10 +25,10 @@ contract UniswapV3Plugin is ICometFlashLoanPlugin {
         address token0 = pool.token0();
         address token1 = pool.token1();
 
-        require(token0 == data.base || token1 == data.base, UnauthorizedCallback());
+        require(token0 == data.asset || token1 == data.asset, UnauthorizedCallback());
 
-        uint256 amount0 = token0 == data.base ? data.debt : 0;
-        uint256 amount1 = token1 == data.base ? data.debt : 0;
+        uint256 amount0 = token0 == data.asset ? data.debt : 0;
+        uint256 amount1 = token1 == data.asset ? data.debt : 0;
 
         pool.flash(address(this), amount0, amount1, _data);
     }
@@ -42,7 +42,7 @@ contract UniswapV3Plugin is ICometFlashLoanPlugin {
         uint256 fee1,
         bytes calldata data
     ) external returns (CallbackData memory _data) {
-        bytes32 flid = keccak256(abi.encode(data, block.timestamp));
+        bytes32 flid = keccak256(data);
         bytes32 flidExpected;
         bytes32 slot = SLOT_PLUGIN;
         assembly {
@@ -59,8 +59,9 @@ contract UniswapV3Plugin is ICometFlashLoanPlugin {
         address token0 = pool.token0();
         address token1 = pool.token1();
 
-        uint256 fee = token0 == _data.base ? fee0 : (token1 == _data.base ? fee1 : type(uint256).max);
+        uint256 fee = token0 == _data.asset ? fee0 : (token1 == _data.asset ? fee1 : type(uint256).max);
         require(fee != type(uint256).max, UnauthorizedCallback());
-        _data.debt += fee;
+        _data.debt;
+        _data.fee = fee;
     }
 }

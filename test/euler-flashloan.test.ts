@@ -7,28 +7,16 @@ import {
   IComet,
   IERC20,
 } from "../typechain-types";
-import axios from "axios";
+import { get1inchSwapData } from "./utils/oneinch";
+
 
 (BigInt.prototype as any).toJSON = function () {
   return this.toString();
 };
 
-async function get1inchSwapData(
-  fromToken: string,
-  toToken: string,
-  amount: string,
-  userAddress: string,
-  slippage: string = "1"
-): Promise<string> {
-  const apiKey = process.env.ONE_INCH_API_KEY;
-  const url = `https://api.1inch.dev/swap/v6.1/1/swap?src=${fromToken}&dst=${toToken}&amount=${amount}&from=${userAddress}&slippage=${slippage}&disableEstimate=true&includeTokensInfo=true`;
-  const res = await axios.get(url, {
-    headers: { Authorization: `Bearer ${apiKey}` },
-  });
-  return res.data.tx.data;
-}
 
-let opts = { maxFeePerGas: 2_000_000_000 };
+
+let opts = { maxFeePerGas: 3_000_000_000 };
 
 describe("Euler Plugin (updated core)", function () {
   let adapter: CometMultiplierAdapter;
@@ -38,10 +26,9 @@ describe("Euler Plugin (updated core)", function () {
   let weth: IERC20;
   let usdc: IERC20;
 
-  let owner: any; // deployer = owner
+  let owner: any;
   let user: any;
 
-  // mainnet addresses
   const WETH_ADDRESS = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
   const USDC_ADDRESS = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
   const COMET_USDC_MARKET = "0xc3d688B66703497DAA19211EEdff47f25384cdc3";
@@ -64,9 +51,7 @@ describe("Euler Plugin (updated core)", function () {
 
     const Adapter = await ethers.getContractFactory("CometMultiplierAdapter", owner);
     adapter = await Adapter.deploy([
-      // плагин флешлоана
       { endpoint: await loanPlugin.getAddress(), config: "0x" },
-      // плагин свопа (с конфигом — адресом роутера 1inch v6)
       {
         endpoint: await swapPlugin.getAddress(),
         config: ethers.AbiCoder.defaultAbiCoder().encode(
@@ -77,7 +62,6 @@ describe("Euler Plugin (updated core)", function () {
     ],
     opts);
 
-    // раздаём пользователю WETH
     const whale = await ethers.getImpersonatedSigner(WETH_WHALE);
     await ethers.provider.send("hardhat_setBalance", [
       whale.address,
@@ -129,25 +113,15 @@ describe("Euler Plugin (updated core)", function () {
       (initialAmount * price * baseScale) / (scale * 1_00000000n);
 
     const delta = BigInt(leverageBps - 10_000);
-    const loan1 = (initialValueBase * delta) / 10_000n;
-    const debt = (loan1 * delta) / 10_000n;
+    const baseAmount = (initialValueBase * delta) / 10_000n;
 
     const swapData = await get1inchSwapData(
       await usdc.getAddress(),
       await weth.getAddress(),
-      debt.toString(),
+      baseAmount.toString(),
       await adapter.getAddress()
     );
-    await adapter
-        .connect(user)
-        .executeMultiplier(
-          await comet.getAddress(),
-          await weth.getAddress(),
-          initialAmount,
-          leverageBps,
-          swapData,
-          minAmountOut
-        )
+
     await expect(
       adapter
         .connect(user)

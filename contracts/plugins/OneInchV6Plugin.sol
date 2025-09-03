@@ -23,6 +23,7 @@ contract OneInchV6SwapPlugin is ICometSwapPlugin {
         address router = abi.decode(config, (address));
 
         IERC20(srcToken).approve(router, amountIn);
+
         (bool ok, bytes memory ret) = router.call(swapData);
         if (!ok) {
             assembly {
