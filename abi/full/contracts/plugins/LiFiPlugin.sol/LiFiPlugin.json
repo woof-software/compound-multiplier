@@ -1,0 +1,8 @@
+[
+    "error InsufficientOutputAmount()",
+    "error InvalidSwapParameters()",
+    "error SwapFailed()",
+    "error ZeroAddress()",
+    "event SwapExecuted(address indexed router, address indexed srcToken, address indexed dstToken, uint256 actualAmountOut)",
+    "function executeSwap(address router, address srcToken, address dstToken, uint256 amountIn, uint256 minAmountOut, bytes swapData)"
+]
