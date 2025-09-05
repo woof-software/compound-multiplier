@@ -6,7 +6,7 @@ import { ethers } from "hardhat";
 import type { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { AAVEPlugin, BalancerPlugin, CompoundV3CollateralSwap, IERC20 } from "../typechain-types";
 
-describe.only("AAVE Flash loan", function () {
+describe("AAVE Flash loan", function () {
     let snapshot: SnapshotRestorer;
 
     // Signers.

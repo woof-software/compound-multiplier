@@ -6,7 +6,7 @@ import { ethers } from "hardhat";
 import type { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { BalancerPlugin, CompoundV3CollateralSwap, IERC20 } from "../typechain-types";
 
-describe.only("Balancer Flash loan", function () {
+describe("Balancer Flash loan", function () {
     let snapshot: SnapshotRestorer;
 
     // Signers.
