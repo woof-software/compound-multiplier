@@ -4,8 +4,11 @@ pragma solidity ^0.8.30;
 import { IComet } from "./interfaces/IComet.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { ICometFlashLoanPlugin } from "./interfaces/ICometFlashLoanPlugin.sol";
+import { ILiFiPlugin } from "./interfaces/ILiFiPlugin.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { AllowBySig } from "./base/AllowBySig.sol";
 
-contract CompoundV3CollateralSwap {
+contract CompoundV3CollateralSwap is AllowBySig {
     struct Plugin {
         address endpoint;
         address flp;
@@ -43,7 +46,8 @@ contract CompoundV3CollateralSwap {
     error NotSufficientLiquidity();
     error UnknownCallbackSelector();
     error FlashLoanFailed();
-    error InsufficiantAmountOut();
+    error InsufficientAmountOut();
+    error InvalidAmountOut();
 
     constructor(Plugin[] memory plugins_) payable {
         uint256 pluginsLength = plugins_.length;
@@ -56,6 +60,15 @@ contract CompoundV3CollateralSwap {
     }
 
     function swap(SwapParams calldata swapParams) external {
+        _swap(swapParams);
+    }
+
+    function swapWithApprove(SwapParams calldata swapParams, AllowParams calldata allowParams) external {
+        _allowBySig(allowParams, swapParams.comet);
+        _swap(swapParams);
+    }
+
+    function _swap(SwapParams calldata swapParams) internal {
         address user = swapParams.user;
         address comet = swapParams.comet;
 
@@ -97,8 +110,39 @@ contract CompoundV3CollateralSwap {
         address endpoint = plugins[msg.sig].endpoint;
         require(endpoint != address(0), UnknownCallbackSelector());
 
-        (bool success, bytes memory ret) = endpoint.delegatecall(msg.data);
+        (bool success, bytes memory payload) = endpoint.delegatecall(msg.data);
+        _catch(success);
 
+        ICometFlashLoanPlugin.CallbackData memory data = abi.decode(payload, (ICometFlashLoanPlugin.CallbackData));
+
+        require(IERC20(data.asset).balanceOf(address(this)) == data.snapshot + data.debt, InvalidAmountOut());
+
+        /*
+        Todo
+            - supply loaned asset as collateral
+            - withdraw collateral with expected amount
+            - swap withdraw collateral into loaned asset
+            - repay flashloan
+        */
+        // (success, ) = endpoint.delegatecall(
+        //     abi.encodeWithSignature(
+        //         ILiFiPlugin.executeSwap.selector,
+        //         router,
+        //         data.srcToken,
+        //         data.dstToken,
+        //         data.minAmountOut,
+        //         data.swapData
+        //     )
+        // );
+
+        (success, ) = endpoint.delegatecall(
+            abi.encodeWithSelector(
+                ICometFlashLoanPlugin.repayFlashLoan.selector,
+                data.flp,
+                data.asset,
+                data.debt + data.flashLoanFee
+            )
+        );
         _catch(success);
     }
 

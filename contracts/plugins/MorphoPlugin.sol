@@ -22,11 +22,11 @@ contract MorphoPlugin is ICometFlashLoanPlugin {
         assembly {
             tstore(slot, flid)
         }
-        IMorphoBase(data.flp).flashLoan(data.base, data.debt, _data);
+        IMorphoBase(data.flp).flashLoan(data.asset, data.debt, _data);
     }
 
-    function repayFlashLoan(address flp, address baseAsset, uint256 amount) external {
-        IERC20(baseAsset).approve(flp, amount);
+    function repayFlashLoan(address flp, address asset, uint256 amount) external {
+        IERC20(asset).approve(flp, amount);
     }
 
     function onMorphoFlashLoan(uint256, bytes calldata data) external returns (CallbackData memory _data) {

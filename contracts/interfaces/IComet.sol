@@ -215,4 +215,15 @@ interface IComet {
     function decimals() external view returns (uint8);
 
     function initializeStorage() external;
+
+    function allowBySig(
+        address owner,
+        address manager,
+        bool isAllowed,
+        uint256 nonce,
+        uint256 expiry,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external;
 }

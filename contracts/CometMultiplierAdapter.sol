@@ -50,21 +50,21 @@ contract CometMultiplierAdapter is Ownable, Pausable, ReentrancyGuard, ICometMul
 
         ICometFlashLoanPlugin.CallbackData memory data = abi.decode(payload, (ICometFlashLoanPlugin.CallbackData));
 
-        require(IERC20(data.base).balanceOf(address(this)) == data.snapshot + data.debt, InvalidAmountOut());
+        require(IERC20(data.asset).balanceOf(address(this)) == data.snapshot + data.debt, InvalidAmountOut());
 
         (uint256 amount, address market, address collateral, uint256 minAmountOut, Mode mode) = _tload();
 
         bool done;
 
         if (mode == Mode.EXECUTE) {
-            uint256 totalAmount = _executeSwap(data.base, collateral, data.debt, minAmountOut, data.swapData) + amount;
+            uint256 totalAmount = _executeSwap(data.asset, collateral, data.debt, minAmountOut, data.swapData) + amount;
 
             IERC20(collateral).approve(market, totalAmount);
 
             IComet(market).supplyTo(data.user, collateral, totalAmount);
-            IComet(market).withdrawFrom(data.user, address(this), data.base, data.debt);
+            IComet(market).withdrawFrom(data.user, address(this), data.asset, data.debt);
             (done, ) = endpoint.delegatecall(
-                abi.encodeWithSelector(ICometFlashLoanPlugin.repayFlashLoan.selector, data.flp, data.base, data.debt)
+                abi.encodeWithSelector(ICometFlashLoanPlugin.repayFlashLoan.selector, data.flp, data.asset, data.debt)
             );
 
             _catch(done);
@@ -72,23 +72,23 @@ contract CometMultiplierAdapter is Ownable, Pausable, ReentrancyGuard, ICometMul
             return;
         }
         if (mode == Mode.WITHDRAW) {
-            IERC20(data.base).approve(market, data.debt);
-            IComet(market).supplyTo(data.user, data.base, data.debt);
+            IERC20(data.asset).approve(market, data.debt);
+            IComet(market).supplyTo(data.user, data.asset, data.debt);
 
             IComet(market).withdrawFrom(data.user, address(this), collateral, type(uint256).max);
 
             require(
-                _executeSwap(collateral, data.base, amount, minAmountOut, data.swapData) >= data.debt,
+                _executeSwap(collateral, data.asset, amount, minAmountOut, data.swapData) >= data.debt,
                 InsufficiantAmountOut()
             );
 
             (done, ) = endpoint.delegatecall(
-                abi.encodeWithSelector(ICometFlashLoanPlugin.repayFlashLoan.selector, data.flp, data.base, data.debt)
+                abi.encodeWithSelector(ICometFlashLoanPlugin.repayFlashLoan.selector, data.flp, data.asset, data.debt)
             );
             _catch(done);
 
-            uint256 leftoverBase = IERC20(data.base).balanceOf(address(this));
-            if (leftoverBase > 0) IERC20(data.base).safeTransfer(data.user, leftoverBase);
+            uint256 leftoverAsset = IERC20(data.asset).balanceOf(address(this));
+            if (leftoverAsset > 0) IERC20(data.asset).safeTransfer(data.user, leftoverAsset);
 
             uint256 leftoverColl = IERC20(collateral).balanceOf(address(this));
             if (leftoverColl > 0) IERC20(collateral).safeTransfer(data.user, leftoverColl);
@@ -153,6 +153,7 @@ contract CometMultiplierAdapter is Ownable, Pausable, ReentrancyGuard, ICometMul
             ICometFlashLoanPlugin.CallbackData(
                 (levereged * (leverage - LEVERAGE_PRECISION)) / LEVERAGE_PRECISION,
                 IERC20(baseAsset).balanceOf(address(this)),
+                0,
                 msg.sender,
                 asset.flp,
                 baseAsset,
@@ -184,6 +185,7 @@ contract CometMultiplierAdapter is Ownable, Pausable, ReentrancyGuard, ICometMul
             ICometFlashLoanPlugin.CallbackData(
                 repayAmount,
                 IERC20(baseAsset).balanceOf(address(this)),
+                0,
                 msg.sender,
                 assets[baseAsset].flp,
                 baseAsset,

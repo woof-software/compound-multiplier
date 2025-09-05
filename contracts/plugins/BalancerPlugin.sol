@@ -3,32 +3,30 @@ pragma solidity 0.8.30;
 
 import { IBalancerVault, IERC20, IFlashLoanRecipient } from "../interfaces/IBalancerVault.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { ICometFlashLoanPlugin } from "../interfaces/ICometFlashLoanPlugin.sol";
 
-contract BalancerPlugin is IFlashLoanRecipient {
+contract BalancerPlugin is IFlashLoanRecipient, ICometFlashLoanPlugin {
     using SafeERC20 for IERC20;
 
     bytes4 public constant CALLBACK_SELECTOR = BalancerPlugin.receiveFlashLoan.selector;
 
-    function takeFlashLoan(
-        address user,
-        address baseAsset,
-        address flp,
-        uint256 amount,
-        bytes memory,
-        bytes memory swapData
-    ) public {
-        // Snapshot balance to validate receipt in callback if desired
-        uint256 snapshot = IERC20(baseAsset).balanceOf(address(this));
-        // Encode consistent payload: (user, baseAsset, flp, snapshot, swapData)
-        bytes memory data = abi.encode(user, baseAsset, flp, snapshot, swapData);
+    bytes32 public constant SLOT_PLUGIN = bytes32(uint256(keccak256("BalancerPlugin.plugin")) - 1);
+
+    function takeFlashLoan(CallbackData memory data, bytes memory) external {
+        bytes memory _data = abi.encode(data);
+        bytes32 flid = keccak256(_data);
+        bytes32 slot = SLOT_PLUGIN;
+
+        assembly {
+            tstore(slot, flid)
+        }
 
         IERC20[] memory tokens = new IERC20[](1);
-        tokens[0] = IERC20(baseAsset);
-
+        tokens[0] = IERC20(data.asset);
         uint256[] memory amounts = new uint256[](1);
-        amounts[0] = amount;
+        amounts[0] = data.debt;
 
-        IBalancerVault(flp).flashLoan(this, tokens, amounts, data);
+        IBalancerVault(data.flp).flashLoan(this, tokens, amounts, _data);
     }
 
     /**
@@ -43,24 +41,24 @@ contract BalancerPlugin is IFlashLoanRecipient {
         uint256[] memory amounts,
         uint256[] memory feeAmounts,
         bytes memory userData
-    ) external override {
-        // Decode exactly the shape encoded in takeFlashLoan
-        (, address baseAsset, address flp, , ) = abi.decode(userData, (address, address, address, uint256, bytes));
+    ) external returns (CallbackData memory _data) {
+        bytes32 flidExpected;
+        bytes32 slot = SLOT_PLUGIN;
+        assembly {
+            flidExpected := tload(slot)
+            tstore(slot, 0)
+        }
 
-        // Basic safety checks
-        require(msg.sender == flp, "WrongVault");
-        require(tokens.length == 1 && amounts.length == 1 && feeAmounts.length == 1, "BadArrayLengths");
-        require(address(tokens[0]) == baseAsset, "UnexpectedToken");
+        require(keccak256(userData) == flidExpected, InvalidFlashLoanId());
 
-        // Optional invariant: received amount equals snapshot delta
-        // Not strictly necessary for Balancer but mirrors other plugins' style
-        // require(IERC20(baseAsset).balanceOf(address(this)) == snapshot + amounts[0], "InvalidAmountOut");
+        _data = abi.decode(userData, (CallbackData));
+        require(_data.flp == msg.sender, UnauthorizedCallback());
+        require(_data.asset == address(tokens[0]) || _data.debt == amounts[0], InvalidFlashLoanData());
 
-        // Repay by transferring back to the Vault (not approve)
-        tokens[0].safeTransfer(flp, amounts[0] + feeAmounts[0]);
+        _data.flashLoanFee = feeAmounts[0];
     }
 
-    function repayFlashLoan(address flp, address baseAsset, uint256 amount) external {
-        IERC20(baseAsset).safeTransfer(flp, amount);
+    function repayFlashLoan(address flp, address asset, uint256 amount) external {
+        IERC20(asset).approve(flp, amount);
     }
 }
