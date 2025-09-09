@@ -2,6 +2,9 @@
 pragma solidity ^0.8.30;
 
 interface ICometSwapPlugin {
+    error InvalidAmountOut();
+    error IvaildInput();
+
     function CALLBACK_SELECTOR() external view returns (bytes4);
 
     function executeSwap(

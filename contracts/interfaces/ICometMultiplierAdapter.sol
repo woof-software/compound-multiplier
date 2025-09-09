@@ -10,17 +10,28 @@ interface ICometMultiplierAdapter {
     error UnknownMarket();
     error InvalidPluginSelector();
     error InvalidLeverage();
+    error InvalidAmountOut();
     error CallbackFailed();
     error FlashLoanFailed();
-    error InsufficiantAmountOut();
     error InvalidMode();
     error AlreadyExists();
     error NothingToDeleverage();
-    error InvalidAmountOut();
 
     enum Mode {
         EXECUTE,
         WITHDRAW
+    }
+
+    struct Market {
+        address market;
+        Asset baseAsset;
+        Collateral[] collaterals;
+    }
+
+    struct Collateral {
+        address asset;
+        Asset config;
+        uint256 leverage;
     }
 
     struct Plugin {

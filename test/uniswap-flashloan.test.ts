@@ -7,7 +7,7 @@ import {
   UniswapV3Plugin,
   OneInchV6SwapPlugin,
 } from "../typechain-types";
-import { get1inchSwapData } from "./utils/oneinch";
+import { get1inchQuote, get1inchSwapData } from "./utils/oneinch";
 
 (BigInt.prototype as any).toJSON = function () {
   return this.toString();
@@ -31,7 +31,7 @@ describe("UniswapV3", function () {
   const UNI_V3_USDC_WETH_005 = "0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640";
   const WETH_WHALE = "0xF04a5cC80B1E94C69B48f5ee68a08CD2F09A7c3E";
 
-  before(async () => {
+   before(async () => {
     [user] = await ethers.getSigners();
 
     weth = await ethers.getContractAt("IERC20", WETH_ADDRESS);
@@ -44,46 +44,62 @@ describe("UniswapV3", function () {
     const SwapFactory = await ethers.getContractFactory("OneInchV6SwapPlugin");
     swapPlugin = (await SwapFactory.deploy(opts)) as OneInchV6SwapPlugin;
 
-    const AdapterFactory = await ethers.getContractFactory("CometMultiplierAdapter");
-    adapter = (await AdapterFactory.deploy([
-      { endpoint: await loanPlugin.getAddress(), config: "0x" },
-      {
-        endpoint: await swapPlugin.getAddress(),
-        config: ethers.AbiCoder.defaultAbiCoder().encode(["address"], [ONE_INCH_ROUTER_V6]),
-      },
-    ], opts)) as CometMultiplierAdapter;
-
-    const whale = await ethers.getImpersonatedSigner(WETH_WHALE);
-    await ethers.provider.send("hardhat_setBalance", [whale.address, "0xffffffffffffffffffffff"]);
-    await weth.connect(whale).transfer(user.address, ethers.parseEther("10"), opts);
-  });
-
-  it("should execute multiplier using Uniswap V3 flash + 1inch swap", async () => {
-    const initialAmount = ethers.parseEther("0.1");
-    const leverageBps = 30_000n;
-    const minAmountOut = 1n;
-
-    await weth.connect(user).approve(await adapter.getAddress(), initialAmount);
-
     const LOAN_SELECTOR = await loanPlugin.CALLBACK_SELECTOR();
     const SWAP_SELECTOR = await swapPlugin.CALLBACK_SELECTOR();
 
-    await adapter.connect(user).addMarket(await comet.getAddress(), {
-      loanSelector: LOAN_SELECTOR,
-      swapSelector: SWAP_SELECTOR,
-      flp: UNI_V3_USDC_WETH_005,
-    });
-
-    await adapter.connect(user).addCollateral(
-      await comet.getAddress(),
-      await weth.getAddress(),
-      {
-        loanSelector: LOAN_SELECTOR,
-        swapSelector: SWAP_SELECTOR,
-        flp: UNI_V3_USDC_WETH_005,
+    const plugins = [
+      { 
+        endpoint: await loanPlugin.getAddress(), 
+        config: "0x" 
       },
-      Number(leverageBps)
-    );
+      {
+        endpoint: await swapPlugin.getAddress(),
+        config: ethers.AbiCoder.defaultAbiCoder().encode(
+          ["address"], 
+          [ONE_INCH_ROUTER_V6]
+        ),
+      },
+    ];
+
+    const markets = [
+      {
+        market: COMET_USDC_MARKET,
+        baseAsset: {
+          loanSelector: LOAN_SELECTOR,
+          swapSelector: SWAP_SELECTOR,
+          flp: UNI_V3_USDC_WETH_005,
+        },
+        collaterals: [
+          {
+            asset: WETH_ADDRESS,
+            config: {
+              loanSelector: LOAN_SELECTOR,
+              swapSelector: SWAP_SELECTOR,
+              flp: UNI_V3_USDC_WETH_005,
+            },
+            leverage: 30_000,
+          }
+        ]
+      }
+    ];
+
+    const AdapterFactory = await ethers.getContractFactory("CometMultiplierAdapter");
+    adapter = (await AdapterFactory.deploy(plugins, markets, opts)) as CometMultiplierAdapter;
+
+    const whale = await ethers.getImpersonatedSigner(WETH_WHALE);
+    await ethers.provider.send("hardhat_setBalance", [
+      whale.address, 
+      "0xffffffffffffffffffffff"
+    ]);
+    await weth.connect(whale).transfer(user.address, ethers.parseEther("10"), opts);
+  });
+
+ it("should execute multiplier using Uniswap V3 flash + 1inch swap", async () => {
+    const initialAmount = ethers.parseEther("0.1");
+    const leverageBps = 30_000;
+    const minAmountOut = 1n;
+
+    await weth.connect(user).approve(await adapter.getAddress(), initialAmount);
 
     const allowAbi = ["function allow(address, bool)"];
     const cometAsSigner = new ethers.Contract(await comet.getAddress(), allowAbi, user) as any;
@@ -95,7 +111,7 @@ describe("UniswapV3", function () {
     const scale = info.scale;
 
     const initialValueBase = (initialAmount * price * baseScale) / (scale * 1_00000000n);
-    const delta = leverageBps - 10_000n;
+    const delta = BigInt(leverageBps - 10_000);
     const baseAmount = (initialValueBase * delta) / 10_000n;
 
     const swapData = await get1inchSwapData(
@@ -110,10 +126,54 @@ describe("UniswapV3", function () {
         await comet.getAddress(),
         await weth.getAddress(),
         initialAmount,
-        Number(leverageBps),
+        leverageBps,
         swapData,
         minAmountOut
       )
     ).to.not.be.reverted;
+
+    const userCollateralBalance = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
+    const userBorrowBalance = await comet.borrowBalanceOf(user.address);
+
+    expect(userCollateralBalance).to.be.gt(initialAmount);
+    expect(userBorrowBalance).to.be.gt(0);
+  });
+
+   it("withdraws multiplier position (partial)", async () => {
+        const debt = await comet.borrowBalanceOf(user.address);
+        const userCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
+        const sellAmount = userCol / 4n;
+    
+        const quote = await get1inchQuote(WETH_ADDRESS, USDC_ADDRESS, sellAmount.toString());
+        const minBaseOut = (BigInt(quote) * 99n) / 100n;
+    
+        const swapData = await get1inchSwapData(
+          WETH_ADDRESS,
+          USDC_ADDRESS,
+          sellAmount.toString(),
+          await adapter.getAddress()
+        );
+        await adapter.connect(user).withdrawMultiplier(
+            await comet.getAddress(),
+            WETH_ADDRESS,
+            sellAmount,
+            swapData,
+            minBaseOut
+          );
+          
+        await expect(
+          adapter.connect(user).withdrawMultiplier(
+            await comet.getAddress(),
+            WETH_ADDRESS,
+            sellAmount,
+            swapData,
+            minBaseOut
+          )
+        ).to.not.be.reverted;
+    
+        const newDebt = await comet.borrowBalanceOf(user.address);
+        const newCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
+        expect(newDebt).to.be.lt(debt);
+        expect(newCol).to.be.lte(userCol);
   });
 });

@@ -5,7 +5,6 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IMorphoBase } from "../interfaces/IMorpho.sol";
 import { IMorphoFlashLoanCallback } from "../interfaces/IMorpho.sol";
 import { ICometFlashLoanPlugin } from "../interfaces/ICometFlashLoanPlugin.sol";
-import "hardhat/console.sol";
 
 contract MorphoPlugin is ICometFlashLoanPlugin {
     /// @notice Callback selector: keccak256("onMorphoFlashLoan(uint256 assets, bytes calldata data)") = 0x31f57072
