@@ -49,9 +49,6 @@ describe("Euler Plugin (updated core)", function () {
     const SwapFactory = await ethers.getContractFactory("OneInchV6SwapPlugin", owner);
     swapPlugin = await SwapFactory.deploy(opts);
 
-    const LOAN_SELECTOR = await loanPlugin.CALLBACK_SELECTOR();
-    const SWAP_SELECTOR = await swapPlugin.CALLBACK_SELECTOR();
-
     const plugins = [
       { 
         endpoint: await loanPlugin.getAddress(), 
@@ -66,30 +63,8 @@ describe("Euler Plugin (updated core)", function () {
       },
     ];
 
-    const markets = [
-      {
-        market: COMET_USDC_MARKET,
-        baseAsset: {
-          loanSelector: LOAN_SELECTOR,
-          swapSelector: SWAP_SELECTOR,
-          flp: USDC_EVAULT,
-        },
-        collaterals: [
-          {
-            asset: WETH_ADDRESS,
-            config: {
-              loanSelector: LOAN_SELECTOR,
-              swapSelector: SWAP_SELECTOR,
-              flp: USDC_EVAULT,
-            },
-            leverage: 30_000,
-          }
-        ]
-      }
-    ];
-
     const Adapter = await ethers.getContractFactory("CometMultiplierAdapter", owner);
-    adapter = await Adapter.deploy(plugins, markets, opts);
+    adapter = await Adapter.deploy(plugins, opts);
 
     const whale = await ethers.getImpersonatedSigner(WETH_WHALE);
     await ethers.provider.send("hardhat_setBalance", [
@@ -128,11 +103,22 @@ describe("Euler Plugin (updated core)", function () {
       await adapter.getAddress()
     );
 
+    const LOAN_SELECTOR = await loanPlugin.CALLBACK_SELECTOR();
+    const SWAP_SELECTOR = await swapPlugin.CALLBACK_SELECTOR();
+
+
+    const market = {
+          market: COMET_USDC_MARKET,
+          loanSelector: LOAN_SELECTOR,
+          swapSelector: SWAP_SELECTOR,
+          flp: USDC_EVAULT,
+        }
+        
     await expect(
       adapter
         .connect(user)
         .executeMultiplier(
-          await comet.getAddress(),
+          market,
           await weth.getAddress(),
           initialAmount,
           leverageBps,
@@ -164,9 +150,21 @@ describe("Euler Plugin (updated core)", function () {
       await adapter.getAddress()
     );
 
+    const LOAN_SELECTOR = await loanPlugin.CALLBACK_SELECTOR();
+    const SWAP_SELECTOR = await swapPlugin.CALLBACK_SELECTOR();
+
+
+    const market = {
+          market: COMET_USDC_MARKET,
+          loanSelector: LOAN_SELECTOR,
+          swapSelector: SWAP_SELECTOR,
+          flp: USDC_EVAULT,
+        }
+
+
     await expect(
       adapter.connect(user).withdrawMultiplier(
-        await comet.getAddress(),
+        market,
         WETH_ADDRESS,
         sellAmount,
         swapData,

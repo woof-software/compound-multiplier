@@ -45,9 +45,6 @@ describe("Morpho", function () {
     const SwapFactory = await ethers.getContractFactory("OneInchV6SwapPlugin");
     swapPlugin = await SwapFactory.deploy(opts);
 
-    const LOAN_SELECTOR = await loanPlugin.CALLBACK_SELECTOR();
-    const SWAP_SELECTOR = await swapPlugin.CALLBACK_SELECTOR();
-
     const plugins = [
       { 
         endpoint: await loanPlugin.getAddress(), 
@@ -62,29 +59,8 @@ describe("Morpho", function () {
       },
     ];
 
-    const markets = [
-      {
-        market: COMET_USDC_MARKET,
-        baseAsset: {
-          loanSelector: LOAN_SELECTOR,
-          swapSelector: SWAP_SELECTOR,
-          flp: MORPHO,
-        },
-        collaterals: [
-          {
-            asset: WETH_ADDRESS,
-            config: {
-              loanSelector: LOAN_SELECTOR,
-              swapSelector: SWAP_SELECTOR,
-              flp: MORPHO,
-            },
-            leverage: 30_000,
-          }
-        ]
-      }
-    ];
     const Adapter = await ethers.getContractFactory("CometMultiplierAdapter");
-    adapter = await Adapter.deploy(plugins, markets, opts);
+    adapter = await Adapter.deploy(plugins, opts);
 
     const whale = await ethers.getImpersonatedSigner(WETH_WHALE);
     await ethers.provider.send("hardhat_setBalance", [
@@ -126,11 +102,24 @@ describe("Morpho", function () {
       await adapter.getAddress()
     );
 
+    const LOAN_SELECTOR = await loanPlugin.CALLBACK_SELECTOR();
+    const SWAP_SELECTOR = await swapPlugin.CALLBACK_SELECTOR();
+
+
+    const market = {
+          market: COMET_USDC_MARKET,
+          loanSelector: LOAN_SELECTOR,
+          swapSelector: SWAP_SELECTOR,
+          flp: MORPHO,
+        }
+
+
+
     await expect(
       adapter
         .connect(user)
         .executeMultiplier(
-          await comet.getAddress(),
+          market,
           await weth.getAddress(),
           initialAmount,
           leverageBps,
@@ -160,17 +149,21 @@ describe("Morpho", function () {
         sellAmount.toString(),
         await adapter.getAddress()
       );
-      await adapter.connect(user).withdrawMultiplier(
-          await comet.getAddress(),
-          WETH_ADDRESS,
-          sellAmount,
-          swapData,
-          minBaseOut
-        );
-        
+
+      const LOAN_SELECTOR = await loanPlugin.CALLBACK_SELECTOR();
+      const SWAP_SELECTOR = await swapPlugin.CALLBACK_SELECTOR();
+
+
+      const market = {
+          market: COMET_USDC_MARKET,
+          loanSelector: LOAN_SELECTOR,
+          swapSelector: SWAP_SELECTOR,
+          flp: MORPHO,
+        }
+
       await expect(
         adapter.connect(user).withdrawMultiplier(
-          await comet.getAddress(),
+          market,
           WETH_ADDRESS,
           sellAmount,
           swapData,

@@ -44,9 +44,6 @@ describe("UniswapV3", function () {
     const SwapFactory = await ethers.getContractFactory("OneInchV6SwapPlugin");
     swapPlugin = (await SwapFactory.deploy(opts)) as OneInchV6SwapPlugin;
 
-    const LOAN_SELECTOR = await loanPlugin.CALLBACK_SELECTOR();
-    const SWAP_SELECTOR = await swapPlugin.CALLBACK_SELECTOR();
-
     const plugins = [
       { 
         endpoint: await loanPlugin.getAddress(), 
@@ -61,30 +58,8 @@ describe("UniswapV3", function () {
       },
     ];
 
-    const markets = [
-      {
-        market: COMET_USDC_MARKET,
-        baseAsset: {
-          loanSelector: LOAN_SELECTOR,
-          swapSelector: SWAP_SELECTOR,
-          flp: UNI_V3_USDC_WETH_005,
-        },
-        collaterals: [
-          {
-            asset: WETH_ADDRESS,
-            config: {
-              loanSelector: LOAN_SELECTOR,
-              swapSelector: SWAP_SELECTOR,
-              flp: UNI_V3_USDC_WETH_005,
-            },
-            leverage: 30_000,
-          }
-        ]
-      }
-    ];
-
     const AdapterFactory = await ethers.getContractFactory("CometMultiplierAdapter");
-    adapter = (await AdapterFactory.deploy(plugins, markets, opts)) as CometMultiplierAdapter;
+    adapter = (await AdapterFactory.deploy(plugins, opts)) as CometMultiplierAdapter;
 
     const whale = await ethers.getImpersonatedSigner(WETH_WHALE);
     await ethers.provider.send("hardhat_setBalance", [
@@ -121,9 +96,22 @@ describe("UniswapV3", function () {
       await adapter.getAddress()
     );
 
+    const LOAN_SELECTOR = await loanPlugin.CALLBACK_SELECTOR();
+    const SWAP_SELECTOR = await swapPlugin.CALLBACK_SELECTOR();
+
+
+    const market = {
+          market: COMET_USDC_MARKET,
+          loanSelector: LOAN_SELECTOR,
+          swapSelector: SWAP_SELECTOR,
+          flp: UNI_V3_USDC_WETH_005,
+        }
+
+
+
     await expect(
       adapter.connect(user).executeMultiplier(
-        await comet.getAddress(),
+        market,
         await weth.getAddress(),
         initialAmount,
         leverageBps,
@@ -153,17 +141,21 @@ describe("UniswapV3", function () {
           sellAmount.toString(),
           await adapter.getAddress()
         );
-        await adapter.connect(user).withdrawMultiplier(
-            await comet.getAddress(),
-            WETH_ADDRESS,
-            sellAmount,
-            swapData,
-            minBaseOut
-          );
-          
+
+        const LOAN_SELECTOR = await loanPlugin.CALLBACK_SELECTOR();
+        const SWAP_SELECTOR = await swapPlugin.CALLBACK_SELECTOR();
+
+
+        const market = {
+          market: COMET_USDC_MARKET,
+          loanSelector: LOAN_SELECTOR,
+          swapSelector: SWAP_SELECTOR,
+          flp: UNI_V3_USDC_WETH_005,
+        }
+
         await expect(
           adapter.connect(user).withdrawMultiplier(
-            await comet.getAddress(),
+            market,
             WETH_ADDRESS,
             sellAmount,
             swapData,
