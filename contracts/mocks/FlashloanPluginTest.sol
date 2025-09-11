@@ -86,7 +86,7 @@ contract FlashloanPluginTest {
                 ICometFlashLoanPlugin.repayFlashLoan.selector,
                 data.flp,
                 data.asset,
-                data.debt + data.flashLoanFee
+                data.debt + data.fee
             )
         );
         require(ok);

@@ -48,7 +48,7 @@ describe("AAVE Flash Loan Plugin", function () {
             data = {
                 debt: debt,
                 snapshot: 0,
-                flashLoanFee: 0,
+                fee: 0,
                 user: alice.address,
                 flp: flp,
                 asset: usdc.target,
@@ -60,7 +60,7 @@ describe("AAVE Flash Loan Plugin", function () {
             // in case of error on AAVE side thus we check lastCallbackData
             const lastCallbackDataBefore = await flash.lastCallbackData();
             expect(lastCallbackDataBefore.debt).to.be.equal(0);
-            expect(lastCallbackDataBefore.flashLoanFee).to.be.equal(0);
+            expect(lastCallbackDataBefore.fee).to.be.equal(0);
             expect(lastCallbackDataBefore.user).to.be.equal(ethers.ZeroAddress);
             expect(lastCallbackDataBefore.flp).to.be.equal(ethers.ZeroAddress);
             expect(lastCallbackDataBefore.asset).to.be.equal(ethers.ZeroAddress);
@@ -72,7 +72,7 @@ describe("AAVE Flash Loan Plugin", function () {
 
             const lastCallbackDataAfter = await flash.lastCallbackData();
             expect(lastCallbackDataAfter.debt).to.be.equal(data.debt);
-            expect(lastCallbackDataAfter.flashLoanFee).to.be.equal(premium);
+            expect(lastCallbackDataAfter.fee).to.be.equal(premium);
             expect(lastCallbackDataAfter.user).to.be.equal(data.user);
             expect(lastCallbackDataAfter.flp).to.be.equal(data.flp);
             expect(lastCallbackDataAfter.asset).to.be.equal(data.asset);
@@ -85,7 +85,7 @@ describe("AAVE Flash Loan Plugin", function () {
             await flash.connect(alice).flash(data);
 
             const lastCallbackDataAfter = await flash.lastCallbackData();
-            expect(lastCallbackDataAfter.flashLoanFee).to.be.equal(premium);
+            expect(lastCallbackDataAfter.fee).to.be.equal(premium);
         });
     });
 
@@ -94,7 +94,7 @@ describe("AAVE Flash Loan Plugin", function () {
             data = {
                 debt: debt,
                 snapshot: 0,
-                flashLoanFee: 0,
+                fee: 0,
                 user: alice,
                 flp: alice,
                 asset: usdc.target,

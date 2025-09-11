@@ -3,20 +3,19 @@
 pragma solidity ^0.8.30;
 
 interface ICometMultiplierAdapter {
-    error UnsupportedAsset();
     error UnsupportedPriceFeed();
     error UnknownCallbackSelector();
     error UnknownSwapPlugin();
     error UnknownMarket();
     error InvalidPluginSelector();
     error InvalidLeverage();
+    error InvalidAmountOut();
+    error InvalidAsset();
     error CallbackFailed();
     error FlashLoanFailed();
-    error InsufficiantAmountOut();
     error InvalidMode();
     error AlreadyExists();
     error NothingToDeleverage();
-    error InvalidAmountOut();
 
     enum Mode {
         EXECUTE,
@@ -28,20 +27,12 @@ interface ICometMultiplierAdapter {
         bytes config;
     }
 
-    struct Asset {
+    struct Options {
+        address market;
         address flp;
         bytes4 loanSelector;
         bytes4 swapSelector;
     }
-
-    function executeMultiplier(
-        address market,
-        address collateralAsset,
-        uint256 initialAmount,
-        uint256 leverage,
-        bytes calldata swapData,
-        uint256 minAmountOut
-    ) external;
 
     event AssetAdded(address indexed collateralAsset, bytes4 pluginSelector);
 

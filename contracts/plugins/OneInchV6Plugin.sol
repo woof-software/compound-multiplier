@@ -4,9 +4,6 @@ pragma solidity ^0.8.30;
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { ICometSwapPlugin } from "../interfaces/ICometSwapPlugin.sol";
 
-error InvalidAmountOut();
-error IvaildInput();
-
 contract OneInchV6SwapPlugin is ICometSwapPlugin {
     bytes4 public constant CALLBACK_SELECTOR = 0x8b9d1a3c;
 
@@ -23,6 +20,7 @@ contract OneInchV6SwapPlugin is ICometSwapPlugin {
         address router = abi.decode(config, (address));
 
         IERC20(srcToken).approve(router, amountIn);
+
         (bool ok, bytes memory ret) = router.call(swapData);
         if (!ok) {
             assembly {

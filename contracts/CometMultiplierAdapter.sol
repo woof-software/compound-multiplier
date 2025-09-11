@@ -1,41 +1,30 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
+
 import { IComet } from "./interfaces/IComet.sol";
 import { ICometMultiplierAdapter } from "./interfaces/ICometMultiplierAdapter.sol";
 import { ICometSwapPlugin } from "./interfaces/ICometSwapPlugin.sol";
 import { ICometFlashLoanPlugin } from "./interfaces/ICometFlashLoanPlugin.sol";
-import { IAggregationRouterV6, IAggregationExecutor } from "./interfaces/IAggregationRouterV6.sol";
-
-import "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
-
+import { AggregatorV3Interface } from "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-
-import "@openzeppelin/contracts/access/Ownable.sol";
-
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/utils/Pausable.sol";
 
-contract CometMultiplierAdapter is Ownable, Pausable, ReentrancyGuard, ICometMultiplierAdapter {
+contract CometMultiplierAdapter is ReentrancyGuard, ICometMultiplierAdapter {
     using SafeERC20 for IERC20;
 
     uint256 constant LEVERAGE_PRECISION = 10_000;
     uint256 constant MAX_LEVERAGE = 50_000;
-
     bytes32 constant SLOT_ADAPTER = bytes32(uint256(keccak256("CometMultiplierAdapter.adapter")) - 1);
-
-    mapping(address => Asset) public assets;
-    mapping(address => bool) public markets;
 
     mapping(bytes4 => Plugin) public plugins;
 
-    mapping(address => mapping(address => uint256)) public leverages;
-
-    constructor(Plugin[] memory _plugins) Ownable(msg.sender) {
+    constructor(Plugin[] memory _plugins) {
         for (uint256 i = 0; i < _plugins.length; i++) {
             Plugin memory plugin = _plugins[i];
             bytes4 pluginSelector = ICometFlashLoanPlugin(plugin.endpoint).CALLBACK_SELECTOR();
+            require(pluginSelector != bytes4(0), InvalidPluginSelector());
             plugins[pluginSelector] = plugin;
         }
     }
@@ -45,179 +34,173 @@ contract CometMultiplierAdapter is Ownable, Pausable, ReentrancyGuard, ICometMul
         require(endpoint != address(0), UnknownCallbackSelector());
 
         (bool ok, bytes memory payload) = endpoint.delegatecall(msg.data);
-
         _catch(ok);
 
         ICometFlashLoanPlugin.CallbackData memory data = abi.decode(payload, (ICometFlashLoanPlugin.CallbackData));
-
         require(IERC20(data.asset).balanceOf(address(this)) == data.snapshot + data.debt, InvalidAmountOut());
 
-        (uint256 amount, address market, address collateral, uint256 minAmountOut, Mode mode) = _tload();
-
-        bool done;
+        bytes32 slot = SLOT_ADAPTER;
+        Mode mode;
+        assembly {
+            mode := tload(add(slot, 0xa0))
+        }
 
         if (mode == Mode.EXECUTE) {
-            uint256 totalAmount = _executeSwap(data.asset, collateral, data.debt, minAmountOut, data.swapData) + amount;
-
-            IERC20(collateral).approve(market, totalAmount);
-
-            IComet(market).supplyTo(data.user, collateral, totalAmount);
-            IComet(market).withdrawFrom(data.user, address(this), data.asset, data.debt);
-            (done, ) = endpoint.delegatecall(
-                abi.encodeWithSelector(ICometFlashLoanPlugin.repayFlashLoan.selector, data.flp, data.asset, data.debt)
-            );
-
-            _catch(done);
-
-            return;
+            _execute(data, endpoint);
+        } else if (mode == Mode.WITHDRAW) {
+            _withdraw(data, endpoint);
+        } else {
+            revert InvalidMode();
         }
-        if (mode == Mode.WITHDRAW) {
-            IERC20(data.asset).approve(market, data.debt);
-            IComet(market).supplyTo(data.user, data.asset, data.debt);
-
-            IComet(market).withdrawFrom(data.user, address(this), collateral, type(uint256).max);
-
-            require(
-                _executeSwap(collateral, data.asset, amount, minAmountOut, data.swapData) >= data.debt,
-                InsufficiantAmountOut()
-            );
-
-            (done, ) = endpoint.delegatecall(
-                abi.encodeWithSelector(ICometFlashLoanPlugin.repayFlashLoan.selector, data.flp, data.asset, data.debt)
-            );
-            _catch(done);
-
-            uint256 leftoverAsset = IERC20(data.asset).balanceOf(address(this));
-            if (leftoverAsset > 0) IERC20(data.asset).safeTransfer(data.user, leftoverAsset);
-
-            uint256 leftoverColl = IERC20(collateral).balanceOf(address(this));
-            if (leftoverColl > 0) IERC20(collateral).safeTransfer(data.user, leftoverColl);
-
-            return;
-        }
-        revert InvalidMode();
     }
 
     receive() external payable {}
 
-    function addPlugin(address plugin, bytes memory config) external onlyOwner {
-        bytes4 pluginSelector = ICometFlashLoanPlugin(plugin).CALLBACK_SELECTOR();
-        if (pluginSelector == bytes4(0)) {
-            revert InvalidPluginSelector();
-        }
-        plugins[pluginSelector] = Plugin({ endpoint: plugin, config: config });
-        emit PluginAdded(plugin, pluginSelector);
-    }
-
-    function addMarket(address market, Asset memory asset) external onlyOwner {
-        require(!markets[market], AlreadyExists());
-        markets[market] = true;
-
-        address baseAsset = IComet(market).baseToken();
-        _addAsset(baseAsset, asset);
-    }
-
-    function addCollateral(
-        address market,
-        address collateralAsset,
-        Asset memory asset,
-        uint256 leverage
-    ) external onlyOwner {
-        require(markets[market], UnknownMarket());
-        _addAsset(collateralAsset, asset);
-        require(leverage > LEVERAGE_PRECISION && leverage <= MAX_LEVERAGE, InvalidLeverage());
-        leverages[market][collateralAsset] = leverage;
-    }
-
     function executeMultiplier(
-        address market,
-        address collateralAsset,
-        uint256 initialAmount,
+        Options memory opts,
+        address collateral,
+        uint256 collateralAmount,
         uint256 leverage,
         bytes calldata swapData,
         uint256 minAmountOut
-    ) external nonReentrant whenNotPaused {
-        require(markets[market], UnknownMarket());
-        Asset memory asset = assets[collateralAsset];
-        Plugin memory plugin = plugins[asset.loanSelector];
-        require(plugin.endpoint != address(0), UnsupportedAsset());
-        require(leverage >= LEVERAGE_PRECISION && leverage <= leverages[market][collateralAsset], InvalidLeverage());
-        IComet comet = IComet(market);
+    ) external nonReentrant {
+        Plugin memory plugin = plugins[opts.loanSelector];
+        require(plugin.endpoint != address(0), InvalidPluginSelector());
+        IComet comet = IComet(opts.market);
 
-        uint256 levereged = _leveraged(comet, collateralAsset, initialAmount, leverage);
+        uint256 leveraged = _leveraged(comet, collateral, collateralAmount, leverage);
 
         address baseAsset = comet.baseToken();
-        _tstore(initialAmount, market, collateralAsset, minAmountOut, Mode.EXECUTE);
-        _takeFlashLoan(
+
+        _tstore(collateralAmount, opts.market, collateral, minAmountOut, opts.swapSelector, Mode.EXECUTE);
+
+        IERC20(collateral).safeTransferFrom(msg.sender, address(this), collateralAmount);
+
+        _loan(
             plugin.endpoint,
             ICometFlashLoanPlugin.CallbackData(
-                (levereged * (leverage - LEVERAGE_PRECISION)) / LEVERAGE_PRECISION,
-                IERC20(baseAsset).balanceOf(address(this)),
+                leveraged,
                 0,
+                IERC20(baseAsset).balanceOf(address(this)),
                 msg.sender,
-                asset.flp,
+                opts.flp,
                 baseAsset,
                 swapData
-            )
+            ),
+            plugin.config
         );
     }
 
     function withdrawMultiplier(
-        address market,
-        address collateralAsset,
-        uint256 sellAmount,
+        Options memory opts,
+        address collateral,
+        uint256 baseAmount,
         bytes calldata swapData,
-        uint256 minBaseOut
-    ) external nonReentrant whenNotPaused {
-        Plugin memory loanPlugin = plugins[assets[collateralAsset].loanSelector];
-        require(loanPlugin.endpoint != address(0), UnsupportedAsset());
-
-        IComet comet = IComet(market);
+        uint256 minAmountOut
+    ) external nonReentrant {
+        Plugin memory loanPlugin = plugins[opts.loanSelector];
+        IComet comet = IComet(opts.market);
 
         uint256 repayAmount = comet.borrowBalanceOf(msg.sender);
         require(repayAmount > 0, NothingToDeleverage());
 
         address baseAsset = comet.baseToken();
+        uint256 loanDebt = Math.min(repayAmount, minAmountOut);
+        require(loanDebt > 0, InvalidLeverage());
 
-        _tstore(sellAmount, market, collateralAsset, minBaseOut, Mode.WITHDRAW);
-        _takeFlashLoan(
+        _tstore(baseAmount, opts.market, collateral, minAmountOut, opts.swapSelector, Mode.WITHDRAW);
+
+        _loan(
             loanPlugin.endpoint,
-            ICometFlashLoanPlugin.CallbackData(
-                repayAmount,
-                IERC20(baseAsset).balanceOf(address(this)),
-                0,
-                msg.sender,
-                assets[baseAsset].flp,
-                baseAsset,
-                swapData
-            )
+            ICometFlashLoanPlugin.CallbackData({
+                debt: loanDebt,
+                fee: 0,
+                snapshot: IERC20(baseAsset).balanceOf(address(this)),
+                user: msg.sender,
+                flp: opts.flp,
+                asset: baseAsset,
+                swapData: swapData
+            }),
+            loanPlugin.config
         );
     }
 
-    function pause() external onlyOwner whenNotPaused {
-        _pause();
+    function _execute(ICometFlashLoanPlugin.CallbackData memory data, address endpoint) private {
+        (uint256 amount, address market, address collateral, uint256 minAmountOut, bytes4 swapSelector) = _tload();
+
+        uint256 totalAmount = _swap(data.asset, collateral, data.debt, minAmountOut, swapSelector, data.swapData) +
+            amount;
+
+        IERC20(collateral).approve(market, totalAmount);
+        IComet(market).supplyTo(data.user, collateral, totalAmount);
+        IComet(market).withdrawFrom(data.user, address(this), data.asset, data.debt + data.fee);
+
+        (bool done, ) = endpoint.delegatecall(
+            abi.encodeWithSelector(
+                ICometFlashLoanPlugin.repayFlashLoan.selector,
+                data.flp,
+                data.asset,
+                data.debt + data.fee
+            )
+        );
+
+        _catch(done);
     }
 
-    function unpause() external onlyOwner whenPaused {
-        _unpause();
+    function _withdraw(ICometFlashLoanPlugin.CallbackData memory data, address endpoint) private {
+        (uint256 amount, address market, address collateral, uint256 minAmountOut, bytes4 swapSelector) = _tload();
+
+        IERC20(data.asset).approve(market, data.debt);
+        IComet(market).supplyTo(data.user, data.asset, data.debt);
+
+        uint128 collateralBalance = IComet(market).collateralBalanceOf(data.user, collateral);
+        uint128 take = _converted(market, collateral, data.debt, amount, collateralBalance);
+
+        if (take == 0) revert NothingToDeleverage();
+
+        IComet(market).withdrawFrom(data.user, address(this), collateral, take);
+
+        if (_swap(collateral, data.asset, take, minAmountOut, swapSelector, data.swapData) < data.debt) {
+            revert InvalidAmountOut();
+        }
+
+        uint256 baseLeft = IERC20(data.asset).balanceOf(address(this));
+
+        (bool done, ) = endpoint.delegatecall(
+            abi.encodeWithSelector(
+                ICometFlashLoanPlugin.repayFlashLoan.selector,
+                data.flp,
+                data.asset,
+                data.debt + data.fee
+            )
+        );
+
+        _catch(done);
+
+        baseLeft -= data.debt + data.fee;
+
+        if (baseLeft > 0) IERC20(data.asset).safeTransfer(data.user, baseLeft);
+
+        uint256 collateralLeft = IERC20(collateral).balanceOf(address(this));
+        if (collateralLeft > 0) IERC20(collateral).safeTransfer(data.user, collateralLeft);
     }
 
-    function _executeSwap(
+    function _swap(
         address srcToken,
         address dstToken,
         uint256 amount,
         uint256 minAmountOut,
+        bytes4 swapSelector,
         bytes memory swapData
     ) internal returns (uint256 amountOut) {
         if (srcToken == dstToken) {
             return amount;
         }
 
-        Asset memory asset = assets[dstToken];
-        Plugin memory plugin = plugins[asset.swapSelector];
+        Plugin memory plugin = plugins[swapSelector];
         require(plugin.endpoint != address(0), UnknownSwapPlugin());
 
-        bytes memory _calldata = abi.encodeWithSelector(
+        bytes memory callData = abi.encodeWithSelector(
             ICometSwapPlugin.executeSwap.selector,
             srcToken,
             dstToken,
@@ -227,13 +210,19 @@ contract CometMultiplierAdapter is Ownable, Pausable, ReentrancyGuard, ICometMul
             swapData
         );
 
-        (bool ok, bytes memory data) = address(plugin.endpoint).delegatecall(_calldata);
-
+        (bool ok, bytes memory data) = address(plugin.endpoint).delegatecall(callData);
         _catch(ok);
 
         amountOut = abi.decode(data, (uint256));
 
-        require(amountOut >= minAmountOut, InsufficiantAmountOut());
+        require(amountOut >= minAmountOut, InvalidAmountOut());
+    }
+
+    function _loan(address endpoint, ICometFlashLoanPlugin.CallbackData memory data, bytes memory config) internal {
+        (bool ok, ) = endpoint.delegatecall(
+            abi.encodeWithSelector(ICometFlashLoanPlugin.takeFlashLoan.selector, data, config)
+        );
+        _catch(ok);
     }
 
     function _leveraged(
@@ -243,54 +232,67 @@ contract CometMultiplierAdapter is Ownable, Pausable, ReentrancyGuard, ICometMul
         uint256 leverage
     ) internal view returns (uint256) {
         IComet.AssetInfo memory info = comet.getAssetInfoByAddress(collateralAsset);
-
         uint256 initialValueBase = Math.mulDiv(
             Math.mulDiv(initialAmount, comet.getPrice(info.priceFeed), 1e8),
             comet.baseScale(),
             info.scale
         );
-
         return Math.mulDiv(initialValueBase, leverage - LEVERAGE_PRECISION, LEVERAGE_PRECISION);
     }
 
-    function _takeFlashLoan(address endpoint, ICometFlashLoanPlugin.CallbackData memory data) internal {
-        (bool ok, ) = endpoint.delegatecall(abi.encodeWithSelector(ICometFlashLoanPlugin.takeFlashLoan.selector, data));
+    function _unlocked(IComet comet, address col, uint256 repayBase) internal view returns (uint128) {
+        IComet.AssetInfo memory info = comet.getAssetInfoByAddress(col);
+        uint256 price = comet.getPrice(info.priceFeed);
+        uint64 collateralFactor = info.borrowCollateralFactor;
 
-        _catch(ok);
+        uint256 num = price * comet.baseScale() * uint256(collateralFactor);
+        uint256 den = _scale(info.priceFeed, uint256(info.scale)) * 1e18;
+
+        uint256 unlocked = Math.mulDiv(repayBase, den, num);
+        if (unlocked > type(uint128).max) unlocked = type(uint128).max;
+        return uint128(unlocked);
     }
 
-    function _addAsset(address collateralAsset, Asset memory asset) internal onlyOwner {
-        if (assets[collateralAsset].flp != address(0)) {
-            return;
-        }
-        require(
-            plugins[asset.loanSelector].endpoint != address(0) && plugins[asset.swapSelector].endpoint != address(0),
-            InvalidPluginSelector()
-        );
-
-        assets[collateralAsset] = Asset({
-            loanSelector: asset.loanSelector,
-            swapSelector: asset.swapSelector,
-            flp: asset.flp
-        });
-
-        emit AssetAdded(collateralAsset, asset.loanSelector);
+    function _converted(
+        address market,
+        address collateral,
+        uint256 debt,
+        uint256 amount,
+        uint128 collateralBalance
+    ) private view returns (uint128) {
+        uint256 unlocked = _unlocked(IComet(market), collateral, debt);
+        uint256 maxAmount = (amount == type(uint256).max)
+            ? collateralBalance
+            : Math.min(amount, uint256(collateralBalance));
+        return uint128(Math.min(unlocked, maxAmount));
     }
 
-    function _tstore(uint256 amount, address market, address collateral, uint256 minAmountOut, Mode mode) internal {
+    function _scale(address priceFeed, uint256 scale) internal view returns (uint256) {
+        return 10 ** AggregatorV3Interface(priceFeed).decimals() * scale;
+    }
+
+    function _tstore(
+        uint256 amount,
+        address market,
+        address collateral,
+        uint256 minAmountOut,
+        bytes4 swapSelector,
+        Mode mode
+    ) internal {
         bytes32 slot = SLOT_ADAPTER;
         assembly {
             tstore(slot, amount)
             tstore(add(slot, 0x20), market)
             tstore(add(slot, 0x40), collateral)
             tstore(add(slot, 0x60), minAmountOut)
-            tstore(add(slot, 0x80), mode)
+            tstore(add(slot, 0x80), swapSelector)
+            tstore(add(slot, 0xa0), mode)
         }
     }
 
     function _tload()
         internal
-        returns (uint256 amount, address market, address collateral, uint256 minAmountOut, Mode mode)
+        returns (uint256 amount, address market, address collateral, uint256 minAmountOut, bytes4 swapSelector)
     {
         bytes32 slot = SLOT_ADAPTER;
         assembly {
@@ -298,7 +300,8 @@ contract CometMultiplierAdapter is Ownable, Pausable, ReentrancyGuard, ICometMul
             market := tload(add(slot, 0x20))
             collateral := tload(add(slot, 0x40))
             minAmountOut := tload(add(slot, 0x60))
-            mode := tload(add(slot, 0x80))
+            swapSelector := tload(add(slot, 0x80))
+            //mode excluded, loaded in the fallback
             tstore(slot, 0)
             tstore(add(slot, 0x20), 0)
             tstore(add(slot, 0x40), 0)

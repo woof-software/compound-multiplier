@@ -62,7 +62,7 @@ contract AAVEPlugin is ICometFlashLoanPlugin {
         require(_data.flp == msg.sender, UnauthorizedCallback());
         require(_data.debt == amount && _data.asset == asset && initiator == address(this), InvalidFlashLoanData());
 
-        _data.flashLoanFee = premium;
+        _data.fee = premium;
     }
 
     /// @inheritdoc ICometFlashLoanPlugin

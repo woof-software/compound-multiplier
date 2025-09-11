@@ -74,7 +74,7 @@ contract CompoundV3CollateralSwap is AllowBySig, ICompoundV3CollateralSwap {
                 fromAsset,
                 data.asset,
                 IERC20(fromAsset).balanceOf(address(this)),
-                data.debt + data.flashLoanFee,
+                data.debt + data.fee,
                 data.swapData
             )
         );
@@ -84,7 +84,7 @@ contract CompoundV3CollateralSwap is AllowBySig, ICompoundV3CollateralSwap {
                 ICometFlashLoanPlugin.repayFlashLoan.selector,
                 data.flp,
                 data.asset,
-                data.debt + data.flashLoanFee
+                data.debt + data.fee
             )
         );
         _catch(success);
@@ -135,7 +135,7 @@ contract CompoundV3CollateralSwap is AllowBySig, ICompoundV3CollateralSwap {
                 ICometFlashLoanPlugin.CallbackData({
                     debt: swapParams.minAmountOut,
                     snapshot: IERC20(asset).balanceOf(address(this)),
-                    flashLoanFee: 0,
+                    fee: 0,
                     user: user,
                     flp: plugin.flp,
                     asset: asset,

@@ -8,8 +8,8 @@ interface ICometFlashLoanPlugin {
 
     struct CallbackData {
         uint256 debt;
+        uint256 fee;
         uint256 snapshot;
-        uint256 flashLoanFee;
         address user;
         address flp;
         address asset;

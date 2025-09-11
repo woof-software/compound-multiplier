@@ -8,7 +8,6 @@ import { IEulerMarkets } from "../interfaces/IEulerMarkets.sol";
 import { ICometFlashLoanPlugin } from "../interfaces/ICometFlashLoanPlugin.sol";
 import { IComet } from "../interfaces/IComet.sol";
 import { IEVault } from "../interfaces/IEVault.sol";
-import "hardhat/console.sol";
 
 contract EulerV2Plugin is ICometFlashLoanPlugin {
     // keccak256("onEulerFlashLoan(bytes)") = 0xc4850ea8

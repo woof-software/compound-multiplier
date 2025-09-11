@@ -15,7 +15,7 @@ import { expect } from "chai";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { Addressable } from "ethers";
 
-describe("CompoundV3CollateralSwap", function () {
+describe("Allow By Signature", function () {
     let snapshot: SnapshotRestorer;
 
     // Signers

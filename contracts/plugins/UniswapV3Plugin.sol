@@ -14,7 +14,7 @@ contract UniswapV3Plugin is ICometFlashLoanPlugin {
 
     function takeFlashLoan(CallbackData memory data, bytes memory) public {
         bytes memory _data = abi.encode(data);
-        bytes32 flid = keccak256(abi.encode(data, block.timestamp));
+        bytes32 flid = keccak256(_data);
 
         bytes32 slot = SLOT_PLUGIN;
         assembly {
@@ -42,7 +42,7 @@ contract UniswapV3Plugin is ICometFlashLoanPlugin {
         uint256 fee1,
         bytes calldata data
     ) external returns (CallbackData memory _data) {
-        bytes32 flid = keccak256(abi.encode(data, block.timestamp));
+        bytes32 flid = keccak256(data);
         bytes32 flidExpected;
         bytes32 slot = SLOT_PLUGIN;
         assembly {
@@ -61,6 +61,7 @@ contract UniswapV3Plugin is ICometFlashLoanPlugin {
 
         uint256 fee = token0 == _data.asset ? fee0 : (token1 == _data.asset ? fee1 : type(uint256).max);
         require(fee != type(uint256).max, UnauthorizedCallback());
-        _data.debt += fee;
+        _data.debt;
+        _data.fee = fee;
     }
 }
