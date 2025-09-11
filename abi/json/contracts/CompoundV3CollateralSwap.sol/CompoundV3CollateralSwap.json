@@ -14,9 +14,14 @@
                         "type": "address"
                     }
                 ],
-                "internalType": "struct CompoundV3CollateralSwap.Plugin[]",
+                "internalType": "struct ICompoundV3CollateralSwap.Plugin[]",
                 "name": "plugins_",
                 "type": "tuple[]"
+            },
+            {
+                "internalType": "address",
+                "name": "swapRouter_",
+                "type": "address"
             }
         ],
         "stateMutability": "payable",
@@ -107,6 +112,45 @@
         "type": "fallback"
     },
     {
+        "inputs": [],
+        "name": "BPS_DROP_DENOMINATOR",
+        "outputs": [
+            {
+                "internalType": "uint16",
+                "name": "",
+                "type": "uint16"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "FACTOR_SCALE",
+        "outputs": [
+            {
+                "internalType": "uint64",
+                "name": "",
+                "type": "uint64"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "SLOT_ADAPTER",
+        "outputs": [
+            {
+                "internalType": "bytes32",
+                "name": "",
+                "type": "bytes32"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
         "inputs": [
             {
                 "internalType": "bytes4",
@@ -150,52 +194,37 @@
                         "type": "bytes4"
                     },
                     {
-                        "internalType": "address[]",
-                        "name": "fromAssets",
-                        "type": "address[]"
+                        "internalType": "address",
+                        "name": "fromAsset",
+                        "type": "address"
                     },
                     {
-                        "internalType": "uint256[]",
-                        "name": "fromAmounts",
-                        "type": "uint256[]"
+                        "internalType": "uint256",
+                        "name": "fromAmount",
+                        "type": "uint256"
                     },
                     {
-                        "internalType": "address[]",
-                        "name": "toAssets",
-                        "type": "address[]"
+                        "internalType": "address",
+                        "name": "toAsset",
+                        "type": "address"
                     },
                     {
-                        "internalType": "uint256[]",
-                        "name": "flashLoanAmounts",
-                        "type": "uint256[]"
-                    },
-                    {
-                        "internalType": "bytes[]",
+                        "internalType": "bytes",
                         "name": "swapCalldata",
-                        "type": "bytes[]"
+                        "type": "bytes"
                     },
                     {
-                        "internalType": "uint256[]",
-                        "name": "minAmountsOut",
-                        "type": "uint256[]"
+                        "internalType": "uint256",
+                        "name": "minAmountOut",
+                        "type": "uint256"
                     },
                     {
                         "internalType": "uint256",
                         "name": "maxHealthFactorDropBps",
                         "type": "uint256"
-                    },
-                    {
-                        "internalType": "address[]",
-                        "name": "supplementalAssets",
-                        "type": "address[]"
-                    },
-                    {
-                        "internalType": "uint256[]",
-                        "name": "supplementalAmounts",
-                        "type": "uint256[]"
                     }
                 ],
-                "internalType": "struct CompoundV3CollateralSwap.SwapParams",
+                "internalType": "struct ICompoundV3CollateralSwap.SwapParams",
                 "name": "swapParams",
                 "type": "tuple"
             }
@@ -203,6 +232,19 @@
         "name": "swap",
         "outputs": [],
         "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "swapRouter",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
         "type": "function"
     },
     {
@@ -225,52 +267,37 @@
                         "type": "bytes4"
                     },
                     {
-                        "internalType": "address[]",
-                        "name": "fromAssets",
-                        "type": "address[]"
+                        "internalType": "address",
+                        "name": "fromAsset",
+                        "type": "address"
                     },
                     {
-                        "internalType": "uint256[]",
-                        "name": "fromAmounts",
-                        "type": "uint256[]"
+                        "internalType": "uint256",
+                        "name": "fromAmount",
+                        "type": "uint256"
                     },
                     {
-                        "internalType": "address[]",
-                        "name": "toAssets",
-                        "type": "address[]"
+                        "internalType": "address",
+                        "name": "toAsset",
+                        "type": "address"
                     },
                     {
-                        "internalType": "uint256[]",
-                        "name": "flashLoanAmounts",
-                        "type": "uint256[]"
-                    },
-                    {
-                        "internalType": "bytes[]",
+                        "internalType": "bytes",
                         "name": "swapCalldata",
-                        "type": "bytes[]"
+                        "type": "bytes"
                     },
                     {
-                        "internalType": "uint256[]",
-                        "name": "minAmountsOut",
-                        "type": "uint256[]"
+                        "internalType": "uint256",
+                        "name": "minAmountOut",
+                        "type": "uint256"
                     },
                     {
                         "internalType": "uint256",
                         "name": "maxHealthFactorDropBps",
                         "type": "uint256"
-                    },
-                    {
-                        "internalType": "address[]",
-                        "name": "supplementalAssets",
-                        "type": "address[]"
-                    },
-                    {
-                        "internalType": "uint256[]",
-                        "name": "supplementalAmounts",
-                        "type": "uint256[]"
                     }
                 ],
-                "internalType": "struct CompoundV3CollateralSwap.SwapParams",
+                "internalType": "struct ICompoundV3CollateralSwap.SwapParams",
                 "name": "swapParams",
                 "type": "tuple"
             },

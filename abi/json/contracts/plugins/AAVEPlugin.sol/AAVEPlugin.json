@@ -10,17 +10,6 @@
         "type": "error"
     },
     {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "token",
-                "type": "address"
-            }
-        ],
-        "name": "SafeERC20FailedOperation",
-        "type": "error"
-    },
-    {
         "inputs": [],
         "name": "UnauthorizedCallback",
         "type": "error"
@@ -90,12 +79,12 @@
                     },
                     {
                         "internalType": "uint256",
-                        "name": "snapshot",
+                        "name": "fee",
                         "type": "uint256"
                     },
                     {
                         "internalType": "uint256",
-                        "name": "flashLoanFee",
+                        "name": "snapshot",
                         "type": "uint256"
                     },
                     {
@@ -161,12 +150,12 @@
                     },
                     {
                         "internalType": "uint256",
-                        "name": "snapshot",
+                        "name": "fee",
                         "type": "uint256"
                     },
                     {
                         "internalType": "uint256",
-                        "name": "flashLoanFee",
+                        "name": "snapshot",
                         "type": "uint256"
                     },
                     {

@@ -1,5 +1,5 @@
 [
-    "constructor(tuple(address endpoint, address flp)[] plugins_) payable",
+    "constructor(tuple(address endpoint, address flp)[] plugins_, address swapRouter_) payable",
     "error FlashLoanFailed()",
     "error InsufficientAmountOut()",
     "error InvalidAllowedType()",
@@ -12,7 +12,11 @@
     "error UnknownPlugin()",
     "error ZeroAddress()",
     "event PluginRegistered(bytes4 indexed callbackSelector, address indexed pluginEndpoint, address indexed flp)",
+    "function BPS_DROP_DENOMINATOR() view returns (uint16)",
+    "function FACTOR_SCALE() view returns (uint64)",
+    "function SLOT_ADAPTER() view returns (bytes32)",
     "function plugins(bytes4) view returns (address endpoint, address flp)",
-    "function swap(tuple(address user, address comet, bytes4 callbackSelector, address[] fromAssets, uint256[] fromAmounts, address[] toAssets, uint256[] flashLoanAmounts, bytes[] swapCalldata, uint256[] minAmountsOut, uint256 maxHealthFactorDropBps, address[] supplementalAssets, uint256[] supplementalAmounts) swapParams)",
-    "function swapWithApprove(tuple(address user, address comet, bytes4 callbackSelector, address[] fromAssets, uint256[] fromAmounts, address[] toAssets, uint256[] flashLoanAmounts, bytes[] swapCalldata, uint256[] minAmountsOut, uint256 maxHealthFactorDropBps, address[] supplementalAssets, uint256[] supplementalAmounts) swapParams, tuple(uint256 nonce, uint256 expiry, bytes32 r, bytes32 s, address owner, bool isAllowed, address manager, uint8 v) allowParams)"
+    "function swap(tuple(address user, address comet, bytes4 callbackSelector, address fromAsset, uint256 fromAmount, address toAsset, bytes swapCalldata, uint256 minAmountOut, uint256 maxHealthFactorDropBps) swapParams)",
+    "function swapRouter() view returns (address)",
+    "function swapWithApprove(tuple(address user, address comet, bytes4 callbackSelector, address fromAsset, uint256 fromAmount, address toAsset, bytes swapCalldata, uint256 minAmountOut, uint256 maxHealthFactorDropBps) swapParams, tuple(uint256 nonce, uint256 expiry, bytes32 r, bytes32 s, address owner, bool isAllowed, address manager, uint8 v) allowParams)"
 ]

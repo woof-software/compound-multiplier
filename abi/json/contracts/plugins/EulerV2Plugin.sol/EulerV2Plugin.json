@@ -59,12 +59,12 @@
                     },
                     {
                         "internalType": "uint256",
-                        "name": "snapshot",
+                        "name": "fee",
                         "type": "uint256"
                     },
                     {
                         "internalType": "uint256",
-                        "name": "flashLoanFee",
+                        "name": "snapshot",
                         "type": "uint256"
                     },
                     {
@@ -130,12 +130,12 @@
                     },
                     {
                         "internalType": "uint256",
-                        "name": "snapshot",
+                        "name": "fee",
                         "type": "uint256"
                     },
                     {
                         "internalType": "uint256",
-                        "name": "flashLoanFee",
+                        "name": "snapshot",
                         "type": "uint256"
                     },
                     {

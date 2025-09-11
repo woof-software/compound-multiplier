@@ -1,7 +1,6 @@
 [
     "error InvalidFlashLoanData()",
     "error InvalidFlashLoanId()",
-    "error SafeERC20FailedOperation(address)",
     "error UnauthorizedCallback()",
     "function CALLBACK_SELECTOR() view returns (bytes4)",
     "function SLOT_PLUGIN() view returns (bytes32)",
