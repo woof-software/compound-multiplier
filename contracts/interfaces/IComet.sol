@@ -226,4 +226,12 @@ interface IComet {
         bytes32 r,
         bytes32 s
     ) external;
+
+    function version() external view returns (string memory);
+
+    function name() external view returns (string memory);
+
+    function hasPermission(address owner, address manager) external view returns (bool);
+
+    function userNonce(address user) external view returns (uint256);
 }

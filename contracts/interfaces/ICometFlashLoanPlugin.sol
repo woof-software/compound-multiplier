@@ -16,8 +16,10 @@ interface ICometFlashLoanPlugin {
         bytes swapData;
     }
 
+    /// @notice The selector of the callback function
     function CALLBACK_SELECTOR() external view returns (bytes4);
 
+    /// @notice Storage slot to store the flash loan ID
     function SLOT_PLUGIN() external view returns (bytes32);
 
     function takeFlashLoan(CallbackData memory data, bytes memory config) external;
