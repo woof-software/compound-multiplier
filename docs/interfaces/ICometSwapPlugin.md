@@ -2,6 +2,18 @@
 
 ## ICometSwapPlugin
 
+### InvalidAmountOut
+
+```solidity
+error InvalidAmountOut()
+```
+
+### IvaildInput
+
+```solidity
+error IvaildInput()
+```
+
 ### CALLBACK_SELECTOR
 
 ```solidity

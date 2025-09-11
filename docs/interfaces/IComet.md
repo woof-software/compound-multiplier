@@ -643,3 +643,27 @@ function initializeStorage() external
 function allowBySig(address owner, address manager, bool isAllowed, uint256 nonce, uint256 expiry, uint8 v, bytes32 r, bytes32 s) external
 ```
 
+### version
+
+```solidity
+function version() external view returns (string)
+```
+
+### name
+
+```solidity
+function name() external view returns (string)
+```
+
+### hasPermission
+
+```solidity
+function hasPermission(address owner, address manager) external view returns (bool)
+```
+
+### userNonce
+
+```solidity
+function userNonce(address user) external view returns (uint256)
+```
+

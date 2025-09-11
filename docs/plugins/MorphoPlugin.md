@@ -16,6 +16,8 @@ Callback selector: keccak256("onMorphoFlashLoan(uint256 assets, bytes calldata d
 bytes32 SLOT_PLUGIN
 ```
 
+Storage slot to store the flash loan ID
+
 ### takeFlashLoan
 
 ```solidity

@@ -2,12 +2,6 @@
 
 ## ICometMultiplierAdapter
 
-### UnsupportedAsset
-
-```solidity
-error UnsupportedAsset()
-```
-
 ### UnsupportedPriceFeed
 
 ```solidity
@@ -44,6 +38,18 @@ error InvalidPluginSelector()
 error InvalidLeverage()
 ```
 
+### InvalidAmountOut
+
+```solidity
+error InvalidAmountOut()
+```
+
+### InvalidAsset
+
+```solidity
+error InvalidAsset()
+```
+
 ### CallbackFailed
 
 ```solidity
@@ -54,12 +60,6 @@ error CallbackFailed()
 
 ```solidity
 error FlashLoanFailed()
-```
-
-### InsufficiantAmountOut
-
-```solidity
-error InsufficiantAmountOut()
 ```
 
 ### InvalidMode
@@ -80,12 +80,6 @@ error AlreadyExists()
 error NothingToDeleverage()
 ```
 
-### InvalidAmountOut
-
-```solidity
-error InvalidAmountOut()
-```
-
 ### Mode
 
 ```solidity
@@ -104,20 +98,15 @@ struct Plugin {
 }
 ```
 
-### Asset
+### Options
 
 ```solidity
-struct Asset {
+struct Options {
+  address market;
   address flp;
   bytes4 loanSelector;
   bytes4 swapSelector;
 }
-```
-
-### executeMultiplier
-
-```solidity
-function executeMultiplier(address market, address collateralAsset, uint256 initialAmount, uint256 leverage, bytes swapData, uint256 minAmountOut) external
 ```
 
 ### AssetAdded

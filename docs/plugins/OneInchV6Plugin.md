@@ -1,17 +1,5 @@
 # Solidity API
 
-## InvalidAmountOut
-
-```solidity
-error InvalidAmountOut()
-```
-
-## IvaildInput
-
-```solidity
-error IvaildInput()
-```
-
 ## OneInchV6SwapPlugin
 
 ### CALLBACK_SELECTOR

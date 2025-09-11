@@ -2,34 +2,6 @@
 
 ## CompoundV3CollateralSwap
 
-### Plugin
-
-```solidity
-struct Plugin {
-  address endpoint;
-  address flp;
-}
-```
-
-### SwapParams
-
-```solidity
-struct SwapParams {
-  address user;
-  address comet;
-  bytes4 callbackSelector;
-  address[] fromAssets;
-  uint256[] fromAmounts;
-  address[] toAssets;
-  uint256[] flashLoanAmounts;
-  bytes[] swapCalldata;
-  uint256[] minAmountsOut;
-  uint256 maxHealthFactorDropBps;
-  address[] supplementalAssets;
-  uint256[] supplementalAmounts;
-}
-```
-
 ### FACTOR_SCALE
 
 ```solidity
@@ -46,90 +18,48 @@ uint16 BPS_DROP_DENOMINATOR
 
 _The denominator for basis points (BPS), value declares 100%_
 
+### SLOT_ADAPTER
+
+```solidity
+bytes32 SLOT_ADAPTER
+```
+
+### swapRouter
+
+```solidity
+address swapRouter
+```
+
 ### plugins
 
 ```solidity
-mapping(bytes4 => struct CompoundV3CollateralSwap.Plugin) plugins
+mapping(bytes4 => struct ICompoundV3CollateralSwap.Plugin) plugins
 ```
 
 Maps plugins callback selector to the plugin endpoint address
 
-### PluginRegistered
-
-```solidity
-event PluginRegistered(bytes4 callbackSelector, address pluginEndpoint, address flp)
-```
-
-### UnauthorizedCallback
-
-```solidity
-error UnauthorizedCallback()
-```
-
-### ZeroAddress
-
-```solidity
-error ZeroAddress()
-```
-
-### UnknownPlugin
-
-```solidity
-error UnknownPlugin()
-```
-
-### NotSufficientLiquidity
-
-```solidity
-error NotSufficientLiquidity()
-```
-
-### UnknownCallbackSelector
-
-```solidity
-error UnknownCallbackSelector()
-```
-
-### FlashLoanFailed
-
-```solidity
-error FlashLoanFailed()
-```
-
-### InsufficientAmountOut
-
-```solidity
-error InsufficientAmountOut()
-```
-
-### InvalidAmountOut
-
-```solidity
-error InvalidAmountOut()
-```
-
 ### constructor
 
 ```solidity
-constructor(struct CompoundV3CollateralSwap.Plugin[] plugins_) public payable
+constructor(struct ICompoundV3CollateralSwap.Plugin[] plugins_, address swapRouter_) public payable
 ```
 
 ### swap
 
 ```solidity
-function swap(struct CompoundV3CollateralSwap.SwapParams swapParams) external
+function swap(struct ICompoundV3CollateralSwap.SwapParams swapParams) external
 ```
 
 ### swapWithApprove
 
 ```solidity
-function swapWithApprove(struct CompoundV3CollateralSwap.SwapParams swapParams, struct AllowBySig.AllowParams allowParams) external
+function swapWithApprove(struct ICompoundV3CollateralSwap.SwapParams swapParams, struct AllowBySig.AllowParams allowParams) external
 ```
 
-### _swap
+### receive
 
 ```solidity
-function _swap(struct CompoundV3CollateralSwap.SwapParams swapParams) internal
+receive() external payable
 ```
 
 ### fallback
@@ -138,10 +68,10 @@ function _swap(struct CompoundV3CollateralSwap.SwapParams swapParams) internal
 fallback() external payable
 ```
 
-### receive
+### _swap
 
 ```solidity
-receive() external payable
+function _swap(struct ICompoundV3CollateralSwap.SwapParams swapParams) internal
 ```
 
 ### _checkCollateralization
@@ -162,6 +92,18 @@ _Checks if the collateralization is sufficient for the swap._
 | fromAmount | uint256 | The amount of the asset being swapped from. |
 | minAmountOut | uint256 | The minimum amount of the asset being swapped to. |
 | maxHealthFactorDropBps | uint256 | The maximum allowed drop in health factor (in basis points). |
+
+### _tstore
+
+```solidity
+function _tstore(address comet, address fromAsset, uint256 fromAmount) internal
+```
+
+### _tload
+
+```solidity
+function _tload() internal returns (address comet, address fromAsset, uint256 fromAmount)
+```
 
 ### _catch
 

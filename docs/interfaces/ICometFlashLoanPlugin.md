@@ -25,8 +25,8 @@ error InvalidFlashLoanData()
 ```solidity
 struct CallbackData {
   uint256 debt;
+  uint256 fee;
   uint256 snapshot;
-  uint256 flashLoanFee;
   address user;
   address flp;
   address asset;
@@ -40,11 +40,15 @@ struct CallbackData {
 function CALLBACK_SELECTOR() external view returns (bytes4)
 ```
 
+The selector of the callback function
+
 ### SLOT_PLUGIN
 
 ```solidity
 function SLOT_PLUGIN() external view returns (bytes32)
 ```
+
+Storage slot to store the flash loan ID
 
 ### takeFlashLoan
 
