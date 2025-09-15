@@ -24,7 +24,7 @@
                 "type": "address"
             }
         ],
-        "stateMutability": "payable",
+        "stateMutability": "nonpayable",
         "type": "constructor"
     },
     {
@@ -80,6 +80,11 @@
     {
         "inputs": [],
         "name": "ZeroAddress",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "ZeroLength",
         "type": "error"
     },
     {

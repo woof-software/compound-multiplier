@@ -1,7 +1,12 @@
 [
     {
         "inputs": [],
-        "name": "InsufficientOutputAmount",
+        "name": "InvalidAmountOut",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "InvalidInput",
         "type": "error"
     },
     {
@@ -51,12 +56,20 @@
         "type": "event"
     },
     {
-        "inputs": [
+        "inputs": [],
+        "name": "CALLBACK_SELECTOR",
+        "outputs": [
             {
-                "internalType": "address",
-                "name": "router",
-                "type": "address"
-            },
+                "internalType": "bytes4",
+                "name": "",
+                "type": "bytes4"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
             {
                 "internalType": "address",
                 "name": "srcToken",
@@ -79,12 +92,23 @@
             },
             {
                 "internalType": "bytes",
+                "name": "config",
+                "type": "bytes"
+            },
+            {
+                "internalType": "bytes",
                 "name": "swapData",
                 "type": "bytes"
             }
         ],
         "name": "executeSwap",
-        "outputs": [],
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "amountOut",
+                "type": "uint256"
+            }
+        ],
         "stateMutability": "nonpayable",
         "type": "function"
     }
