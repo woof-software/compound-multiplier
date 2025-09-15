@@ -100,7 +100,7 @@ const config: HardhatUserConfig = {
             },
             // Uncomment if "Error: cannot estimate gas; transaction may fail or may require manual gas limit...".
             // gas: 3E7,
-            gasPrice: 8e9
+            gasPrice: 14e9
         },
         // Ethereum:
         ethereum: {
