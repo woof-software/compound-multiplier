@@ -1,5 +1,5 @@
 import { ethers } from "hardhat";
-import { getQuote, exp, ZERO_ADDRESS } from "../helpers/helpers";
+import { getQuote, exp, ZERO_ADDRESS, getSwapPlugins, tokensInstances, getWhales } from "../helpers/helpers";
 import { IERC20, LiFiPlugin } from "../../typechain-types";
 import {
     impersonateAccount,
@@ -17,25 +17,25 @@ describe("LiFi Plugin", function () {
     let lifiPlugin: LiFiPlugin;
     let weth: IERC20;
     let usdc: IERC20;
+    let router: string;
+
+    let config: string;
 
     let wethWhale: HardhatEthersSigner;
 
     const CHAIN = "ETH";
 
-    const WETH = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
-    const USDC = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
-
-    const WETH_WHALE = "0x4d5F47FA6A74757f35C14fD3a6Ef8E3C9BC514E8";
-
     before(async () => {
-        lifiPlugin = await ethers.deployContract("LiFiPlugin", []);
+        ({ wethWhale } = await getWhales());
 
-        await impersonateAccount(WETH_WHALE);
-        wethWhale = await ethers.getSigner(WETH_WHALE);
-        await setBalance(wethWhale.address, exp(1000, 18));
+        const { lifiPlugin: LiFiPlugin } = await getSwapPlugins();
+        lifiPlugin = LiFiPlugin.endpoint;
+        router = LiFiPlugin.router;
 
-        weth = await ethers.getContractAt("IERC20", WETH, wethWhale);
-        usdc = await ethers.getContractAt("IERC20", USDC);
+        config = ethers.AbiCoder.defaultAbiCoder().encode(["address"], [LiFiPlugin.router]);
+
+        ({ weth, usdc } = await tokensInstances());
+        weth = weth.connect(wethWhale);
 
         snapshot = await takeSnapshot();
     });
@@ -59,7 +59,7 @@ describe("LiFi Plugin", function () {
 
             const dstTokenBalanceBefore = await usdc.balanceOf(lifiPlugin);
 
-            await lifiPlugin.executeSwap(data.to, WETH, USDC, fromAmount, minAmountOut, data.data);
+            await lifiPlugin.executeSwap(weth, usdc, fromAmount, minAmountOut, config, data.data);
 
             const dstTokenBalanceAfter = await usdc.balanceOf(lifiPlugin);
             expect(dstTokenBalanceAfter).to.be.gt(dstTokenBalanceBefore);
@@ -81,9 +81,9 @@ describe("LiFi Plugin", function () {
 
             await weth.transfer(lifiPlugin, fromAmount);
 
-            await expect(lifiPlugin.executeSwap(router, WETH, USDC, fromAmount, minAmountOut, data.data))
+            await expect(lifiPlugin.executeSwap(weth, usdc, fromAmount, minAmountOut, config, data.data))
                 .to.emit(lifiPlugin, "SwapExecuted")
-                .withArgs(router, WETH, USDC, anyUint);
+                .withArgs(router, weth, usdc, anyUint);
         });
     });
 
@@ -102,31 +102,31 @@ describe("LiFi Plugin", function () {
 
         it("reverts if srcToken is address(0)", async () => {
             await expect(
-                lifiPlugin.executeSwap(data.to, ZERO_ADDRESS, USDC, fromAmount, minAmountOut, data.data)
+                lifiPlugin.executeSwap(ZERO_ADDRESS, usdc, fromAmount, minAmountOut, config, data.data)
             ).to.be.revertedWithCustomError(lifiPlugin, "ZeroAddress");
         });
 
         it("reverts if dstToken is address(0)", async () => {
             await expect(
-                lifiPlugin.executeSwap(data.to, WETH, ZERO_ADDRESS, fromAmount, minAmountOut, data.data)
+                lifiPlugin.executeSwap(weth, ZERO_ADDRESS, fromAmount, minAmountOut, config, data.data)
             ).to.be.revertedWithCustomError(lifiPlugin, "ZeroAddress");
         });
 
         it("reverts if srcTokens is dstToken", async () => {
             await expect(
-                lifiPlugin.executeSwap(data.to, WETH, WETH, fromAmount, minAmountOut, data.data)
+                lifiPlugin.executeSwap(weth, weth, fromAmount, minAmountOut, config, data.data)
             ).to.be.revertedWithCustomError(lifiPlugin, "InvalidSwapParameters");
         });
 
         it("reverts if amountIn is 0", async () => {
             await expect(
-                lifiPlugin.executeSwap(data.to, WETH, USDC, 0, minAmountOut, data.data)
+                lifiPlugin.executeSwap(weth, usdc, 0, minAmountOut, config, data.data)
             ).to.be.revertedWithCustomError(lifiPlugin, "InvalidSwapParameters");
         });
 
         it("reverts if minAmountOut is 0", async () => {
             await expect(
-                lifiPlugin.executeSwap(data.to, WETH, USDC, fromAmount, 0, data.data)
+                lifiPlugin.executeSwap(weth, usdc, fromAmount, 0, config, data.data)
             ).to.be.revertedWithCustomError(lifiPlugin, "InvalidSwapParameters");
         });
 
@@ -135,9 +135,8 @@ describe("LiFi Plugin", function () {
             await weth.transfer(lifiPlugin, fromAmount);
 
             const invalidCallData = "0x12345678"; // Invalid call data
-            await expect(
-                lifiPlugin.executeSwap(data.to, WETH, USDC, fromAmount, minAmountOut, invalidCallData)
-            ).to.be.revertedWithCustomError(lifiPlugin, "SwapFailed");
+            await expect(lifiPlugin.executeSwap(weth, usdc, fromAmount, minAmountOut, config, invalidCallData)).to.be
+                .reverted;
         });
 
         it("reverts if actual amount out is less than minAmountOut", async () => {
@@ -154,8 +153,8 @@ describe("LiFi Plugin", function () {
             await weth.transfer(lifiPlugin, fromAmount);
 
             await expect(
-                lifiPlugin.executeSwap(quoteData.to, WETH, USDC, fromAmount, unrealisticMinAmountOut, quoteData.data)
-            ).to.be.revertedWithCustomError(lifiPlugin, "InsufficientOutputAmount");
+                lifiPlugin.executeSwap(weth, usdc, fromAmount, unrealisticMinAmountOut, config, quoteData.data)
+            ).to.be.revertedWithCustomError(lifiPlugin, "InvalidAmountOut");
         });
     });
 });

@@ -1,109 +1,63 @@
-import { ethers } from "hardhat";
-import { $CompoundV3CollateralSwap } from "../typechain-types/contracts-exposed/CompoundV3CollateralSwap.sol/$CompoundV3CollateralSwap";
+import { SnapshotRestorer, takeSnapshot } from "@nomicfoundation/hardhat-network-helpers";
 
+import { IComet, IERC20 } from "../../typechain-types";
 import {
-    impersonateAccount,
-    setBalance,
-    SnapshotRestorer,
-    takeSnapshot
-} from "@nomicfoundation/hardhat-network-helpers";
-
-import {
-    BalancerPlugin,
-    CompoundV3CollateralSwap,
-    IComet,
-    ICompoundV3CollateralSwap,
-    IERC20
-} from "../typechain-types";
-import { exp } from "./helpers/helpers";
+    deployCollateralSwap,
+    exp,
+    getComet,
+    getPlugins,
+    getWhales,
+    Plugin,
+    SWAP_ROUTER,
+    tokensInstances
+} from "../helpers/helpers";
 import { expect } from "chai";
+import { $CompoundV3CollateralSwap } from "../../typechain-types/contracts-exposed/CompoundV3CollateralSwap.sol/$CompoundV3CollateralSwap";
 
 describe("CompoundV3CollateralSwap", function () {
     let snapshot: SnapshotRestorer;
 
     // Contracts
     let collateralSwap: $CompoundV3CollateralSwap;
-    let balancerPlugin: BalancerPlugin;
     let comet: IComet;
 
-    // Mainnet data
-    const FLP_BALANCER = "0xBA12222222228d8Ba445958a75a0704d566BF2C8";
-    const SWAP_ROUTER = "0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE";
-    const COMET = "0xA17581A9E3356d9A858b789D68B4d866e593aE94";
-
     // Tokens
-    const WETH = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
-    const WST_ETH = "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0";
-    const RS_ETH = "0xA1290d69c65A6Fe4DF752f95823fae25cB99e5A7";
-    const R_ETH = "0xae78736Cd615f374D3085123A210448E74Fc6393";
-
     let weth: IERC20;
     let wstETH: IERC20;
     let rsETH: IERC20;
     let rETH: IERC20;
 
-    // Whales
-    const WETH_WHALE = "0x4d5F47FA6A74757f35C14fD3a6Ef8E3C9BC514E8";
-    const WST_ETH_WHALE = "0x0B925eD163218f6662a35e0f0371Ac234f9E9371";
-    const RS_ETH_WHALE = "0x2D62109243b87C4bA3EE7bA1D91B0dD0A074d7b1";
-    const R_ETH_WHALE = "0xCc9EE9483f662091a1de4795249E24aC0aC2630f";
-
     before(async () => {
-        const balancerFlashLoan = await ethers.deployContract("BalancerPlugin", []);
-        const balancerPlugin: ICompoundV3CollateralSwap.PluginStruct = {
-            flp: FLP_BALANCER,
-            endpoint: balancerFlashLoan.target
+        const { balancerPlugin, aavePlugin } = await getPlugins();
+
+        const balancerPluginA: Plugin = {
+            endpoint: await balancerPlugin.endpoint.getAddress(),
+            flp: balancerPlugin.flp
+        };
+        const aavePluginA: Plugin = {
+            endpoint: await aavePlugin.endpoint.getAddress(),
+            flp: aavePlugin.flp
         };
 
-        collateralSwap = (await ethers.deployContract("$CompoundV3CollateralSwap", [
-            [balancerPlugin],
-            SWAP_ROUTER
-        ])) as unknown as $CompoundV3CollateralSwap;
+        collateralSwap = await deployCollateralSwap([balancerPluginA, aavePluginA], SWAP_ROUTER);
 
-        comet = await ethers.getContractAt("IComet", COMET);
-        weth = await ethers.getContractAt("IERC20", WETH);
-        wstETH = await ethers.getContractAt("IERC20", WST_ETH);
-        rsETH = await ethers.getContractAt("IERC20", RS_ETH);
-        rETH = await ethers.getContractAt("IERC20", R_ETH);
+        comet = await getComet();
+
+        ({ weth, wstETH, rsETH, rETH } = await tokensInstances());
 
         snapshot = await takeSnapshot();
     });
 
     afterEach(async () => await snapshot.restore());
 
-    describe("deployment", function () {
-        it("test", async function () {
-            const addr = ethers.Wallet.createRandom().address;
-            await collateralSwap.$_tstore(addr, addr, 1);
-
-            const data = await collateralSwap.$_tload.staticCall();
-            console.log(data);
-        });
-    });
-
-    describe("collateralization check", function () {
+    describe("isCollateralized", function () {
         let wethWhale: any, wstETHWhale: any, rsETHWhale: any, rETHWhale: any;
 
         before(async () => {
-            // Setup whales for testing
-            await impersonateAccount(WETH_WHALE);
-            await impersonateAccount(WST_ETH_WHALE);
-            await impersonateAccount(RS_ETH_WHALE);
-            await impersonateAccount(R_ETH_WHALE);
-
-            wethWhale = await ethers.getSigner(WETH_WHALE);
-            wstETHWhale = await ethers.getSigner(WST_ETH_WHALE);
-            rsETHWhale = await ethers.getSigner(RS_ETH_WHALE);
-            rETHWhale = await ethers.getSigner(R_ETH_WHALE);
-
-            // Give ETH to whales for gas
-            await setBalance(WETH_WHALE, exp(100, 18));
-            await setBalance(WST_ETH_WHALE, exp(100, 18));
-            await setBalance(RS_ETH_WHALE, exp(100, 18));
-            await setBalance(R_ETH_WHALE, exp(100, 18));
+            ({ wethWhale, wstETHWhale, rsETHWhale, rETHWhale } = await getWhales());
         });
 
-        describe("valid collateralization scenarios", function () {
+        describe("happy cases (collateralized)", function () {
             it("returns true when swapping with favorable price ratio", async () => {
                 // wstETH price ≈ $1209, rsETH price ≈ $1052
                 // So 1 wstETH should get us about 1.15 rsETH
@@ -113,8 +67,8 @@ describe("CompoundV3CollateralSwap", function () {
 
                 const isCollateralized = await collateralSwap.$_checkCollateralization(
                     comet,
-                    WST_ETH,
-                    RS_ETH,
+                    wstETH,
+                    rsETH,
                     fromAmount,
                     minAmountOut,
                     maxHealthFactorDropBps
@@ -130,8 +84,8 @@ describe("CompoundV3CollateralSwap", function () {
 
                 const isCollateralized = await collateralSwap.$_checkCollateralization(
                     comet,
-                    WST_ETH,
-                    WST_ETH, // Same asset
+                    wstETH,
+                    wstETH, // Same asset
                     fromAmount,
                     minAmountOut,
                     maxHealthFactorDropBps
@@ -147,8 +101,8 @@ describe("CompoundV3CollateralSwap", function () {
 
                 const isCollateralized = await collateralSwap.$_checkCollateralization(
                     comet,
-                    WST_ETH,
-                    RS_ETH,
+                    wstETH,
+                    rsETH,
                     fromAmount,
                     minAmountOut,
                     maxHealthFactorDropBps
@@ -159,8 +113,8 @@ describe("CompoundV3CollateralSwap", function () {
 
             it("returns true with realistic price-adjusted amounts", async () => {
                 // Get actual prices to calculate fair exchange
-                const wstETHInfo = await comet.getAssetInfoByAddress(WST_ETH);
-                const rsETHInfo = await comet.getAssetInfoByAddress(RS_ETH);
+                const wstETHInfo = await comet.getAssetInfoByAddress(wstETH);
+                const rsETHInfo = await comet.getAssetInfoByAddress(rsETH);
                 const wstETHPrice = await comet.getPrice(wstETHInfo.priceFeed);
                 const rsETHPrice = await comet.getPrice(rsETHInfo.priceFeed);
 
@@ -171,8 +125,8 @@ describe("CompoundV3CollateralSwap", function () {
 
                 const isCollateralized = await collateralSwap.$_checkCollateralization(
                     comet,
-                    WST_ETH,
-                    RS_ETH,
+                    wstETH,
+                    rsETH,
                     fromAmount,
                     fairValue,
                     maxHealthFactorDropBps
@@ -182,11 +136,11 @@ describe("CompoundV3CollateralSwap", function () {
             });
         });
 
-        describe("invalid collateralization scenarios", function () {
+        describe("revert cases (not collateralized)", function () {
             it("returns false when swapping to much lower CF asset with strict health factor", async () => {
                 // Get actual collateral factors to ensure we're testing correctly
-                const wstETHInfo = await comet.getAssetInfoByAddress(WST_ETH);
-                const rsETHInfo = await comet.getAssetInfoByAddress(RS_ETH);
+                const wstETHInfo = await comet.getAssetInfoByAddress(wstETH);
+                const rsETHInfo = await comet.getAssetInfoByAddress(rsETH);
 
                 // Swap from higher CF to lower CF with very strict health factor requirement
                 const fromAmount = exp(1, 18);
@@ -196,8 +150,8 @@ describe("CompoundV3CollateralSwap", function () {
                 // This should fail if there's any meaningful difference in CF
                 const isCollateralized = await collateralSwap.$_checkCollateralization(
                     comet,
-                    WST_ETH,
-                    RS_ETH,
+                    wstETH,
+                    rsETH,
                     fromAmount,
                     minAmountOut,
                     maxHealthFactorDropBps
@@ -217,8 +171,8 @@ describe("CompoundV3CollateralSwap", function () {
 
                 const isCollateralized = await collateralSwap.$_checkCollateralization(
                     comet,
-                    WST_ETH,
-                    RS_ETH,
+                    wstETH,
+                    rsETH,
                     fromAmount,
                     minAmountOut,
                     maxHealthFactorDropBps
@@ -234,8 +188,8 @@ describe("CompoundV3CollateralSwap", function () {
 
                 const isCollateralized = await collateralSwap.$_checkCollateralization(
                     comet,
-                    WST_ETH,
-                    RS_ETH,
+                    wstETH,
+                    rsETH,
                     fromAmount,
                     minAmountOut,
                     maxHealthFactorDropBps
@@ -249,8 +203,8 @@ describe("CompoundV3CollateralSwap", function () {
             it("handles zero amounts correctly", async () => {
                 const isCollateralized = await collateralSwap.$_checkCollateralization(
                     comet,
-                    WST_ETH,
-                    RS_ETH,
+                    wstETH,
+                    rsETH,
                     0, // Zero from amount
                     0, // Zero min amount out
                     1000 // 10% max drop
@@ -268,8 +222,8 @@ describe("CompoundV3CollateralSwap", function () {
 
                 const isCollateralized = await collateralSwap.$_checkCollateralization(
                     comet,
-                    WST_ETH,
-                    RS_ETH,
+                    wstETH,
+                    rsETH,
                     fromAmount,
                     minAmountOut,
                     maxHealthFactorDropBps
@@ -286,8 +240,8 @@ describe("CompoundV3CollateralSwap", function () {
                 // Test wstETH -> rETH
                 const wstToReth = await collateralSwap.$_checkCollateralization(
                     comet,
-                    WST_ETH,
-                    R_ETH,
+                    wstETH,
+                    rsETH,
                     fromAmount,
                     minAmountOut,
                     maxHealthFactorDropBps
@@ -296,8 +250,8 @@ describe("CompoundV3CollateralSwap", function () {
                 // Test rETH -> rsETH
                 const rethToRseth = await collateralSwap.$_checkCollateralization(
                     comet,
-                    R_ETH,
-                    RS_ETH,
+                    rETH,
+                    rsETH,
                     fromAmount,
                     minAmountOut,
                     maxHealthFactorDropBps
@@ -306,42 +260,6 @@ describe("CompoundV3CollateralSwap", function () {
                 // Both should have some result (true or false based on actual CF values)
                 expect(typeof wstToReth).to.equal("boolean");
                 expect(typeof rethToRseth).to.equal("boolean");
-            });
-        });
-
-        describe("price and collateral factor analysis", function () {
-            it("logs actual collateral factors and prices for analysis", async () => {
-                const wstETHInfo = await comet.getAssetInfoByAddress(WST_ETH);
-                const rsETHInfo = await comet.getAssetInfoByAddress(RS_ETH);
-                const rETHInfo = await comet.getAssetInfoByAddress(R_ETH);
-
-                const wstETHPrice = await comet.getPrice(wstETHInfo.priceFeed);
-                const rsETHPrice = await comet.getPrice(rsETHInfo.priceFeed);
-                const rETHPrice = await comet.getPrice(rETHInfo.priceFeed);
-
-                console.log("=== Asset Analysis ===");
-                console.log(
-                    `wstETH CF: ${wstETHInfo.borrowCollateralFactor}, Price: ${wstETHPrice}, Scale: ${wstETHInfo.scale}`
-                );
-                console.log(
-                    `rsETH CF: ${rsETHInfo.borrowCollateralFactor}, Price: ${rsETHPrice}, Scale: ${rsETHInfo.scale}`
-                );
-                console.log(
-                    `rETH CF: ${rETHInfo.borrowCollateralFactor}, Price: ${rETHPrice}, Scale: ${rETHInfo.scale}`
-                );
-
-                // Verify the function works with actual mainnet data
-                const testResult = await collateralSwap.$_checkCollateralization(
-                    comet,
-                    WST_ETH,
-                    RS_ETH,
-                    exp(1, 18),
-                    exp(1, 18),
-                    1000 // 10%
-                );
-
-                console.log(`Test result for 1:1 wstETH->rsETH with 10% max drop: ${testResult}`);
-                expect(typeof testResult).to.equal("boolean");
             });
         });
     });

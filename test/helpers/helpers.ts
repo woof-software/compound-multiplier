@@ -2,6 +2,13 @@ import { impersonateAccount, setBalance } from "@nomicfoundation/hardhat-network
 import axios from "axios";
 import { Addressable } from "ethers";
 import { ethers } from "hardhat";
+import { CompoundV3CollateralSwap, ICompoundV3CollateralSwap } from "../../typechain-types";
+import { $CompoundV3CollateralSwap } from "../../typechain-types/contracts-exposed/CompoundV3CollateralSwap.sol/$CompoundV3CollateralSwap";
+
+export interface Plugin {
+    endpoint: string;
+    flp: string;
+}
 
 export { ethers };
 
@@ -10,25 +17,46 @@ export const ZERO_ADDRESS = ethers.ZeroAddress;
 // Mainnet data
 export const AAVE_POOL = "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2";
 export const BALANCER_VAULT = "0xBA12222222228d8Ba445958a75a0704d566BF2C8";
+export const SWAP_ROUTER = "0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE";
+export const COMET = "0xA17581A9E3356d9A858b789D68B4d866e593aE94";
 
 // Mainnet Tokens
 export const USDC = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
+export const WETH = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
+export const WST_ETH = "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0";
+export const RS_ETH = "0xA1290d69c65A6Fe4DF752f95823fae25cB99e5A7";
+export const R_ETH = "0xae78736Cd615f374D3085123A210448E74Fc6393";
 
 // Mainnet Whales
 export const USDC_WHALE = "0xEe7aE85f2Fe2239E27D9c1E23fFFe168D63b4055";
+export const WETH_WHALE = "0x4d5F47FA6A74757f35C14fD3a6Ef8E3C9BC514E8";
+export const WST_ETH_WHALE = "0x0B925eD163218f6662a35e0f0371Ac234f9E9371";
+export const RS_ETH_WHALE = "0x2D62109243b87C4bA3EE7bA1D91B0dD0A074d7b1";
+export const R_ETH_WHALE = "0xCc9EE9483f662091a1de4795249E24aC0aC2630f";
 
 export async function getWhales() {
-    await impersonateAccount(USDC_WHALE);
-    await setBalance(USDC_WHALE, exp(10000, 18));
+    const whales = [USDC_WHALE, WETH_WHALE, WST_ETH_WHALE, RS_ETH_WHALE, R_ETH_WHALE];
+    for (const whale of whales) {
+        await impersonateAccount(whale);
+        await setBalance(whale, exp(1000, 18));
+    }
 
     return {
-        usdcWhale: await ethers.getSigner(USDC_WHALE)
+        usdcWhale: await ethers.getSigner(USDC_WHALE),
+        wethWhale: await ethers.getSigner(WETH_WHALE),
+        wstETHWhale: await ethers.getSigner(WST_ETH_WHALE),
+        rsETHWhale: await ethers.getSigner(RS_ETH_WHALE),
+        rETHWhale: await ethers.getSigner(R_ETH_WHALE)
     };
 }
 
 export async function tokensInstances() {
     return {
-        usdc: await ethers.getContractAt("IERC20", USDC)
+        usdc: await ethers.getContractAt("IERC20", USDC),
+        weth: await ethers.getContractAt("IERC20", WETH),
+        wstETH: await ethers.getContractAt("IERC20", WST_ETH),
+        rsETH: await ethers.getContractAt("IERC20", RS_ETH),
+        rETH: await ethers.getContractAt("IERC20", R_ETH)
     };
 }
 
@@ -37,6 +65,26 @@ export async function getPlugins() {
         aavePlugin: { endpoint: await ethers.deployContract("AAVEPlugin", []), flp: AAVE_POOL },
         balancerPlugin: { endpoint: await ethers.deployContract("BalancerPlugin", []), flp: BALANCER_VAULT }
     };
+}
+
+export async function getComet() {
+    return await ethers.getContractAt("IComet", COMET);
+}
+
+export async function getSwapPlugins() {
+    return {
+        lifiPlugin: { endpoint: await ethers.deployContract("LiFiPlugin", []), router: SWAP_ROUTER }
+    };
+}
+
+export async function deployCollateralSwap(
+    flashLoanPlugins: Plugin[],
+    swapRouter: string
+): Promise<$CompoundV3CollateralSwap> {
+    return (await ethers.deployContract("$CompoundV3CollateralSwap", [
+        flashLoanPlugins,
+        swapRouter
+    ])) as unknown as $CompoundV3CollateralSwap;
 }
 
 /*//////////////////////////////////////////////////////////////
