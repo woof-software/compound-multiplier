@@ -24,27 +24,18 @@ contract CompoundV3CollateralSwap is AllowBySig, ICompoundV3CollateralSwap {
     /// @notice Maps plugins callback selector to the plugin endpoint address
     mapping(bytes4 => Plugin) public plugins;
 
-    constructor(Plugin[] memory plugins_, address swapRouter_) payable {
+    constructor(Plugin[] memory plugins_, address swapRouter_) {
         uint256 pluginsLength = plugins_.length;
-        require(pluginsLength != 0, ZeroAddress()); // TODO: change error
+        require(pluginsLength != 0, ZeroLength());
+        require(swapRouter_ != address(0), ZeroAddress());
 
+        swapRouter = swapRouter_;
         for (uint256 i = 0; i < pluginsLength; i++) {
             bytes4 pluginSelector = ICometFlashLoanPlugin(plugins_[i].endpoint).CALLBACK_SELECTOR();
             plugins[pluginSelector] = plugins_[i];
 
             emit PluginRegistered(pluginSelector, plugins_[i].endpoint, plugins_[i].flp);
         }
-        require(swapRouter_ != address(0), ZeroAddress());
-        swapRouter = swapRouter_;
-    }
-
-    function swap(SwapParams calldata swapParams) external {
-        _swap(swapParams);
-    }
-
-    function swapWithApprove(SwapParams calldata swapParams, AllowParams calldata allowParams) external {
-        _allowBySig(allowParams, swapParams.comet);
-        _swap(swapParams);
     }
 
     receive() external payable {
@@ -100,16 +91,29 @@ contract CompoundV3CollateralSwap is AllowBySig, ICompoundV3CollateralSwap {
     }
 
     /*//////////////////////////////////////////////////////////////
+                                EXTERNAL
+    //////////////////////////////////////////////////////////////*/
+
+    function swap(SwapParams calldata swapParams) external {
+        _swap(swapParams);
+    }
+
+    function swapWithApprove(SwapParams calldata swapParams, AllowParams calldata allowParams) external {
+        _allowBySig(allowParams, swapParams.comet);
+        _swap(swapParams);
+    }
+
+    /*//////////////////////////////////////////////////////////////
                                 INTERNAL
     //////////////////////////////////////////////////////////////*/
 
     function _swap(SwapParams calldata swapParams) internal {
+        Plugin memory plugin = plugins[swapParams.callbackSelector];
         address user = swapParams.user;
         address comet = swapParams.comet;
         address toAsset = swapParams.toAsset;
 
-        require(user != address(0) || comet != address(0), ZeroAddress());
-
+        require(user != address(0) && comet != address(0), ZeroAddress());
         require(
             _checkCollateralization(
                 IComet(comet),
@@ -121,11 +125,7 @@ contract CompoundV3CollateralSwap is AllowBySig, ICompoundV3CollateralSwap {
             ),
             NotSufficientLiquidity()
         );
-
-        Plugin memory plugin = plugins[swapParams.callbackSelector];
         require(plugin.endpoint != address(0), UnknownPlugin());
-
-        address asset = toAsset;
 
         _tstore(comet, swapParams.fromAsset, swapParams.fromAmount);
 
@@ -134,22 +134,17 @@ contract CompoundV3CollateralSwap is AllowBySig, ICompoundV3CollateralSwap {
                 ICometFlashLoanPlugin.takeFlashLoan.selector,
                 ICometFlashLoanPlugin.CallbackData({
                     debt: swapParams.minAmountOut,
-                    snapshot: IERC20(asset).balanceOf(address(this)),
+                    snapshot: IERC20(toAsset).balanceOf(address(this)),
                     fee: 0,
                     user: user,
                     flp: plugin.flp,
-                    asset: asset,
+                    asset: toAsset,
                     swapData: swapParams.swapCalldata
                 }),
                 "" // config
             )
         );
-        require(ok, FlashLoanFailed());
-
-        assembly {
-            mstore(0x00, 1)
-            return(0x00, 0x20)
-        }
+        _catch(ok);
     }
 
     /**

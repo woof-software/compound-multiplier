@@ -29,6 +29,7 @@ interface ICompoundV3CollateralSwap {
     error FlashLoanFailed();
     error InsufficientAmountOut();
     error InvalidAmountOut();
+    error ZeroLength();
 
     function swapRouter() external view returns (address);
 
