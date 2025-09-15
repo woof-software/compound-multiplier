@@ -41,19 +41,7 @@ Maps plugins callback selector to the plugin endpoint address
 ### constructor
 
 ```solidity
-constructor(struct ICompoundV3CollateralSwap.Plugin[] plugins_, address swapRouter_) public payable
-```
-
-### swap
-
-```solidity
-function swap(struct ICompoundV3CollateralSwap.SwapParams swapParams) external
-```
-
-### swapWithApprove
-
-```solidity
-function swapWithApprove(struct ICompoundV3CollateralSwap.SwapParams swapParams, struct AllowBySig.AllowParams allowParams) external
+constructor(struct ICompoundV3CollateralSwap.Plugin[] plugins_, address swapRouter_) public
 ```
 
 ### receive
@@ -66,6 +54,18 @@ receive() external payable
 
 ```solidity
 fallback() external payable
+```
+
+### swap
+
+```solidity
+function swap(struct ICompoundV3CollateralSwap.SwapParams swapParams) external
+```
+
+### swapWithApprove
+
+```solidity
+function swapWithApprove(struct ICompoundV3CollateralSwap.SwapParams swapParams, struct AllowBySig.AllowParams allowParams) external
 ```
 
 ### _swap

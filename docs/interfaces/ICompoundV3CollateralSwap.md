@@ -81,6 +81,12 @@ error InsufficientAmountOut()
 error InvalidAmountOut()
 ```
 
+### ZeroLength
+
+```solidity
+error ZeroLength()
+```
+
 ### swapRouter
 
 ```solidity
