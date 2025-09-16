@@ -105,7 +105,10 @@ contract CometMultiplierAdapter is ReentrancyGuard, ICometMultiplierAdapter {
         require(repayAmount > 0, NothingToDeleverage());
 
         address baseAsset = comet.baseToken();
-        uint256 loanDebt = Math.min(repayAmount, minAmountOut);
+
+        uint256 loanDebt = _convert(comet, collateral, baseAmount, false);
+        loanDebt = Math.min(loanDebt, repayAmount);
+
         require(loanDebt > 0, InvalidLeverage());
 
         _tstore(baseAmount, opts.market, collateral, minAmountOut, opts.swapSelector, Mode.WITHDRAW);
@@ -159,8 +162,8 @@ contract CometMultiplierAdapter is ReentrancyGuard, ICometMultiplierAdapter {
         if (take == 0) revert NothingToDeleverage();
 
         IComet(market).withdrawFrom(data.user, address(this), collateral, take);
-
-        if (_swap(collateral, data.asset, take, minAmountOut, swapSelector, data.swapData) < data.debt) {
+        uint256 amountOut = _swap(collateral, data.asset, take, minAmountOut, swapSelector, data.swapData);
+        if (amountOut < data.debt) {
             revert InvalidAmountOut();
         }
 
@@ -240,7 +243,12 @@ contract CometMultiplierAdapter is ReentrancyGuard, ICometMultiplierAdapter {
         return Math.mulDiv(initialValueBase, leverage - LEVERAGE_PRECISION, LEVERAGE_PRECISION);
     }
 
-    function _unlocked(IComet comet, address col, uint256 repayBase) internal view returns (uint128) {
+    function _convert(
+        IComet comet,
+        address col,
+        uint256 amount,
+        bool debtToCollateral
+    ) internal view returns (uint256) {
         IComet.AssetInfo memory info = comet.getAssetInfoByAddress(col);
         uint256 price = comet.getPrice(info.priceFeed);
         uint64 collateralFactor = info.borrowCollateralFactor;
@@ -248,9 +256,12 @@ contract CometMultiplierAdapter is ReentrancyGuard, ICometMultiplierAdapter {
         uint256 num = price * comet.baseScale() * uint256(collateralFactor);
         uint256 den = _scale(info.priceFeed, uint256(info.scale)) * 1e18;
 
-        uint256 unlocked = Math.mulDiv(repayBase, den, num);
-        if (unlocked > type(uint128).max) unlocked = type(uint128).max;
-        return uint128(unlocked);
+        if (debtToCollateral) {
+            uint256 unlocked = Math.mulDiv(amount, den, num);
+            return unlocked > type(uint128).max ? type(uint128).max : unlocked;
+        } else {
+            return Math.mulDiv(amount, num, den);
+        }
     }
 
     function _converted(
@@ -260,7 +271,7 @@ contract CometMultiplierAdapter is ReentrancyGuard, ICometMultiplierAdapter {
         uint256 amount,
         uint128 collateralBalance
     ) private view returns (uint128) {
-        uint256 unlocked = _unlocked(IComet(market), collateral, debt);
+        uint256 unlocked = _convert(IComet(market), collateral, debt, true);
         uint256 maxAmount = (amount == type(uint256).max)
             ? collateralBalance
             : Math.min(amount, uint256(collateralBalance));

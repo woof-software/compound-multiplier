@@ -14,6 +14,8 @@ export async function get1inchSwapData(
   const res = await axios.get(url, {
     headers: { Authorization: `Bearer ${apiKey}` },
   });
+
+  await new Promise((resolve) => setTimeout(resolve, 1000));
   return res.data.tx.data;
 }
 
@@ -29,5 +31,6 @@ export async function get1inchQuote(
     headers: { Authorization: `Bearer ${apiKey}` },
   });
 
+  await new Promise((resolve) => setTimeout(resolve, 1000));
   return res.data.dstAmount;
 }
