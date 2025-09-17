@@ -1,0 +1,291 @@
+[
+    {
+        "inputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "address",
+                        "name": "endpoint",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "bytes",
+                        "name": "config",
+                        "type": "bytes"
+                    }
+                ],
+                "internalType": "struct ICometMultiplierAdapter.Plugin[]",
+                "name": "_plugins",
+                "type": "tuple[]"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "constructor"
+    },
+    {
+        "inputs": [],
+        "name": "AlreadyExists",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "CallbackFailed",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "FlashLoanFailed",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "InvalidAmountOut",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "InvalidAsset",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "InvalidLeverage",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "InvalidMode",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "InvalidPluginSelector",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "NothingToDeleverage",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "ReentrancyGuardReentrantCall",
+        "type": "error"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            }
+        ],
+        "name": "SafeERC20FailedOperation",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "UnknownCallbackSelector",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "UnknownMarket",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "UnknownSwapPlugin",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "UnsupportedPriceFeed",
+        "type": "error"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "collateralAsset",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "bytes4",
+                "name": "pluginSelector",
+                "type": "bytes4"
+            }
+        ],
+        "name": "AssetAdded",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "plugin",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "bytes4",
+                "name": "pluginSelector",
+                "type": "bytes4"
+            }
+        ],
+        "name": "PluginAdded",
+        "type": "event"
+    },
+    {
+        "stateMutability": "payable",
+        "type": "fallback"
+    },
+    {
+        "inputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "address",
+                        "name": "market",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "flp",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "bytes4",
+                        "name": "loanSelector",
+                        "type": "bytes4"
+                    },
+                    {
+                        "internalType": "bytes4",
+                        "name": "swapSelector",
+                        "type": "bytes4"
+                    }
+                ],
+                "internalType": "struct ICometMultiplierAdapter.Options",
+                "name": "opts",
+                "type": "tuple"
+            },
+            {
+                "internalType": "address",
+                "name": "collateral",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "collateralAmount",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "leverage",
+                "type": "uint256"
+            },
+            {
+                "internalType": "bytes",
+                "name": "swapData",
+                "type": "bytes"
+            },
+            {
+                "internalType": "uint256",
+                "name": "minAmountOut",
+                "type": "uint256"
+            }
+        ],
+        "name": "executeMultiplier",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bytes4",
+                "name": "",
+                "type": "bytes4"
+            }
+        ],
+        "name": "plugins",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "endpoint",
+                "type": "address"
+            },
+            {
+                "internalType": "bytes",
+                "name": "config",
+                "type": "bytes"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "address",
+                        "name": "market",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "flp",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "bytes4",
+                        "name": "loanSelector",
+                        "type": "bytes4"
+                    },
+                    {
+                        "internalType": "bytes4",
+                        "name": "swapSelector",
+                        "type": "bytes4"
+                    }
+                ],
+                "internalType": "struct ICometMultiplierAdapter.Options",
+                "name": "opts",
+                "type": "tuple"
+            },
+            {
+                "internalType": "address",
+                "name": "collateral",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "baseAmount",
+                "type": "uint256"
+            },
+            {
+                "internalType": "bytes",
+                "name": "swapData",
+                "type": "bytes"
+            },
+            {
+                "internalType": "uint256",
+                "name": "minAmountOut",
+                "type": "uint256"
+            }
+        ],
+        "name": "withdrawMultiplier",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "stateMutability": "payable",
+        "type": "receive"
+    }
+]

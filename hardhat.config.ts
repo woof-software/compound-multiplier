@@ -97,7 +97,7 @@ const config: HardhatUserConfig = {
             forking: {
                 url: envs.FORKING_URL ?? "",
                 enabled: enableForking
-            },
+            }
             // Uncomment if "Error: cannot estimate gas; transaction may fail or may require manual gas limit...".
             // gas: 3E7,
             // gasPrice: 8E9
@@ -106,7 +106,7 @@ const config: HardhatUserConfig = {
         ethereum: {
             chainId: 1,
             url: envs.ETHEREUM_URL ?? "",
-            accounts: [...ethereumMainnetKeys],
+            accounts: [...ethereumMainnetKeys]
         },
         sepolia: {
             chainId: 11155111,
@@ -147,7 +147,7 @@ const config: HardhatUserConfig = {
     },
     mocha: {
         timeout: 100000,
-        parallel: !mochaSerial,
+        //parallel: !mochaSerial,
         bail: mochaBail
     },
     docgen: {

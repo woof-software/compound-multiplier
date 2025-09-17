@@ -1,0 +1,23 @@
+[
+    "constructor(tuple(address endpoint, bytes config)[] _plugins)",
+    "error AlreadyExists()",
+    "error CallbackFailed()",
+    "error FlashLoanFailed()",
+    "error InvalidAmountOut()",
+    "error InvalidAsset()",
+    "error InvalidLeverage()",
+    "error InvalidMode()",
+    "error InvalidPluginSelector()",
+    "error NothingToDeleverage()",
+    "error ReentrancyGuardReentrantCall()",
+    "error SafeERC20FailedOperation(address token)",
+    "error UnknownCallbackSelector()",
+    "error UnknownMarket()",
+    "error UnknownSwapPlugin()",
+    "error UnsupportedPriceFeed()",
+    "event AssetAdded(address indexed collateralAsset, bytes4 pluginSelector)",
+    "event PluginAdded(address indexed plugin, bytes4 pluginSelector)",
+    "function executeMultiplier(tuple(address market, address flp, bytes4 loanSelector, bytes4 swapSelector) opts, address collateral, uint256 collateralAmount, uint256 leverage, bytes swapData, uint256 minAmountOut)",
+    "function plugins(bytes4) view returns (address endpoint, bytes config)",
+    "function withdrawMultiplier(tuple(address market, address flp, bytes4 loanSelector, bytes4 swapSelector) opts, address collateral, uint256 baseAmount, bytes swapData, uint256 minAmountOut)"
+]
