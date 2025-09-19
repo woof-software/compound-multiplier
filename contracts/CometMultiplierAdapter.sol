@@ -94,7 +94,7 @@ contract CometMultiplierAdapter is ReentrancyGuard, ICometMultiplierAdapter {
     function withdrawMultiplier(
         Options memory opts,
         address collateral,
-        uint256 baseAmount,
+        uint256 collateralAmount,
         bytes calldata swapData,
         uint256 minAmountOut
     ) external nonReentrant {
@@ -106,12 +106,12 @@ contract CometMultiplierAdapter is ReentrancyGuard, ICometMultiplierAdapter {
 
         address baseAsset = comet.baseToken();
 
-        uint256 loanDebt = _convert(comet, collateral, baseAmount, false);
+        uint256 loanDebt = _convert(comet, collateral, collateralAmount, false);
         loanDebt = Math.min(loanDebt, repayAmount);
 
         require(loanDebt > 0, InvalidLeverage());
 
-        _tstore(baseAmount, opts.market, collateral, minAmountOut, opts.swapSelector, Mode.WITHDRAW);
+        _tstore(collateralAmount, opts.market, collateral, minAmountOut, opts.swapSelector, Mode.WITHDRAW);
 
         _loan(
             loanPlugin.endpoint,

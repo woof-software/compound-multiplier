@@ -74,6 +74,14 @@ describe("Morpho Plugin (updated core)", function () {
     });
 
     before(async () => {
+        await ethers.provider.send("hardhat_reset", [
+            {
+                forking: {
+                    jsonRpcUrl: process.env.FORKING_URL!
+                }
+            }
+        ]);
+
         [owner, user, user2, user3] = await ethers.getSigners();
 
         weth = await ethers.getContractAt("IERC20", WETH_ADDRESS);
