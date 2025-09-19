@@ -667,3 +667,26 @@ function hasPermission(address owner, address manager) external view returns (bo
 function userNonce(address user) external view returns (uint256)
 ```
 
+### allow
+
+```solidity
+function allow(address manager, bool isAllowed) external
+```
+
+### UserCollateral
+
+```solidity
+struct UserCollateral {
+  uint128 balance;
+  uint128 _reserved;
+}
+```
+
+### userCollateral
+
+```solidity
+function userCollateral(address user, address asset) external view returns (struct IComet.UserCollateral)
+```
+
+Mapping of users to collateral data per collateral asset
+
