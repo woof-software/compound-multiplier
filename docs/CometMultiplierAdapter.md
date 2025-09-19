@@ -53,7 +53,7 @@ function executeMultiplier(struct ICometMultiplierAdapter.Options opts, address 
 ### withdrawMultiplier
 
 ```solidity
-function withdrawMultiplier(struct ICometMultiplierAdapter.Options opts, address collateral, uint256 baseAmount, bytes swapData, uint256 minAmountOut) external
+function withdrawMultiplier(struct ICometMultiplierAdapter.Options opts, address collateral, uint256 collateralAmount, bytes swapData, uint256 minAmountOut) external
 ```
 
 ### _swap
