@@ -6,6 +6,7 @@ import {
     exp,
     getComet,
     getPlugins,
+    getSwapPlugins,
     getWhales,
     Plugin,
     SWAP_ROUTER,
@@ -39,7 +40,9 @@ describe("CompoundV3CollateralSwap", function () {
             flp: aavePlugin.flp
         };
 
-        collateralSwap = await deployCollateralSwap([balancerPluginA, aavePluginA], SWAP_ROUTER);
+        const { lifiPlugin } = await getSwapPlugins();
+
+        collateralSwap = await deployCollateralSwap([balancerPluginA, aavePluginA], SWAP_ROUTER, lifiPlugin.endpoint);
 
         comet = await getComet();
 
