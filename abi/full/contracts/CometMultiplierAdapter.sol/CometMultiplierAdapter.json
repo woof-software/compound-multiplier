@@ -19,5 +19,5 @@
     "event PluginAdded(address indexed plugin, bytes4 pluginSelector)",
     "function executeMultiplier(tuple(address market, address flp, bytes4 loanSelector, bytes4 swapSelector) opts, address collateral, uint256 collateralAmount, uint256 leverage, bytes swapData, uint256 minAmountOut)",
     "function plugins(bytes4) view returns (address endpoint, bytes config)",
-    "function withdrawMultiplier(tuple(address market, address flp, bytes4 loanSelector, bytes4 swapSelector) opts, address collateral, uint256 baseAmount, bytes swapData, uint256 minAmountOut)"
+    "function withdrawMultiplier(tuple(address market, address flp, bytes4 loanSelector, bytes4 swapSelector) opts, address collateral, uint256 collateralAmount, bytes swapData, uint256 minAmountOut)"
 ]

@@ -265,7 +265,7 @@
             },
             {
                 "internalType": "uint256",
-                "name": "baseAmount",
+                "name": "collateralAmount",
                 "type": "uint256"
             },
             {

@@ -1,0 +1,73 @@
+[
+    {
+        "inputs": [],
+        "name": "InvalidAmountOut",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "IvaildInput",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "CALLBACK_SELECTOR",
+        "outputs": [
+            {
+                "internalType": "bytes4",
+                "name": "",
+                "type": "bytes4"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "srcToken",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "dstToken",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "amountIn",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "minAmountOut",
+                "type": "uint256"
+            },
+            {
+                "internalType": "bytes",
+                "name": "config",
+                "type": "bytes"
+            },
+            {
+                "internalType": "bytes",
+                "name": "",
+                "type": "bytes"
+            }
+        ],
+        "name": "executeSwap",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "amountOut",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "stateMutability": "payable",
+        "type": "receive"
+    }
+]
