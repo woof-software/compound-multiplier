@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import { IComet } from "./interfaces/IComet.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
-import { ICometFlashLoanPlugin } from "./interfaces/ICometFlashLoanPlugin.sol";
-import { ILiFiPlugin } from "./interfaces/ILiFiPlugin.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 import { AllowBySig } from "./base/AllowBySig.sol";
+
+import { IComet } from "./interfaces/IComet.sol";
+import { ICometFlashLoanPlugin } from "./interfaces/ICometFlashLoanPlugin.sol";
 import { ICompoundV3CollateralSwap } from "./interfaces/ICompoundV3CollateralSwap.sol";
+import { ICometSwapPlugin } from "./interfaces/ICometSwapPlugin.sol";
 
 contract CompoundV3CollateralSwap is AllowBySig, ICompoundV3CollateralSwap {
     /// @dev The scale for factors
@@ -16,20 +18,32 @@ contract CompoundV3CollateralSwap is AllowBySig, ICompoundV3CollateralSwap {
     /// @dev The denominator for basis points (BPS), value declares 100%
     uint16 public constant BPS_DROP_DENOMINATOR = 10_000;
 
+    /// @dev Storage slot for temporary adapter data
     bytes32 public constant SLOT_ADAPTER = bytes32(uint256(keccak256("CompoundV3CollateralSwap.adapter")) - 1);
 
     /// @inheritdoc ICompoundV3CollateralSwap
     address public immutable swapRouter;
 
+    /// @inheritdoc ICompoundV3CollateralSwap
+    address public immutable swapPlugin;
+
     /// @notice Maps plugins callback selector to the plugin endpoint address
     mapping(bytes4 => Plugin) public plugins;
 
-    constructor(Plugin[] memory plugins_, address swapRouter_) {
+    /**
+     * @notice Constructor
+     * @param plugins_ Array of plugin structs
+     * @param swapRouter_ Address of the swap router
+     * @param swapPlugin_ Address of the swap plugin
+     * @dev Emits PluginRegistered event for each registered plugin
+     */
+    constructor(Plugin[] memory plugins_, address swapRouter_, address swapPlugin_) {
         uint256 pluginsLength = plugins_.length;
         require(pluginsLength != 0, ZeroLength());
-        require(swapRouter_ != address(0), ZeroAddress());
+        require(swapRouter_ != address(0) && swapPlugin_ != address(0), ZeroAddress());
 
         swapRouter = swapRouter_;
+        swapPlugin = swapPlugin_;
         for (uint256 i = 0; i < pluginsLength; i++) {
             bytes4 pluginSelector = ICometFlashLoanPlugin(plugins_[i].endpoint).CALLBACK_SELECTOR();
             plugins[pluginSelector] = plugins_[i];
@@ -38,50 +52,90 @@ contract CompoundV3CollateralSwap is AllowBySig, ICompoundV3CollateralSwap {
         }
     }
 
+    /**
+     * @notice Prevents the contract from receiving ETH
+     */
     receive() external payable {
         revert("Cannot receive ETH");
     }
 
-    fallback() external payable {
+    /**
+     * @notice Handles flash loan callbacks from registered plugins to execute collateral swaps
+     * @dev This fallback function is the core of the collateral swap mechanism. It receives callbacks
+     *      from flash loan providers through registered plugins and executes a complete collateral swap:
+     *      1. Validates the callback is from an authorized source
+     *      2. Decodes the callback data and retrieves swap parameters
+     *      3. Supplies the borrowed asset to Comet on behalf of the user
+     *      4. Withdraws the user's collateral to be swapped
+     *      5. Swaps the withdrawn collateral for the borrowed asset to repay the loan
+     *      6. Supplies any remaining dust amounts back to the user
+     *      7. Repays the flash loan with fees
+     *
+     * The function uses delegate calls to plugin endpoints for modularity and gas efficiency.
+     * Temporary storage (tstore/tload) is used to pass swap parameters between function calls.
+     *
+     * @custom:security This function validates the caller is an authorized flash loan provider
+     * @custom:security Uses tstore/tload for temporary parameter storage to avoid storage slot collisions
+     * @custom:security Validates exact token balance requirements before and after operations
+     * @custom:returns Returns uint256(1) to signal successful completion (required by some flash loan providers like AAVE)
+     *
+     * Requirements:
+     * - msg.sig must correspond to a registered plugin callback selector
+     * - msg.sender must be the registered flash loan provider for the callback selector
+     * - The contract must receive exactly the expected amount of borrowed tokens
+     * - The swap must produce enough tokens to repay the flash loan plus fees
+     * - All delegate calls to plugins must succeed
+     *
+     * Reverts:
+     * - UnknownCallbackSelector: If msg.sig doesn't match any registered plugin
+     * - UnauthorizedCallback: If msg.sender is not the authorized flash loan provider
+     * - InvalidAmountOut: If token balances don't match expectations after operations
+     * - May revert with plugin-specific errors if delegate calls fail
+     */
+    fallback() external {
         address endpoint = plugins[msg.sig].endpoint;
         require(endpoint != address(0), UnknownCallbackSelector());
+        require(msg.sender == plugins[msg.sig].flp, UnauthorizedCallback());
 
         (bool success, bytes memory payload) = endpoint.delegatecall(msg.data);
         _catch(success);
 
         ICometFlashLoanPlugin.CallbackData memory data = abi.decode(payload, (ICometFlashLoanPlugin.CallbackData));
+        address asset = data.asset;
+        address user = data.user;
+        uint256 debt = data.debt;
 
-        require(IERC20(data.asset).balanceOf(address(this)) == data.snapshot + data.debt, InvalidAmountOut());
+        require(IERC20(asset).balanceOf(address(this)) == data.snapshot + debt, InvalidAmountOut());
 
         (address comet, address fromAsset, uint256 fromAmount) = _tload();
 
-        IComet(comet).supplyTo(data.user, data.asset, data.debt);
-        IComet(comet).withdrawFrom(data.user, address(this), fromAsset, fromAmount);
+        IERC20(asset).approve(comet, debt);
+        IComet(comet).supplyTo(user, asset, debt);
+        IComet(comet).withdrawFrom(user, address(this), fromAsset, fromAmount);
 
-        (success, ) = endpoint.delegatecall(
+        uint256 repayAmount = debt + data.fee;
+
+        // Swap withdrawn asset to repay the flash loan
+        (success, ) = swapPlugin.delegatecall(
             abi.encodeWithSelector(
-                ILiFiPlugin.executeSwap.selector,
-                swapRouter,
+                ICometSwapPlugin.executeSwap.selector,
                 fromAsset,
-                data.asset,
-                IERC20(fromAsset).balanceOf(address(this)),
-                data.debt + data.fee,
+                asset,
+                fromAmount,
+                repayAmount,
+                abi.encode(swapRouter),
                 data.swapData
-            )
-        );
-
-        (success, ) = endpoint.delegatecall(
-            abi.encodeWithSelector(
-                ICometFlashLoanPlugin.repayFlashLoan.selector,
-                data.flp,
-                data.asset,
-                data.debt + data.fee
             )
         );
         _catch(success);
 
-        // Note
-        // check if there any dust of tokens on the contract
+        _supplyDust(user, fromAsset, comet, 0);
+        _supplyDust(user, asset, comet, repayAmount);
+
+        (success, ) = endpoint.delegatecall(
+            abi.encodeWithSelector(ICometFlashLoanPlugin.repayFlashLoan.selector, data.flp, asset, repayAmount)
+        );
+        _catch(success);
 
         // Note Return 1 to the caller to signal success (required by AAVE)
         assembly {
@@ -109,39 +163,41 @@ contract CompoundV3CollateralSwap is AllowBySig, ICompoundV3CollateralSwap {
 
     function _swap(SwapParams calldata swapParams) internal {
         Plugin memory plugin = plugins[swapParams.callbackSelector];
-        address user = swapParams.user;
         address comet = swapParams.comet;
         address toAsset = swapParams.toAsset;
+        address fromAsset = swapParams.fromAsset;
+        uint256 minAmountOut = swapParams.minAmountOut;
+        uint256 fromAmount = swapParams.fromAmount;
 
-        require(user != address(0) && comet != address(0), ZeroAddress());
+        _validateSwapParams(swapParams);
+        require(plugin.endpoint != address(0), UnknownPlugin());
         require(
             _checkCollateralization(
                 IComet(comet),
-                swapParams.fromAsset,
+                fromAsset,
                 toAsset,
-                swapParams.fromAmount,
-                swapParams.minAmountOut,
+                fromAmount,
+                minAmountOut,
                 swapParams.maxHealthFactorDropBps
             ),
             NotSufficientLiquidity()
         );
-        require(plugin.endpoint != address(0), UnknownPlugin());
 
-        _tstore(comet, swapParams.fromAsset, swapParams.fromAmount);
+        _tstore(comet, fromAsset, fromAmount);
 
         (bool ok, ) = plugin.endpoint.delegatecall(
             abi.encodeWithSelector(
                 ICometFlashLoanPlugin.takeFlashLoan.selector,
                 ICometFlashLoanPlugin.CallbackData({
-                    debt: swapParams.minAmountOut,
+                    debt: minAmountOut,
                     snapshot: IERC20(toAsset).balanceOf(address(this)),
                     fee: 0,
-                    user: user,
+                    user: msg.sender,
                     flp: plugin.flp,
                     asset: toAsset,
                     swapData: swapParams.swapCalldata
                 }),
-                "" // config
+                ""
             )
         );
         _catch(ok);
@@ -203,6 +259,25 @@ contract CompoundV3CollateralSwap is AllowBySig, ICompoundV3CollateralSwap {
             tstore(slot, 0)
             tstore(add(slot, 0x20), 0)
             tstore(add(slot, 0x40), 0)
+        }
+    }
+
+    function _validateSwapParams(SwapParams calldata swapParams) internal pure {
+        require(
+            swapParams.comet != address(0) &&
+                swapParams.fromAsset != address(0) &&
+                swapParams.toAsset != address(0) &&
+                swapParams.minAmountOut > 0 &&
+                swapParams.maxHealthFactorDropBps < BPS_DROP_DENOMINATOR,
+            InvalidSwapParameters()
+        );
+    }
+
+    function _supplyDust(address user, address asset, address comet, uint256 repayAmount) internal {
+        uint256 balance = IERC20(asset).balanceOf(address(this)) - repayAmount;
+        if (balance != 0) {
+            IERC20(asset).approve(comet, balance);
+            IComet(comet).supplyTo(user, asset, balance);
         }
     }
 

@@ -4,8 +4,6 @@ pragma solidity 0.8.30;
 import { ICometFlashLoanPlugin } from "../interfaces/ICometFlashLoanPlugin.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import "hardhat/console.sol";
-
 contract FlashloanPluginTest {
     address public flp;
     ICometFlashLoanPlugin public endpoint;
@@ -13,6 +11,8 @@ contract FlashloanPluginTest {
     ICometFlashLoanPlugin.CallbackData public lastCallbackData;
 
     uint256 public amm;
+
+    bytes4 public constant CALLBACK_SELECTOR = 0x1b11d0ff;
 
     constructor(address _flp, address _endpoint) {
         flp = _flp;
@@ -72,6 +72,25 @@ contract FlashloanPluginTest {
             abi.encodeWithSelector(endpoint.CALLBACK_SELECTOR(), tokens, amounts, feeAmounts, abi.encode(data))
         );
         _catch(ok);
+    }
+
+    function executeOperation(
+        address,
+        uint256,
+        uint256,
+        address,
+        bytes calldata
+    ) public pure returns (ICometFlashLoanPlugin.CallbackData memory) {
+        return
+            ICometFlashLoanPlugin.CallbackData({
+                debt: 1000,
+                fee: 0,
+                snapshot: 0,
+                user: address(0),
+                flp: address(0),
+                asset: 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48,
+                swapData: ""
+            });
     }
 
     fallback() external payable {
