@@ -5,17 +5,27 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { ICometFlashLoanPlugin } from "../interfaces/ICometFlashLoanPlugin.sol";
 import { IUniswapV3Pool } from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 
+/**
+ * @title UniswapV3Plugin
+ * @author WOOF!
+ * @notice Flash loan plugin for integrating Uniswap V3 pools with CometMultiplierAdapter
+ * @dev Implements ICometFlashLoanPlugin interface to provide standardized flash loan functionality
+ */
 contract UniswapV3Plugin is ICometFlashLoanPlugin {
-    /// @notice Callback selector: keccak256("uniswapV3FlashCallback(uint256,uint256,bytes)") = 0xe9cbafb0
+    /// @notice Callback function selector for Uniswap V3 flash loans
     bytes4 public constant CALLBACK_SELECTOR = 0xe9cbafb0;
 
-    // bytes32(uint256(keccak256("UniswapV3Plugin.plugin")) - 1)
+    /// @notice Storage slot for transient flash loan ID validation
     bytes32 public constant SLOT_PLUGIN = bytes32(uint256(keccak256("UniswapV3Plugin.plugin")) - 1);
 
+    /**
+     * @notice Initiates a flash loan from a Uniswap V3 pool
+     * @param data Flash loan parameters including debt amount, asset, and user information
+     * @dev Stores flash loan ID in transient storage for callback validation
+     */
     function takeFlashLoan(CallbackData memory data, bytes memory) public {
         bytes memory _data = abi.encode(data);
         bytes32 flid = keccak256(_data);
-
         bytes32 slot = SLOT_PLUGIN;
         assembly {
             tstore(slot, flid)
@@ -24,7 +34,6 @@ contract UniswapV3Plugin is ICometFlashLoanPlugin {
         IUniswapV3Pool pool = IUniswapV3Pool(data.flp);
         address token0 = pool.token0();
         address token1 = pool.token1();
-
         require(token0 == data.asset || token1 == data.asset, UnauthorizedCallback());
 
         uint256 amount0 = token0 == data.asset ? data.debt : 0;
@@ -33,10 +42,24 @@ contract UniswapV3Plugin is ICometFlashLoanPlugin {
         pool.flash(address(this), amount0, amount1, _data);
     }
 
+    /**
+     * @notice Repays the flash loan to the Uniswap V3 pool
+     * @param flp Address of the flash loan provider (pool)
+     * @param baseAsset Address of the borrowed asset
+     * @param amount Total repayment amount (principal + fee)
+     */
     function repayFlashLoan(address flp, address baseAsset, uint256 amount) external {
         IERC20(baseAsset).transfer(flp, amount);
     }
 
+    /**
+     * @notice Handles flash loan callback from Uniswap V3 pool
+     * @param fee0 Fee amount for token0
+     * @param fee1 Fee amount for token1
+     * @param data Encoded callback data from flash loan initiation
+     * @return _data Decoded callback data for adapter processing
+     * @dev Validates flash loan ID and sender authorization before processing
+     */
     function uniswapV3FlashCallback(
         uint256 fee0,
         uint256 fee1,
@@ -50,18 +73,15 @@ contract UniswapV3Plugin is ICometFlashLoanPlugin {
             tstore(slot, 0)
         }
         require(flid == flidExpected, InvalidFlashLoanId());
-
         _data = abi.decode(data, (CallbackData));
-
         require(_data.flp == msg.sender, UnauthorizedCallback());
 
         IUniswapV3Pool pool = IUniswapV3Pool(_data.flp);
         address token0 = pool.token0();
         address token1 = pool.token1();
-
         uint256 fee = token0 == _data.asset ? fee0 : (token1 == _data.asset ? fee1 : type(uint256).max);
         require(fee != type(uint256).max, UnauthorizedCallback());
-        _data.debt;
+
         _data.fee = fee;
     }
 }

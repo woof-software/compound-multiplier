@@ -7,9 +7,20 @@ import { IWEth } from "../interfaces/IWEth.sol";
 import { IWstEth } from "../interfaces/IWstEth.sol";
 import { IStEth } from "../interfaces/IStEth.sol";
 
+/**
+ * @title WstEthPlugin
+ * @notice Swap plugin for converting between WETH and wstETH via Lido staking
+ * @dev Implements ICometSwapPlugin interface to provide specialized WETH / wstETH conversion
+ */
 contract WstEthPlugin is ICometSwapPlugin {
+    /// @notice Callback function selector for this swap plugin
+    /// @dev Used by CometMultiplierAdapter to identify and route swap calls to this plugin
     bytes4 public constant CALLBACK_SELECTOR = 0x77aa7e1b;
 
+    /**
+     * @notice Allows the contract to receive ETH for staking operations
+     * @dev Required for receiving ETH from WETH unwrapping and stETH withdrawals
+     */
     receive() external payable {}
 
     function executeSwap(
@@ -18,31 +29,60 @@ contract WstEthPlugin is ICometSwapPlugin {
         uint256 amountIn,
         uint256 minAmountOut,
         bytes calldata config,
-        bytes calldata
+        bytes calldata swapData
     ) external returns (uint256 amountOut) {
         require(srcToken != dstToken && amountIn > 0 && minAmountOut > 0, IvaildInput());
 
-        (address wEth, address wstEth, address stEth) = abi.decode(config, (address, address, address));
+        {
+            (address wEth, address wstEth, address stEth, , ) = abi.decode(
+                config,
+                (address, address, address, address, bytes)
+            );
 
-        if (srcToken == wEth && dstToken == wstEth) {
-            IWEth(wEth).withdraw(amountIn);
-            uint256 stEthAmount = IStEth(stEth).submit{ value: amountIn }(address(this));
-            IERC20(stEth).approve(wstEth, stEthAmount);
-            IWstEth(wstEth).wrap(stEthAmount);
-            uint256 wstBal = IERC20(wstEth).balanceOf(address(this));
-            require(wstBal >= minAmountOut, InvalidAmountOut());
-            return wstBal;
-        } else if (srcToken == wstEth && dstToken == wEth) {
-            IERC20(wstEth).approve(wstEth, amountIn);
-            IWstEth(wstEth).unwrap(amountIn);
-            uint256 stEthBalance = IERC20(stEth).balanceOf(address(this));
-            IStEth(stEth).withdraw(stEthBalance, address(this));
-            uint256 ethOut = address(this).balance;
-            IWEth(wEth).deposit{ value: ethOut }();
-            require(ethOut >= minAmountOut, InvalidAmountOut());
-            return ethOut;
-        } else {
-            revert IvaildInput();
+            if (srcToken == wEth && dstToken == wstEth) {
+                return _lidoSwap(wEth, wstEth, stEth, amountIn, minAmountOut);
+            }
         }
+
+        {
+            (, , , address swapPlugin, bytes memory _config) = abi.decode(
+                config,
+                (address, address, address, address, bytes)
+            );
+
+            (bool ok, bytes memory ret) = swapPlugin.delegatecall(
+                abi.encodeWithSelector(
+                    ICometSwapPlugin.executeSwap.selector,
+                    srcToken,
+                    dstToken,
+                    amountIn,
+                    minAmountOut,
+                    _config,
+                    swapData
+                )
+            );
+            if (!ok) {
+                assembly {
+                    revert(add(ret, 32), mload(ret))
+                }
+            }
+            amountOut = abi.decode(ret, (uint256));
+        }
+    }
+
+    function _lidoSwap(
+        address wEth,
+        address wstEth,
+        address stEth,
+        uint256 amountIn,
+        uint256 minAmountOut
+    ) internal returns (uint256 amountOut) {
+        uint256 initial = IERC20(wstEth).balanceOf(address(this));
+        IWEth(wEth).withdraw(amountIn);
+        uint256 stAmount = IStEth(stEth).submit{ value: amountIn }(address(this));
+        IERC20(stEth).approve(wstEth, stAmount);
+        IWstEth(wstEth).wrap(stAmount);
+        amountOut = IERC20(wstEth).balanceOf(address(this)) - initial;
+        require(amountOut >= minAmountOut, InvalidAmountOut());
     }
 }

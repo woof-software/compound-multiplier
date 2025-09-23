@@ -13,7 +13,6 @@
     "error SafeERC20FailedOperation(address token)",
     "error UnknownCallbackSelector()",
     "error UnknownMarket()",
-    "error UnknownSwapPlugin()",
     "error UnsupportedPriceFeed()",
     "event AssetAdded(address indexed collateralAsset, bytes4 pluginSelector)",
     "event PluginAdded(address indexed plugin, bytes4 pluginSelector)",

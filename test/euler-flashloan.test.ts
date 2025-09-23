@@ -13,7 +13,7 @@ const WETH_WHALE = "0xF04a5cC80B1E94C69B48f5ee68a08CD2F09A7c3E";
 
 const opts = { maxFeePerGas: 4_000_000_000 };
 
-describe("Comet Multiplier Adapter", function () {
+describe("Comet Multiplier Adapter - Euler", function () {
     let adapter: CometMultiplierAdapter;
     let loanPlugin: EulerV2Plugin;
     let swapPlugin: OneInchV6SwapPlugin;
@@ -43,8 +43,6 @@ describe("Comet Multiplier Adapter", function () {
             flp: USDC_EVAULT
         };
     }
-
-    const U128 = (1n << 128n) - 1n;
 
     async function previewTake(
         comet: any,
@@ -76,7 +74,6 @@ describe("Comet Multiplier Adapter", function () {
         if (loanDebt === 0n) return 0n;
 
         let unlocked = (loanDebt * den) / num;
-        if (unlocked > U128) unlocked = U128;
 
         const reqCap = req === ethers.MaxUint256 ? BigInt(userCol) : req < BigInt(userCol) ? req : BigInt(userCol);
         const take = unlocked < reqCap ? unlocked : reqCap;

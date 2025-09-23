@@ -95,11 +95,6 @@
     },
     {
         "inputs": [],
-        "name": "UnknownSwapPlugin",
-        "type": "error"
-    },
-    {
-        "inputs": [],
         "name": "UnsupportedPriceFeed",
         "type": "error"
     },

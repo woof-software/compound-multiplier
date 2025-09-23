@@ -5,7 +5,6 @@ pragma solidity ^0.8.30;
 interface ICometMultiplierAdapter {
     error UnsupportedPriceFeed();
     error UnknownCallbackSelector();
-    error UnknownSwapPlugin();
     error UnknownMarket();
     error InvalidPluginSelector();
     error InvalidLeverage();
