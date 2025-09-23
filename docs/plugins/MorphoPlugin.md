@@ -2,13 +2,17 @@
 
 ## MorphoPlugin
 
+Flash loan plugin for integrating Morpho protocol with CometMultiplierAdapter
+
+_Implements ICometFlashLoanPlugin interface to provide standardized flash loan functionality_
+
 ### CALLBACK_SELECTOR
 
 ```solidity
 bytes4 CALLBACK_SELECTOR
 ```
 
-Callback selector: keccak256("onMorphoFlashLoan(uint256 assets, bytes calldata data)") = 0x31f57072
+Callback function selector for Morpho flash loans
 
 ### SLOT_PLUGIN
 
@@ -16,11 +20,24 @@ Callback selector: keccak256("onMorphoFlashLoan(uint256 assets, bytes calldata d
 bytes32 SLOT_PLUGIN
 ```
 
+Storage slot for transient flash loan ID validation
+
 ### takeFlashLoan
 
 ```solidity
 function takeFlashLoan(struct ICometFlashLoanPlugin.CallbackData data, bytes) public
 ```
+
+Initiates a flash loan from Morpho protocol
+
+_Stores flash loan ID in transient storage for callback validation_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| data | struct ICometFlashLoanPlugin.CallbackData | Flash loan parameters including debt amount, asset, and user information |
+|  | bytes |  |
 
 ### repayFlashLoan
 
@@ -28,9 +45,38 @@ function takeFlashLoan(struct ICometFlashLoanPlugin.CallbackData data, bytes) pu
 function repayFlashLoan(address flp, address baseAsset, uint256 amount) external
 ```
 
+Repays the flash loan to Morpho protocol
+
+_Uses approve instead of transfer as Morpho pulls repayment_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| flp | address | Address of the flash loan provider (Morpho contract) |
+| baseAsset | address | Address of the borrowed asset |
+| amount | uint256 | Total repayment amount (principal + fee) |
+
 ### onMorphoFlashLoan
 
 ```solidity
 function onMorphoFlashLoan(uint256, bytes data) external returns (struct ICometFlashLoanPlugin.CallbackData _data)
 ```
+
+Handles flash loan callback from Morpho protocol
+
+_Validates flash loan ID and sender authorization before processing_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+|  | uint256 |  |
+| data | bytes | Encoded callback data from flash loan initiation |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _data | struct ICometFlashLoanPlugin.CallbackData | Decoded callback data for adapter processing |
 

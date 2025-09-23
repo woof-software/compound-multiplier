@@ -14,12 +14,6 @@ error UnsupportedPriceFeed()
 error UnknownCallbackSelector()
 ```
 
-### UnknownSwapPlugin
-
-```solidity
-error UnknownSwapPlugin()
-```
-
 ### UnknownMarket
 
 ```solidity
