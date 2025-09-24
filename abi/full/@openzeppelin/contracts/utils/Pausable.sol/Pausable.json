@@ -1,7 +1,0 @@
-[
-    "error EnforcedPause()",
-    "error ExpectedPause()",
-    "event Paused(address account)",
-    "event Unpaused(address account)",
-    "function paused() view returns (bool)"
-]
