@@ -2,8 +2,9 @@ import { impersonateAccount, setBalance } from "@nomicfoundation/hardhat-network
 import axios from "axios";
 import { Addressable } from "ethers";
 import { ethers } from "hardhat";
-import { CompoundV3CollateralSwap, ICompoundV3CollateralSwap } from "../../typechain-types";
 import { $CompoundV3CollateralSwap } from "../../typechain-types/contracts-exposed/CompoundV3CollateralSwap.sol/$CompoundV3CollateralSwap";
+import { IComet, IERC20 } from "../../typechain-types";
+export { SnapshotRestorer, takeSnapshot, time } from "@nomicfoundation/hardhat-network-helpers";
 
 export interface Plugin {
     endpoint: string;
@@ -36,7 +37,7 @@ export const WETH_WHALE = "0x4d5F47FA6A74757f35C14fD3a6Ef8E3C9BC514E8";
 export const WST_ETH_WHALE = "0x0B925eD163218f6662a35e0f0371Ac234f9E9371";
 export const RS_ETH_WHALE = "0x2D62109243b87C4bA3EE7bA1D91B0dD0A074d7b1";
 export const R_ETH_WHALE = "0xCc9EE9483f662091a1de4795249E24aC0aC2630f";
-export const WBTC_WHALE = "0x5Ee5bf7ae06D1Be5997A1A72006FE6C607eC6DE8";
+export const WBTC_WHALE = "0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb";
 
 export async function getWhales() {
     const whales = [USDC_WHALE, WETH_WHALE, WST_ETH_WHALE, RS_ETH_WHALE, R_ETH_WHALE, WBTC_WHALE];
@@ -117,6 +118,12 @@ export async function calcMinAmountOut(
         (assetFromLiquidity * FACTOR_SCALE * assetToInfo.scale) / (priceTo * assetToInfo.borrowCollateralFactor);
 
     return (amountTo * (BPS_DROP_DENOMINATOR - slippage)) / BPS_DROP_DENOMINATOR;
+}
+
+export async function getLiquidity(comet: IComet, token: IERC20, amount: bigint): Promise<bigint> {
+    const assetInfo = await comet.getAssetInfoByAddress(token);
+    const priceUSD = (amount * (await comet.getPrice(assetInfo.priceFeed))) / assetInfo.scale;
+    return (priceUSD * assetInfo.borrowCollateralFactor) / FACTOR_SCALE;
 }
 
 /*//////////////////////////////////////////////////////////////

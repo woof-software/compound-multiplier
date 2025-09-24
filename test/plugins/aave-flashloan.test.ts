@@ -55,6 +55,7 @@ describe("AAVE Flash Loan Plugin", function () {
                 swapData: "0x"
             };
         });
+
         it("allows to take a flashloan and repay it", async () => {
             // As plugin is executed via delegatecall, tx will may not fail
             // in case of error on AAVE side thus we check lastCallbackData

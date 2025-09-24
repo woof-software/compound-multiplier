@@ -1,12 +1,16 @@
 import { ethers } from "hardhat";
-import { getQuote, exp, ZERO_ADDRESS, getSwapPlugins, tokensInstances, getWhales } from "../helpers/helpers";
-import { IERC20, LiFiPlugin } from "../../typechain-types";
 import {
-    impersonateAccount,
-    setBalance,
+    getQuote,
+    exp,
+    ZERO_ADDRESS,
+    getSwapPlugins,
+    tokensInstances,
+    getWhales,
     SnapshotRestorer,
-    takeSnapshot
-} from "@nomicfoundation/hardhat-network-helpers";
+    takeSnapshot,
+    SWAP_ROUTER
+} from "../helpers/helpers";
+import { IERC20, LiFiPlugin } from "../../typechain-types";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { expect } from "chai";
 import { anyUint } from "@nomicfoundation/hardhat-chai-matchers/withArgs";
@@ -43,47 +47,47 @@ describe("LiFi Plugin", function () {
     afterEach(async () => await snapshot.restore());
 
     describe("happy cases", function () {
-        it("allows to make a swap", async () => {
-            const fromToken = "WETH";
-            const toToken = "USDC";
-            const fromAmount = exp(1, 18);
+        let fromToken: string;
+        let toToken: string;
+        let fromAmount: bigint;
+        let swapCalldata: string;
+        let toAmountMin: bigint;
+
+        before(async () => {
+            fromToken = "WETH";
+            toToken = "USDC";
+            fromAmount = exp(1, 18);
             const fromAddress = lifiPlugin.target;
 
-            /// hardcode minAmountOut value to 4k USD per ETH
-            const minAmountOut = exp(4000, 6);
+            ({ swapCalldata, toAmountMin } = await getQuote(
+                CHAIN,
+                CHAIN,
+                fromToken,
+                toToken,
+                String(fromAmount),
+                fromAddress
+            ));
+        });
 
-            const data = (await getQuote(CHAIN, CHAIN, fromToken, toToken, String(fromAmount), fromAddress))
-                .transactionRequest;
-
+        it("allows to make a swap", async () => {
             await weth.transfer(lifiPlugin, fromAmount);
 
             const dstTokenBalanceBefore = await usdc.balanceOf(lifiPlugin);
 
-            await lifiPlugin.executeSwap(weth, usdc, fromAmount, minAmountOut, config, data.data);
+            await lifiPlugin.executeSwap(weth, usdc, fromAmount, toAmountMin, config, swapCalldata);
 
             const dstTokenBalanceAfter = await usdc.balanceOf(lifiPlugin);
+            expect(toAmountMin).to.be.gt(0);
             expect(dstTokenBalanceAfter).to.be.gt(dstTokenBalanceBefore);
-            expect(dstTokenBalanceAfter - dstTokenBalanceBefore).to.be.greaterThanOrEqual(minAmountOut);
+            expect(dstTokenBalanceAfter - dstTokenBalanceBefore).to.be.greaterThanOrEqual(toAmountMin);
         });
 
         it("emits an event on successful swap", async () => {
-            const fromToken = "WETH";
-            const toToken = "USDC";
-            const fromAmount = exp(1, 18);
-            const fromAddress = lifiPlugin.target;
-
-            /// hardcode minAmountOut value to 4k USD per ETH
-            const minAmountOut = exp(4000, 6);
-
-            const data = (await getQuote(CHAIN, CHAIN, fromToken, toToken, String(fromAmount), fromAddress))
-                .transactionRequest;
-            const router = data.to;
-
             await weth.transfer(lifiPlugin, fromAmount);
 
-            await expect(lifiPlugin.executeSwap(weth, usdc, fromAmount, minAmountOut, config, data.data))
+            await expect(lifiPlugin.executeSwap(weth, usdc, fromAmount, toAmountMin, config, swapCalldata))
                 .to.emit(lifiPlugin, "SwapExecuted")
-                .withArgs(router, weth, usdc, anyUint);
+                .withArgs(SWAP_ROUTER, weth, usdc, anyUint);
         });
     });
 
@@ -93,40 +97,40 @@ describe("LiFi Plugin", function () {
         const fromAmount = exp(1, 18);
         const minAmountOut = 1;
 
-        let data: any;
+        let swapData: string;
         before(async () => {
             const fromAddress = lifiPlugin.target;
-            data = (await getQuote(CHAIN, CHAIN, fromToken, toToken, String(fromAmount), fromAddress))
-                .transactionRequest;
+            const { swapCalldata } = await getQuote(CHAIN, CHAIN, fromToken, toToken, String(fromAmount), fromAddress);
+            swapData = swapCalldata;
         });
 
         it("reverts if srcToken is address(0)", async () => {
             await expect(
-                lifiPlugin.executeSwap(ZERO_ADDRESS, usdc, fromAmount, minAmountOut, config, data.data)
+                lifiPlugin.executeSwap(ZERO_ADDRESS, usdc, fromAmount, minAmountOut, config, swapData)
             ).to.be.revertedWithCustomError(lifiPlugin, "ZeroAddress");
         });
 
         it("reverts if dstToken is address(0)", async () => {
             await expect(
-                lifiPlugin.executeSwap(weth, ZERO_ADDRESS, fromAmount, minAmountOut, config, data.data)
+                lifiPlugin.executeSwap(weth, ZERO_ADDRESS, fromAmount, minAmountOut, config, swapData)
             ).to.be.revertedWithCustomError(lifiPlugin, "ZeroAddress");
         });
 
         it("reverts if srcTokens is dstToken", async () => {
             await expect(
-                lifiPlugin.executeSwap(weth, weth, fromAmount, minAmountOut, config, data.data)
+                lifiPlugin.executeSwap(weth, weth, fromAmount, minAmountOut, config, swapData)
             ).to.be.revertedWithCustomError(lifiPlugin, "InvalidSwapParameters");
         });
 
         it("reverts if amountIn is 0", async () => {
             await expect(
-                lifiPlugin.executeSwap(weth, usdc, 0, minAmountOut, config, data.data)
+                lifiPlugin.executeSwap(weth, usdc, 0, minAmountOut, config, swapData)
             ).to.be.revertedWithCustomError(lifiPlugin, "InvalidSwapParameters");
         });
 
         it("reverts if minAmountOut is 0", async () => {
             await expect(
-                lifiPlugin.executeSwap(weth, usdc, fromAmount, 0, config, data.data)
+                lifiPlugin.executeSwap(weth, usdc, fromAmount, 0, config, swapData)
             ).to.be.revertedWithCustomError(lifiPlugin, "InvalidSwapParameters");
         });
 
@@ -140,20 +144,13 @@ describe("LiFi Plugin", function () {
         });
 
         it("reverts if actual amount out is less than minAmountOut", async () => {
-            // Get a real quote first, then set minAmountOut higher than expected output
-            const fromAmount = exp(1, 18);
-            const fromAddress = lifiPlugin.target;
-
-            const quoteData = (await getQuote(CHAIN, CHAIN, "WETH", "USDC", String(fromAmount), fromAddress))
-                .transactionRequest;
-
             // Set minAmountOut to be 10x higher than the realistic quote would give
             const unrealisticMinAmountOut = exp(50_000, 6); // 50k USDC for 1 WETH (unrealistic)
 
             await weth.transfer(lifiPlugin, fromAmount);
 
             await expect(
-                lifiPlugin.executeSwap(weth, usdc, fromAmount, unrealisticMinAmountOut, config, quoteData.data)
+                lifiPlugin.executeSwap(weth, usdc, fromAmount, unrealisticMinAmountOut, config, swapData)
             ).to.be.revertedWithCustomError(lifiPlugin, "InvalidAmountOut");
         });
     });

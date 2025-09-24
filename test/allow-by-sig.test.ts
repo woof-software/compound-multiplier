@@ -1,19 +1,11 @@
 import { ethers } from "hardhat";
 import { $CompoundV3CollateralSwap } from "../typechain-types/contracts-exposed/CompoundV3CollateralSwap.sol/$CompoundV3CollateralSwap";
-
-import {
-    impersonateAccount,
-    setBalance,
-    SnapshotRestorer,
-    takeSnapshot,
-    time
-} from "@nomicfoundation/hardhat-network-helpers";
-
-import { AllowBySig, BalancerPlugin, CompoundV3CollateralSwap, IComet, IERC20 } from "../typechain-types";
-import { exp } from "./helpers/helpers";
+import { SnapshotRestorer, takeSnapshot, time } from "@nomicfoundation/hardhat-network-helpers";
+import { IComet } from "../typechain-types";
 import { expect } from "chai";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { Addressable } from "ethers";
+import { getSwapPlugins } from "./helpers/helpers";
 
 describe("Allow By Signature", function () {
     let snapshot: SnapshotRestorer;
@@ -69,9 +61,11 @@ describe("Allow By Signature", function () {
             endpoint: balancerFlashLoan.target
         };
 
+        const { lifiPlugin } = await getSwapPlugins();
+
         collateralSwap = (await ethers.deployContract(
             "$CompoundV3CollateralSwap",
-            [[balancerPlugin], SWAP_ROUTER],
+            [[balancerPlugin], SWAP_ROUTER, lifiPlugin.endpoint],
             deployer
         )) as unknown as $CompoundV3CollateralSwap;
 
