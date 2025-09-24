@@ -103,6 +103,16 @@ _This fallback function is the core of the collateral swap mechanism. It receive
 The function uses delegate calls to plugin endpoints for modularity and gas efficiency.
 Temporary storage (tstore/tload) is used to pass swap parameters between function calls._
 
+### receive
+
+```solidity
+receive() external payable
+```
+
+Rejects any direct ETH transfers
+
+_This contract does not handle ETH, all operations are with ERC20 tokens_
+
 ### swap
 
 ```solidity
