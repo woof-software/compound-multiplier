@@ -82,14 +82,6 @@ _Emits PluginRegistered event for each registered plugin_
 | swapRouter_ | address | Address of the swap router |
 | swapPlugin_ | address | Address of the swap plugin |
 
-### receive
-
-```solidity
-receive() external payable
-```
-
-Prevents the contract from receiving ETH
-
 ### fallback
 
 ```solidity
@@ -188,11 +180,31 @@ _Checks if the collateralization is sufficient for the swap._
 function _tstore(address comet, address fromAsset, uint256 fromAmount) internal
 ```
 
+_Stores swap parameters in transient storage for use in fallback callback_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| comet | address | The Comet contract address |
+| fromAsset | address | The asset being swapped from |
+| fromAmount | uint256 | The amount being swapped |
+
 ### _tload
 
 ```solidity
 function _tload() internal returns (address comet, address fromAsset, uint256 fromAmount)
 ```
+
+_Loads and clears swap parameters from transient storage_
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| comet | address | The Comet contract address |
+| fromAsset | address | The asset being swapped from |
+| fromAmount | uint256 | The amount being swapped |
 
 ### _validateSwapParams
 
@@ -200,15 +212,42 @@ function _tload() internal returns (address comet, address fromAsset, uint256 fr
 function _validateSwapParams(struct ICompoundV3CollateralSwap.SwapParams swapParams) internal pure
 ```
 
+_Validates swap parameters for correctness and safety_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| swapParams | struct ICompoundV3CollateralSwap.SwapParams | The swap parameters to validate |
+
 ### _supplyDust
 
 ```solidity
 function _supplyDust(address user, address asset, address comet, uint256 repayAmount) internal
 ```
 
+_Supplies any remaining asset balance back to user's Comet position_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| user | address | The user to supply dust to |
+| asset | address | The asset to supply |
+| comet | address | The Comet contract address |
+| repayAmount | uint256 | Amount reserved for repayment (excluded from dust) |
+
 ### _catch
 
 ```solidity
 function _catch(bool success) internal pure
 ```
+
+_Reverts with the original error if a call failed_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| success | bool | Whether the call succeeded |
 
