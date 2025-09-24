@@ -12,7 +12,7 @@ contract FlashloanPluginTest {
 
     uint256 public amm;
 
-    bytes4 public constant CALLBACK_SELECTOR = 0x1b11d0ff;
+    bytes4 public constant CALLBACK_SELECTOR = 0xa6dad371;
 
     constructor(address _flp, address _endpoint) {
         flp = _flp;
@@ -74,13 +74,7 @@ contract FlashloanPluginTest {
         _catch(ok);
     }
 
-    function executeOperation(
-        address,
-        uint256,
-        uint256,
-        address,
-        bytes calldata
-    ) public pure returns (ICometFlashLoanPlugin.CallbackData memory) {
+    function attackCallback() public pure returns (ICometFlashLoanPlugin.CallbackData memory) {
         return
             ICometFlashLoanPlugin.CallbackData({
                 debt: 1000,
