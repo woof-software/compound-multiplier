@@ -53,13 +53,6 @@ contract CompoundV3CollateralSwap is AllowBySig, ICompoundV3CollateralSwap {
     }
 
     /**
-     * @notice Prevents the contract from receiving ETH
-     */
-    receive() external payable {
-        revert("Cannot receive ETH");
-    }
-
-    /**
      * @notice Handles flash loan callbacks from registered plugins to execute collateral swaps
      * @dev This fallback function is the core of the collateral swap mechanism. It receives callbacks
      *      from flash loan providers through registered plugins and executes a complete collateral swap:
@@ -148,10 +141,12 @@ contract CompoundV3CollateralSwap is AllowBySig, ICompoundV3CollateralSwap {
                                 EXTERNAL
     //////////////////////////////////////////////////////////////*/
 
+    /// @inheritdoc ICompoundV3CollateralSwap
     function swap(SwapParams calldata swapParams) external {
         _swap(swapParams);
     }
 
+    /// @inheritdoc ICompoundV3CollateralSwap
     function swapWithApprove(SwapParams calldata swapParams, AllowParams calldata allowParams) external {
         _allowBySig(allowParams, swapParams.comet);
         _swap(swapParams);
@@ -240,6 +235,12 @@ contract CompoundV3CollateralSwap is AllowBySig, ICompoundV3CollateralSwap {
             assetInLiquidity;
     }
 
+    /**
+     * @dev Stores swap parameters in transient storage for use in fallback callback
+     * @param comet The Comet contract address
+     * @param fromAsset The asset being swapped from
+     * @param fromAmount The amount being swapped
+     */
     function _tstore(address comet, address fromAsset, uint256 fromAmount) internal {
         bytes32 slot = SLOT_ADAPTER;
         assembly {
@@ -249,6 +250,12 @@ contract CompoundV3CollateralSwap is AllowBySig, ICompoundV3CollateralSwap {
         }
     }
 
+    /**
+     * @dev Loads and clears swap parameters from transient storage
+     * @return comet The Comet contract address
+     * @return fromAsset The asset being swapped from
+     * @return fromAmount The amount being swapped
+     */
     function _tload() internal returns (address comet, address fromAsset, uint256 fromAmount) {
         bytes32 slot = SLOT_ADAPTER;
         assembly {
@@ -262,6 +269,10 @@ contract CompoundV3CollateralSwap is AllowBySig, ICompoundV3CollateralSwap {
         }
     }
 
+    /**
+     * @dev Validates swap parameters for correctness and safety
+     * @param swapParams The swap parameters to validate
+     */
     function _validateSwapParams(SwapParams calldata swapParams) internal pure {
         require(
             swapParams.comet != address(0) &&
@@ -273,6 +284,13 @@ contract CompoundV3CollateralSwap is AllowBySig, ICompoundV3CollateralSwap {
         );
     }
 
+    /**
+     * @dev Supplies any remaining asset balance back to user's Comet position
+     * @param user The user to supply dust to
+     * @param asset The asset to supply
+     * @param comet The Comet contract address
+     * @param repayAmount Amount reserved for repayment (excluded from dust)
+     */
     function _supplyDust(address user, address asset, address comet, uint256 repayAmount) internal {
         uint256 balance = IERC20(asset).balanceOf(address(this)) - repayAmount;
         if (balance != 0) {
@@ -281,6 +299,10 @@ contract CompoundV3CollateralSwap is AllowBySig, ICompoundV3CollateralSwap {
         }
     }
 
+    /**
+     * @dev Reverts with the original error if a call failed
+     * @param success Whether the call succeeded
+     */
     function _catch(bool success) internal pure {
         if (!success) {
             assembly {
