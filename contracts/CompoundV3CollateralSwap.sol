@@ -137,6 +137,14 @@ contract CompoundV3CollateralSwap is AllowBySig, ICompoundV3CollateralSwap {
         }
     }
 
+    /**
+     * @notice Rejects any direct ETH transfers
+     * @dev This contract does not handle ETH, all operations are with ERC20 tokens
+     */
+    receive() external payable {
+        revert("Can not receive ETH");
+    }
+
     /*//////////////////////////////////////////////////////////////
                                 EXTERNAL
     //////////////////////////////////////////////////////////////*/
