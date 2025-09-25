@@ -14,6 +14,18 @@ error InvalidAmountOut()
 error InvaildInput()
 ```
 
+### ZeroAddress
+
+```solidity
+error ZeroAddress()
+```
+
+### SwapExecuted
+
+```solidity
+event SwapExecuted(address router, address srcToken, address dstToken, uint256 amountOut)
+```
+
 ### CALLBACK_SELECTOR
 
 ```solidity

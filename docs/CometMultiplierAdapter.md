@@ -16,14 +16,6 @@ uint256 LEVERAGE_PRECISION
 
 Precision constant for leverage calculations (represents 1x leverage)
 
-### MAX_LEVERAGE
-
-```solidity
-uint256 MAX_LEVERAGE
-```
-
-Maximum allowed leverage multiplier (5x leverage)
-
 ### SLOT_ADAPTER
 
 ```solidity
@@ -42,10 +34,18 @@ Mapping of function selectors to their corresponding plugin configurations
 
 _Key is the callback selector, value contains plugin endpoint and configuration_
 
+### wEth
+
+```solidity
+address wEth
+```
+
+Wrapped ETH (WETH) token address
+
 ### constructor
 
 ```solidity
-constructor(struct ICometMultiplierAdapter.Plugin[] _plugins) public
+constructor(struct ICometMultiplierAdapter.Plugin[] _plugins, address _wEth) public
 ```
 
 Initializes the adapter with flash loan and swap plugins
@@ -57,6 +57,7 @@ _Each plugin must have a valid non-zero callback selector_
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | _plugins | struct ICometMultiplierAdapter.Plugin[] | Array of plugin configurations containing endpoints and their callback selectors |
+| _wEth | address |  |
 
 ### fallback
 
@@ -82,7 +83,7 @@ _Required for receiving ETH from WETH unwrapping or native ETH operations_
 ### executeMultiplier
 
 ```solidity
-function executeMultiplier(struct ICometMultiplierAdapter.Options opts, address collateral, uint256 collateralAmount, uint256 leverage, bytes swapData, uint256 minAmountOut) external
+function executeMultiplier(struct ICometMultiplierAdapter.Options opts, address collateral, uint256 collateralAmount, uint256 leverage, bytes swapData, uint256 minAmountOut) external payable
 ```
 
 Creates a leveraged position by borrowing against supplied collateral
@@ -200,7 +201,7 @@ _Formula: loan = (initialValue * (leverage - 1)) / LEVERAGE_PRECISION_
 ### _convert
 
 ```solidity
-function _convert(contract IComet comet, address col, uint256 amount, bool debtToCollateral) internal view returns (uint256)
+function _convert(contract IComet comet, address colllateral, uint256 amount) internal view returns (uint256)
 ```
 
 Converts between collateral and base asset amounts using market prices
@@ -212,9 +213,8 @@ _Accounts for collateral factors and price feed decimals in conversions_
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | comet | contract IComet | The Comet market interface |
-| col | address | Address of the collateral token |
+| colllateral | address | Address of the collateral token |
 | amount | uint256 | Amount to convert |
-| debtToCollateral | bool | Direction of conversion (true: debt→collateral, false: collateral→debt) |
 
 #### Return Values
 

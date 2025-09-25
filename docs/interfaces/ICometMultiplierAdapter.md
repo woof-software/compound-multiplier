@@ -74,6 +74,12 @@ error AlreadyExists()
 error NothingToDeleverage()
 ```
 
+### InvalidCollateralAmount
+
+```solidity
+error InvalidCollateralAmount()
+```
+
 ### Mode
 
 ```solidity
@@ -113,5 +119,23 @@ event AssetAdded(address collateralAsset, bytes4 pluginSelector)
 
 ```solidity
 event PluginAdded(address plugin, bytes4 pluginSelector)
+```
+
+### Executed
+
+```solidity
+event Executed(address user, address market, address collateral, uint256 totalAmount, uint256 debtAmount)
+```
+
+### Withdrawn
+
+```solidity
+event Withdrawn(address user, address market, address collateral, uint256 withdrawnAmount, uint256 baseReturned)
+```
+
+### wEth
+
+```solidity
+function wEth() external view returns (address)
 ```
 
