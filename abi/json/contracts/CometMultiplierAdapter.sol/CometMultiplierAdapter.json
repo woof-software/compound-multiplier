@@ -17,6 +17,11 @@
                 "internalType": "struct ICometMultiplierAdapter.Plugin[]",
                 "name": "_plugins",
                 "type": "tuple[]"
+            },
+            {
+                "internalType": "address",
+                "name": "_wEth",
+                "type": "address"
             }
         ],
         "stateMutability": "nonpayable",
@@ -45,6 +50,11 @@
     {
         "inputs": [],
         "name": "InvalidAsset",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "InvalidCollateralAmount",
         "type": "error"
     },
     {
@@ -123,6 +133,43 @@
             {
                 "indexed": true,
                 "internalType": "address",
+                "name": "user",
+                "type": "address"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "market",
+                "type": "address"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "collateral",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "totalAmount",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "debtAmount",
+                "type": "uint256"
+            }
+        ],
+        "name": "Executed",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
                 "name": "plugin",
                 "type": "address"
             },
@@ -134,6 +181,43 @@
             }
         ],
         "name": "PluginAdded",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "user",
+                "type": "address"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "market",
+                "type": "address"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "collateral",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "withdrawnAmount",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "baseReturned",
+                "type": "uint256"
+            }
+        ],
+        "name": "Withdrawn",
         "type": "event"
     },
     {
@@ -197,7 +281,7 @@
         ],
         "name": "executeMultiplier",
         "outputs": [],
-        "stateMutability": "nonpayable",
+        "stateMutability": "payable",
         "type": "function"
     },
     {
@@ -219,6 +303,19 @@
                 "internalType": "bytes",
                 "name": "config",
                 "type": "bytes"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "wEth",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
             }
         ],
         "stateMutability": "view",

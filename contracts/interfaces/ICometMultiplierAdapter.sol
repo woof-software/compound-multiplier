@@ -15,6 +15,7 @@ interface ICometMultiplierAdapter {
     error InvalidMode();
     error AlreadyExists();
     error NothingToDeleverage();
+    error InvalidCollateralAmount();
 
     enum Mode {
         EXECUTE,
@@ -34,6 +35,23 @@ interface ICometMultiplierAdapter {
     }
 
     event AssetAdded(address indexed collateralAsset, bytes4 pluginSelector);
-
     event PluginAdded(address indexed plugin, bytes4 pluginSelector);
+
+    event Executed(
+        address indexed user,
+        address indexed market,
+        address indexed collateral,
+        uint256 totalAmount,
+        uint256 debtAmount
+    );
+
+    event Withdrawn(
+        address indexed user,
+        address indexed market,
+        address indexed collateral,
+        uint256 withdrawnAmount,
+        uint256 baseReturned
+    );
+
+    function wEth() external view returns (address);
 }

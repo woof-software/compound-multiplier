@@ -1,0 +1,4 @@
+[
+    "function swap(address,tuple(address,address,address,address,uint256,uint256,uint256),bytes) payable returns (uint256, uint256)",
+    "function unoswap(address,uint256,uint256,uint256[]) payable returns (uint256)"
+]

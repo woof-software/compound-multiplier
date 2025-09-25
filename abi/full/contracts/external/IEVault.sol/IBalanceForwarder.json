@@ -1,0 +1,6 @@
+[
+    "function balanceForwarderEnabled(address account) view returns (bool)",
+    "function balanceTrackerAddress() view returns (address)",
+    "function disableBalanceForwarder()",
+    "function enableBalanceForwarder()"
+]

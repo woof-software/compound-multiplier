@@ -1,0 +1,5 @@
+[
+    "function checkAccountStatus(address,address[]) returns (bytes4)",
+    "function checkVaultStatus() returns (bytes4)",
+    "function disableController()"
+]

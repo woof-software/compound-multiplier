@@ -8,10 +8,10 @@
 error InvalidAmountOut()
 ```
 
-### IvaildInput
+### InvaildInput
 
 ```solidity
-error IvaildInput()
+error InvaildInput()
 ```
 
 ### CALLBACK_SELECTOR

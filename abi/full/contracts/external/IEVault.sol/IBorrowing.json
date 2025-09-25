@@ -1,0 +1,16 @@
+[
+    "function borrow(uint256 amount, address receiver) returns (uint256)",
+    "function cash() view returns (uint256)",
+    "function dToken() view returns (address)",
+    "function debtOf(address account) view returns (uint256)",
+    "function debtOfExact(address account) view returns (uint256)",
+    "function flashLoan(uint256 amount, bytes data)",
+    "function interestAccumulator() view returns (uint256)",
+    "function interestRate() view returns (uint256)",
+    "function pullDebt(uint256 amount, address from) returns (uint256)",
+    "function repay(uint256 amount, address receiver) returns (uint256)",
+    "function repayWithShares(uint256 amount, address receiver) returns (uint256 shares, uint256 debt)",
+    "function totalBorrows() view returns (uint256)",
+    "function totalBorrowsExact() view returns (uint256)",
+    "function touch()"
+]

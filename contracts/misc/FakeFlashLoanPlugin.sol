@@ -3,11 +3,12 @@ pragma solidity ^0.8.30;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import { IEulerDToken } from "../interfaces/IEulerDToken.sol";
-import { IEulerMarkets } from "../interfaces/IEulerMarkets.sol";
 import { ICometFlashLoanPlugin } from "../interfaces/ICometFlashLoanPlugin.sol";
-import { IComet } from "../interfaces/IComet.sol";
-import { IEVault } from "../interfaces/IEVault.sol";
+
+import { IEulerDToken } from "../external/IEulerDToken.sol";
+import { IEulerMarkets } from "../external/IEulerMarkets.sol";
+import { IComet } from "../external/IComet.sol";
+import { IEVault } from "../external/IEVault.sol";
 
 contract FakeFlashLoanPlugin is ICometFlashLoanPlugin {
     // keccak256("onEulerFlashLoan(bytes)") = 0xc4850ea8
@@ -26,11 +27,11 @@ contract FakeFlashLoanPlugin is ICometFlashLoanPlugin {
             tstore(slot, flid)
         }
 
-        (bool sucess, bytes memory data) = address(this).delegatecall(abi.encodeWithSelector(CALLBACK_SELECTOR, _data));
+        (bool sucess, bytes memory payload) = address(this).call(abi.encodeWithSelector(CALLBACK_SELECTOR, _data));
 
         if (!sucess) {
             assembly {
-                revert(add(data, 32), mload(data))
+                revert(add(payload, 32), mload(payload))
             }
         }
     }
@@ -42,8 +43,8 @@ contract FakeFlashLoanPlugin is ICometFlashLoanPlugin {
     function onFlashLoan(bytes calldata data) external returns (CallbackData memory _data) {
         _data = abi.decode(data, (CallbackData));
         uint256 allowance = IERC20(_data.asset).allowance(WHALE, address(this));
-        if (allowance < _data.debt) {
-            IERC20(_data.asset).transferFrom(msg.sender, address(this), _data.debt);
+        if (allowance >= _data.debt) {
+            IERC20(_data.asset).transferFrom(WHALE, address(this), _data.debt);
         }
     }
 }

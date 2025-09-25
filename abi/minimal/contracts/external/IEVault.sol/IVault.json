@@ -1,0 +1,22 @@
+[
+    "function accumulatedFees() view returns (uint256)",
+    "function accumulatedFeesAssets() view returns (uint256)",
+    "function asset() view returns (address)",
+    "function convertToAssets(uint256) view returns (uint256)",
+    "function convertToShares(uint256) view returns (uint256)",
+    "function creator() view returns (address)",
+    "function deposit(uint256,address) returns (uint256)",
+    "function maxDeposit(address) view returns (uint256)",
+    "function maxMint(address) view returns (uint256)",
+    "function maxRedeem(address) view returns (uint256)",
+    "function maxWithdraw(address) view returns (uint256)",
+    "function mint(uint256,address) returns (uint256)",
+    "function previewDeposit(uint256) view returns (uint256)",
+    "function previewMint(uint256) view returns (uint256)",
+    "function previewRedeem(uint256) view returns (uint256)",
+    "function previewWithdraw(uint256) view returns (uint256)",
+    "function redeem(uint256,address,address) returns (uint256)",
+    "function skim(uint256,address) returns (uint256)",
+    "function totalAssets() view returns (uint256)",
+    "function withdraw(uint256,address,address) returns (uint256)"
+]

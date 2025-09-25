@@ -1,0 +1,4 @@
+[
+    "function checkLiquidation(address liquidator, address violator, address collateral) view returns (uint256 maxRepay, uint256 maxYield)",
+    "function liquidate(address violator, address collateral, uint256 repayAssets, uint256 minYieldBalance)"
+]

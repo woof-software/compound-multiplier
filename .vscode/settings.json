@@ -72,5 +72,8 @@
         "typechain",
         "typecheck",
         "Yurii"
-    ]
+    ],
+    "[typescript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    }
 }
