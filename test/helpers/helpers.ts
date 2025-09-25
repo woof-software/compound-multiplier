@@ -39,6 +39,17 @@ export const RS_ETH_WHALE = "0x2D62109243b87C4bA3EE7bA1D91B0dD0A074d7b1";
 export const R_ETH_WHALE = "0xCc9EE9483f662091a1de4795249E24aC0aC2630f";
 export const WBTC_WHALE = "0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb";
 
+export async function executeWithRetry(operation: Function, maxRetries = 10) {
+    for (let i = 0; i < maxRetries; i++) {
+        try {
+            return await operation();
+        } catch (error) {
+            if (i === maxRetries - 1) throw error;
+            await new Promise((resolve) => setTimeout(resolve, 200));
+        }
+    }
+}
+
 export async function getWhales() {
     const whales = [USDC_WHALE, WETH_WHALE, WST_ETH_WHALE, RS_ETH_WHALE, R_ETH_WHALE, WBTC_WHALE];
     for (const whale of whales) {
@@ -138,6 +149,7 @@ export async function getQuote(
     fromAmount: string,
     fromAddress: string | Addressable
 ) {
+    const apiKey = process.env.LIFI_API_KEY;
     const quoteData = (
         await axios.get("https://li.quest/v1/quote", {
             params: {
@@ -147,7 +159,8 @@ export async function getQuote(
                 toToken,
                 fromAmount,
                 fromAddress
-            }
+            },
+            headers: apiKey ? { "x-lifi-api-key": apiKey } : undefined
         })
     ).data;
 

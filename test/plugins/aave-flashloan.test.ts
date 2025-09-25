@@ -38,6 +38,8 @@ describe("AAVE Flash Loan Plugin", function () {
 
         flash = await ethers.deployContract("FlashloanPluginTest", [aavePlugin.flp, aavePlugin.endpoint]);
 
+        await usdc.connect(alice).transfer(flash, premium);
+
         snapshot = await takeSnapshot();
     });
 
@@ -67,8 +69,6 @@ describe("AAVE Flash Loan Plugin", function () {
             expect(lastCallbackDataBefore.asset).to.be.equal(ethers.ZeroAddress);
             expect(lastCallbackDataBefore.swapData).to.be.equal("0x");
 
-            await usdc.connect(alice).transfer(flash, premium);
-
             await flash.connect(alice).flash(data);
 
             const lastCallbackDataAfter = await flash.lastCallbackData();
@@ -81,8 +81,6 @@ describe("AAVE Flash Loan Plugin", function () {
         });
 
         it('updates "flashLoanFee" in callback data', async () => {
-            await usdc.connect(alice).transfer(flash, premium);
-
             await flash.connect(alice).flash(data);
 
             const lastCallbackDataAfter = await flash.lastCallbackData();

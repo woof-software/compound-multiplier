@@ -47,29 +47,20 @@ describe("LiFi Plugin", function () {
     afterEach(async () => await snapshot.restore());
 
     describe("happy cases", function () {
-        let fromToken: string;
-        let toToken: string;
-        let fromAmount: bigint;
-        let swapCalldata: string;
-        let toAmountMin: bigint;
-
-        before(async () => {
-            fromToken = "WETH";
-            toToken = "USDC";
-            fromAmount = exp(1, 18);
+        it("allows to make a swap", async () => {
+            const fromToken = "WETH";
+            const toToken = "USDC";
+            const fromAmount = exp(1, 18);
             const fromAddress = lifiPlugin.target;
-
-            ({ swapCalldata, toAmountMin } = await getQuote(
+            const { swapCalldata, toAmountMin } = await getQuote(
                 CHAIN,
                 CHAIN,
                 fromToken,
                 toToken,
                 String(fromAmount),
                 fromAddress
-            ));
-        });
+            );
 
-        it("allows to make a swap", async () => {
             await weth.transfer(lifiPlugin, fromAmount);
 
             const dstTokenBalanceBefore = await usdc.balanceOf(lifiPlugin);
@@ -83,6 +74,19 @@ describe("LiFi Plugin", function () {
         });
 
         it("emits an event on successful swap", async () => {
+            const fromToken = "WETH";
+            const toToken = "USDC";
+            const fromAmount = exp(1, 18);
+            const fromAddress = lifiPlugin.target;
+            const { swapCalldata, toAmountMin } = await getQuote(
+                CHAIN,
+                CHAIN,
+                fromToken,
+                toToken,
+                String(fromAmount),
+                fromAddress
+            );
+
             await weth.transfer(lifiPlugin, fromAmount);
 
             await expect(lifiPlugin.executeSwap(weth, usdc, fromAmount, toAmountMin, config, swapCalldata))

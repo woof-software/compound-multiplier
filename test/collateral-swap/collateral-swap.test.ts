@@ -175,7 +175,7 @@ describe("CompoundV3CollateralSwap", function () {
                     to: collateralSwap,
                     value: 1 // 1 wei
                 })
-            ).to.be.revertedWith("Cannot receive ETH");
+            ).to.be.revertedWith("Can not receive ETH");
         });
     });
 
@@ -416,24 +416,10 @@ describe("CompoundV3CollateralSwap", function () {
             it("reverts when incorrect contract balance of loaned token after flash loan", async () => {
                 const attackContract = await ethers.deployContract("FlashloanPluginTest", [aavePl, aavePl]);
 
-                const abi = [
-                    "function executeOperation(address asset, uint256 amount, uint256 premium, address initiator, bytes params)"
-                ];
+                const abi = ["function attackCallback()"];
                 const iface = new ethers.Interface(abi);
 
-                const asset = wstETH.target;
-                const amount = exp(1, 18);
-                const premium = 0;
-                const initiator = alice.address;
-                const params = "0x";
-
-                const calldata = iface.encodeFunctionData("executeOperation", [
-                    asset,
-                    amount,
-                    premium,
-                    initiator,
-                    params
-                ]);
+                const calldata = iface.encodeFunctionData("attackCallback", []);
 
                 const plugin = {
                     endpoint: attackContract,
@@ -446,13 +432,7 @@ describe("CompoundV3CollateralSwap", function () {
                     lifiPlugin.endpoint
                 ]);
 
-                const expectedReturnData = await attackContract.executeOperation(
-                    asset,
-                    amount,
-                    premium,
-                    initiator,
-                    params
-                );
+                const expectedReturnData = await attackContract.attackCallback();
 
                 const assetData = await ethers.getContractAt("IERC20", expectedReturnData.asset);
                 expect(await assetData.balanceOf(collateralSwap)).to.equal(0n);

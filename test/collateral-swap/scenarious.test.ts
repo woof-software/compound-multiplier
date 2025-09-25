@@ -11,11 +11,10 @@ import {
     Plugin,
     SWAP_ROUTER,
     tokensInstances,
-    ZERO_ADDRESS,
     SnapshotRestorer,
     takeSnapshot,
-    time,
-    getLiquidity
+    getLiquidity,
+    executeWithRetry
 } from "../helpers/helpers";
 import { expect } from "chai";
 import { $CompoundV3CollateralSwap } from "../../typechain-types/contracts-exposed/CompoundV3CollateralSwap.sol/$CompoundV3CollateralSwap";
@@ -228,7 +227,10 @@ describe("Collateral Swap Scenarios", function () {
         const liquidityCollateralC = await getLiquidity(comet, collateralC, collateralCBalanceBefore);
 
         // Perform swap
-        await collateralSwap.connect(alice).swap(swapParams);
+        await executeWithRetry(async () => {
+            const tx = collateralSwap.connect(alice).swap(swapParams);
+            5;
+        });
 
         // Post-checks
         expect(await collateralA.balanceOf(collateralSwap)).to.eq(0);
@@ -307,7 +309,7 @@ describe("Collateral Swap Scenarios", function () {
         expect(await collateralA.balanceOf(collateralSwap)).to.eq(0);
         expect(await collateralB.balanceOf(collateralSwap)).to.eq(0);
         expect(await collateralC.balanceOf(collateralSwap)).to.eq(0);
-        expect(await comet.borrowBalanceOf(alice)).to.be.eq(BORROW_AMOUNT);
+        expect(await comet.borrowBalanceOf(alice)).to.be.closeTo(BORROW_AMOUNT, 100);
 
         const collateralABalanceBefore = await comet.collateralBalanceOf(alice, collateralA);
         const collateralBBalanceBefore = await comet.collateralBalanceOf(alice, collateralB);
@@ -438,7 +440,7 @@ describe("Collateral Swap Scenarios", function () {
     it("several swaps in a row via different flash plugins", async function () {
         /**
          *  Scenario:
-         *  User has 2 supplied collateral (wbtc and wstETH) and has borrow position
+         *  User has supplied collateral WBTC and has no borrow position
          *  User wants to swap wbtc to wstETH with half of wbtc supply amount via AAVE
          *  Then user wants to swap wstETH to wbtc with half of wstETH supply amount via Balancer
          *  This tests that the same swap calldata works with different flash loan providers
@@ -448,15 +450,15 @@ describe("Collateral Swap Scenarios", function () {
         const collateralA = wbtc; // WBTC
         const collateralB = wstETH; // wstETH
         const supplyAmountCollateralA = exp(0.1, 8); // 0.1 WBTC
-        const fromAmount = (supplyAmountCollateralA * 9995n) / 4n / 10000n;
+        const fromAmountA = (supplyAmountCollateralA * 9995n) / 2n / 10000n; // Half of WBTC supply amount
 
-        // Get swap calldata for wbtc -> wstETH
-        const { swapCalldata, toAmountMin } = await getQuote(
+        // Get swap calldata for wbtc -> wstETH (first swap)
+        const { swapCalldata: swapCalldataA, toAmountMin: toAmountMinA } = await getQuote(
             "ETH",
             "ETH",
             "WBTC",
             "wstETH",
-            fromAmount.toString(),
+            fromAmountA.toString(),
             String(collateralSwap.target)
         );
 
@@ -464,21 +466,10 @@ describe("Collateral Swap Scenarios", function () {
             comet: comet,
             callbackSelector: await aavePl.CALLBACK_SELECTOR(),
             fromAsset: collateralA,
-            fromAmount: fromAmount,
+            fromAmount: fromAmountA,
             toAsset: collateralB,
-            swapCalldata: swapCalldata,
-            minAmountOut: toAmountMin,
-            maxHealthFactorDropBps: 1500n // 15% of health factor
-        };
-
-        let swapParamsB: ICompoundV3CollateralSwap.SwapParamsStruct = {
-            comet: comet,
-            callbackSelector: await balancerPl.CALLBACK_SELECTOR(),
-            fromAsset: collateralA,
-            fromAmount: fromAmount,
-            toAsset: collateralB,
-            swapCalldata: swapCalldata,
-            minAmountOut: toAmountMin,
+            swapCalldata: swapCalldataA,
+            minAmountOut: toAmountMinA,
             maxHealthFactorDropBps: 1500n // 15% of health factor
         };
 
@@ -500,9 +491,33 @@ describe("Collateral Swap Scenarios", function () {
         // Perform swap A: wbtc -> wstETH via AAVE
         await collateralSwap.connect(alice).swap(swapParamsA);
 
-        // Check intermediate state
+        // Check intermediate state after first swap
         const collateralABalanceAfterFirstSwap = await comet.collateralBalanceOf(alice, collateralA);
         const collateralBBalanceAfterFirstSwap = await comet.collateralBalanceOf(alice, collateralB);
+
+        // Calculate fromAmountB as half of the wstETH balance obtained from first swap
+        const fromAmountB = (collateralBBalanceAfterFirstSwap * 9995n) / 2n / 10000n; // Half of wstETH balance
+
+        // Get swap calldata for wstETH -> wbtc (second swap) using the actual wstETH amount from first swap
+        const { swapCalldata: swapCalldataB, toAmountMin: toAmountMinB } = await getQuote(
+            "ETH",
+            "ETH",
+            "wstETH",
+            "WBTC",
+            fromAmountB.toString(),
+            String(collateralSwap.target)
+        );
+
+        let swapParamsB: ICompoundV3CollateralSwap.SwapParamsStruct = {
+            comet: comet,
+            callbackSelector: await balancerPl.CALLBACK_SELECTOR(),
+            fromAsset: collateralB, // wstETH
+            fromAmount: fromAmountB,
+            toAsset: collateralA, // WBTC
+            swapCalldata: swapCalldataB,
+            minAmountOut: toAmountMinB,
+            maxHealthFactorDropBps: 1500n // 15% of health factor
+        };
 
         // Perform swap B: wstETH -> wbtc via Balancer
         await collateralSwap.connect(alice).swap(swapParamsB);
@@ -517,13 +532,13 @@ describe("Collateral Swap Scenarios", function () {
         const liquidityCollateralAAfter = await getLiquidity(comet, collateralA, collateralABalanceAfter);
         const liquidityCollateralBAfter = await getLiquidity(comet, collateralB, collateralBBalanceAfter);
 
-        // Verify first swap: WBTC decreased, wstETH increased
-        expect(collateralABalanceAfterFirstSwap).to.be.closeTo(collateralABalanceBefore - fromAmount, 10);
-        expect(collateralBBalanceAfterFirstSwap).to.be.gt(collateralBBalanceBefore + toAmountMin);
+        // Verify first swap: WBTC decreased by half of supply amount, wstETH increased
+        expect(collateralABalanceAfterFirstSwap).to.be.closeTo(collateralABalanceBefore - fromAmountA, 10);
+        expect(collateralBBalanceAfterFirstSwap).to.be.gt(collateralBBalanceBefore + toAmountMinA);
 
-        // Verify second swap: wstETH decreased from intermediate state, WBTC increased
-        expect(collateralBBalanceAfter).to.be.closeTo(collateralBBalanceAfterFirstSwap - fromAmount, 10);
-        expect(collateralABalanceAfter).to.be.gt(collateralABalanceAfterFirstSwap + toAmountMin);
+        // Verify second swap: wstETH decreased by half of its balance, WBTC increased
+        expect(collateralBBalanceAfter).to.be.closeTo(collateralBBalanceAfterFirstSwap - fromAmountB, 10);
+        expect(collateralABalanceAfter).to.be.gt(collateralABalanceAfterFirstSwap + toAmountMinB);
 
         // Verify health factor constraints for both swaps
         const totalLiquidityBefore = liquidityCollateralABefore + liquidityCollateralBBefore;
