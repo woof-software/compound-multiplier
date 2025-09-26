@@ -26,11 +26,32 @@ bytes32 SLOT_PLUGIN
 function takeFlashLoan(struct ICometFlashLoanPlugin.CallbackData data, bytes) public
 ```
 
+Initiates a flash loan
+
+_Stores flash loan ID in transient storage for callback validation_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| data | struct ICometFlashLoanPlugin.CallbackData | Flash loan parameters including debt amount, asset, and user information |
+|  | bytes |  |
+
 ### repayFlashLoan
 
 ```solidity
 function repayFlashLoan(address flp, address baseAsset, uint256 amount) external
 ```
+
+Repays the flash loan
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| flp | address | Address of the flash loan provider |
+| baseAsset | address | Address of the borrowed asset |
+| amount | uint256 | Total repayment amount (principal + fee) |
 
 ### onFlashLoan
 

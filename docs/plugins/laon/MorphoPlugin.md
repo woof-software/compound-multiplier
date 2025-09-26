@@ -28,7 +28,7 @@ Storage slot for transient flash loan ID validation
 function takeFlashLoan(struct ICometFlashLoanPlugin.CallbackData data, bytes) public
 ```
 
-Initiates a flash loan from Morpho protocol
+Initiates a flash loan
 
 _Stores flash loan ID in transient storage for callback validation_
 
@@ -45,15 +45,13 @@ _Stores flash loan ID in transient storage for callback validation_
 function repayFlashLoan(address flp, address baseAsset, uint256 amount) external
 ```
 
-Repays the flash loan to Morpho protocol
-
-_Uses approve instead of transfer as Morpho pulls repayment_
+Repays the flash loan
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| flp | address | Address of the flash loan provider (Morpho contract) |
+| flp | address | Address of the flash loan provider |
 | baseAsset | address | Address of the borrowed asset |
 | amount | uint256 | Total repayment amount (principal + fee) |
 

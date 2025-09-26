@@ -23,18 +23,18 @@ _Used by CometMultiplierAdapter to identify and route swap calls to this plugin_
 function executeSwap(address srcToken, address dstToken, uint256 amountIn, uint256 minAmountOut, bytes config, bytes swapData) external returns (uint256 amountOut)
 ```
 
-Executes a token swap using 1inch V6 aggregator
+Executes a token swap between two assets
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | srcToken | address | Address of the source token to swap from |
-| dstToken | address | Address of the destination token to swap to (unused) |
+| dstToken | address | Address of the destination token to swap to |
 | amountIn | uint256 | Amount of source tokens to swap |
 | minAmountOut | uint256 | Minimum amount of destination tokens expected |
-| config | bytes | Encoded configuration containing the 1inch router address |
-| swapData | bytes | Encoded swap parameters for the 1inch router call |
+| config | bytes | Encoded configuration specific to the swap plugin |
+| swapData | bytes | Encoded data required by the underlying swap mechanism |
 
 #### Return Values
 
