@@ -17,15 +17,7 @@ contract OneInchV6SwapPlugin is ICometSwapPlugin {
     bytes4 public constant CALLBACK_SELECTOR = 0x7a8c0f2b;
 
     /**
-     * @notice Executes a token swap using 1inch V6 aggregator
-     * @param srcToken Address of the source token to swap from
-     * @param dstToken Address of the destination token to swap to (unused)
-     * @param amountIn Amount of source tokens to swap
-     * @param minAmountOut Minimum amount of destination tokens expected
-     * @param config Encoded configuration containing the 1inch router address
-     * @param swapData Encoded swap parameters for the 1inch router call
-     * @return amountOut Actual amount of destination tokens received from the swap
-     * @custom:security Uses low-level call with proper error propagation to handle router failures
+     * @inheritdoc ICometSwapPlugin
      */
     function executeSwap(
         address srcToken,

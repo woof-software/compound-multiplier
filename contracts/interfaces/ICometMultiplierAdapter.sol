@@ -54,4 +54,49 @@ interface ICometMultiplierAdapter {
     );
 
     function wEth() external view returns (address);
+
+    /**
+     * @notice Creates a leveraged position by borrowing against supplied collateral
+     * @param opts Configuration options including market, selectors, and flash loan provider
+     * @param collateral Address of the collateral token to supply
+     * @param collateralAmount Amount of collateral tokens to supply
+     * @param leverage Leverage multiplier (e.g., 20000 = 2x leverage)
+     * @param swapData Encoded swap parameters for the DEX aggregator
+     * @param minAmountOut Minimum amount of collateral tokens expected from the swap
+     * @dev This function:
+     *      1. Validates the flash loan plugin exists
+     *      2. Calculates the required loan amount based on leverage
+     *      3. Transfers user's collateral to the contract
+     *      4. Initiates a flash loan to execute the leveraged position
+     * @custom:security Protected by reentrancy guard and requires valid plugin selectors
+     */
+    function executeMultiplier(
+        Options memory opts,
+        address collateral,
+        uint256 collateralAmount,
+        uint256 leverage,
+        bytes calldata swapData,
+        uint256 minAmountOut
+    ) external payable;
+
+    /**
+     * @notice Reduces or closes a leveraged position by withdrawing collateral and repaying debt
+     * @param opts Configuration options including market, selectors, and flash loan provider
+     * @param collateral Address of the collateral token to withdraw
+     * @param collateralAmount Amount of collateral tokens to withdraw (or type(uint256).max for maximum)
+     * @param swapData Encoded swap parameters for converting collateral to base asset
+     * @param minAmountOut Minimum amount of base asset expected from the swap
+     * @dev This function:
+     *      1. Checks that the user has an outstanding borrow balance
+     *      2. Calculates the maximum withdrawable amount based on collateralization
+     *      3. Initiates a flash loan to temporarily repay debt and withdraw collateral
+     * @custom:security Protected by reentrancy guard and validates borrow balance exists
+     */
+    function withdrawMultiplier(
+        Options memory opts,
+        address collateral,
+        uint256 collateralAmount,
+        bytes calldata swapData,
+        uint256 minAmountOut
+    ) external;
 }

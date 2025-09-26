@@ -19,9 +19,7 @@ contract EulerV2Plugin is ICometFlashLoanPlugin {
     bytes32 public constant SLOT_PLUGIN = bytes32(uint256(keccak256("EulerV2Plugin.plugin")) - 1);
 
     /**
-     * @notice Initiates a flash loan from an Euler V2 vault
-     * @param data Flash loan parameters including debt amount, asset, and user information
-     * @dev Stores flash loan ID in transient storage for callback validation
+     * @inheritdoc ICometFlashLoanPlugin
      */
     function takeFlashLoan(CallbackData memory data, bytes memory) public {
         bytes memory _data = abi.encode(data);
@@ -34,10 +32,7 @@ contract EulerV2Plugin is ICometFlashLoanPlugin {
     }
 
     /**
-     * @notice Repays the flash loan to the Euler V2 vault
-     * @param flp Address of the flash loan provider (vault)
-     * @param baseAsset Address of the borrowed asset
-     * @param amount Total repayment amount (principal + fee)
+     * @inheritdoc ICometFlashLoanPlugin
      */
     function repayFlashLoan(address flp, address baseAsset, uint256 amount) external {
         IERC20(baseAsset).transfer(flp, amount);

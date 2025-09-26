@@ -18,9 +18,7 @@ contract MorphoPlugin is ICometFlashLoanPlugin {
     bytes32 public constant SLOT_PLUGIN = bytes32(uint256(keccak256("MorphoPlugin.plugin")) - 1);
 
     /**
-     * @notice Initiates a flash loan from Morpho protocol
-     * @param data Flash loan parameters including debt amount, asset, and user information
-     * @dev Stores flash loan ID in transient storage for callback validation
+     * @inheritdoc ICometFlashLoanPlugin
      */
     function takeFlashLoan(CallbackData memory data, bytes memory) public {
         bytes memory _data = abi.encode(data);
@@ -33,11 +31,7 @@ contract MorphoPlugin is ICometFlashLoanPlugin {
     }
 
     /**
-     * @notice Repays the flash loan to Morpho protocol
-     * @param flp Address of the flash loan provider (Morpho contract)
-     * @param baseAsset Address of the borrowed asset
-     * @param amount Total repayment amount (principal + fee)
-     * @dev Uses approve instead of transfer as Morpho pulls repayment
+     * @inheritdoc ICometFlashLoanPlugin
      */
     function repayFlashLoan(address flp, address baseAsset, uint256 amount) external {
         IERC20(baseAsset).approve(flp, amount);

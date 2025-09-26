@@ -24,6 +24,9 @@ contract WstEthPlugin is ICometSwapPlugin {
      */
     receive() external payable {}
 
+    /**
+     * @inheritdoc ICometSwapPlugin
+     */
     function executeSwap(
         address srcToken,
         address dstToken,
@@ -64,6 +67,8 @@ contract WstEthPlugin is ICometSwapPlugin {
                 }
             }
             amountOut = abi.decode(ret, (uint256));
+
+            emit SwapExecuted(swapPlugin, srcToken, dstToken, amountOut);
         }
     }
 
@@ -81,5 +86,6 @@ contract WstEthPlugin is ICometSwapPlugin {
         IWstEth(wstEth).wrap(stAmount);
         amountOut = IERC20(wstEth).balanceOf(address(this)) - initial;
         require(amountOut >= minAmountOut, InvalidAmountOut());
+        emit SwapExecuted(wstEth, wEth, wstEth, amountOut);
     }
 }

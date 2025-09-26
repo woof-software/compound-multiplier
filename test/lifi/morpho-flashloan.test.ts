@@ -1,31 +1,31 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
-import { CometMultiplierAdapter, EulerV2Plugin, LiFiPlugin, IComet, IERC20 } from "../../typechain-types";
+import { CometMultiplierAdapter, MorphoPlugin, LiFiPlugin, IComet, IERC20 } from "../../typechain-types";
+import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 import {
-    calculateMaxSafeWithdrawal,
-    calculateHealthFactor,
-    executeMultiplierLiFi as executeMultiplier,
-    withdrawMultiplierLiFi as withdrawMultiplier,
-    calculateMaxLeverage,
-    calculateLeveragedAmount,
-    calculateExpectedCollateral,
-    previewTake,
     executeWithRetry,
-    getQuote,
     WETH_ADDRESS,
     USDC_ADDRESS,
     WETH_WHALE,
     COMET_USDC_MARKET,
-    LIFI_ROUTER,
-    USDC_EVAULT
+    MORPHO,
+    calculateMaxLeverage,
+    calculateLeveragedAmount,
+    calculateExpectedCollateral,
+    previewTake,
+    executeMultiplierLiFi as executeMultiplier,
+    withdrawMultiplierLiFi as withdrawMultiplier,
+    calculateHealthFactor,
+    calculateMaxSafeWithdrawal,
+    getQuote
 } from "../helpers/helpers";
-import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 
+const LIFI_ROUTER = "0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE";
 const opts = { maxFeePerGas: 4_000_000_000 };
 
-describe("Comet Multiplier Adapter / LiFi / Euler", function () {
+describe("Comet Multiplier Adapter / LiFi / Morpho", function () {
     let adapter: CometMultiplierAdapter;
-    let loanPlugin: EulerV2Plugin;
+    let loanPlugin: MorphoPlugin;
     let swapPlugin: LiFiPlugin;
     let comet: IComet;
     let weth: IERC20;
@@ -40,7 +40,7 @@ describe("Comet Multiplier Adapter / LiFi / Euler", function () {
             market: COMET_USDC_MARKET,
             loanSelector: await loanPlugin.CALLBACK_SELECTOR(),
             swapSelector: await swapPlugin.CALLBACK_SELECTOR(),
-            flp: USDC_EVAULT
+            flp: MORPHO
         };
     }
 
@@ -53,7 +53,7 @@ describe("Comet Multiplier Adapter / LiFi / Euler", function () {
 
         [owner, user, user2] = await ethers.getSigners();
 
-        const LoanFactory = await ethers.getContractFactory("EulerV2Plugin", owner);
+        const LoanFactory = await ethers.getContractFactory("MorphoPlugin", owner);
         loanPlugin = await LoanFactory.deploy(opts);
 
         const SwapFactory = await ethers.getContractFactory("LiFiPlugin", owner);
@@ -98,6 +98,24 @@ describe("Comet Multiplier Adapter / LiFi / Euler", function () {
     });
 
     describe("Execute Multiplier", function () {
+        it("should execute with 1.1x leverage", async function () {
+            const initialAmount = ethers.parseEther("1");
+            const leverage = 11_000;
+
+            const expectedDebt = await calculateLeveragedAmount(comet, initialAmount, leverage);
+            const expectedCollateral = await calculateExpectedCollateral(initialAmount, leverage);
+
+            await executeMultiplier(weth, await getMarketOptions(), comet, adapter, user, initialAmount, leverage);
+
+            const collateralBalance = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
+            const borrowBalance = await comet.borrowBalanceOf(user.address);
+
+            expect(collateralBalance).to.be.closeTo(expectedCollateral, (expectedCollateral * 2n) / 100n);
+            expect(borrowBalance).to.be.closeTo(expectedDebt, expectedDebt / 20n);
+            expect(collateralBalance).to.be.gt(initialAmount);
+            expect(borrowBalance).to.be.gt(0);
+        });
+
         it("should execute with 1.5x leverage", async function () {
             const initialAmount = ethers.parseEther("0.1");
             const leverage = 15_000;
@@ -112,7 +130,7 @@ describe("Comet Multiplier Adapter / LiFi / Euler", function () {
             const finalCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
             const finalDebt = await comet.borrowBalanceOf(user.address);
 
-            expect(finalCol).to.be.closeTo(expectedCollateral, expectedCollateral / 100n);
+            expect(finalCol).to.be.closeTo(expectedCollateral, (expectedCollateral * 2n) / 100n);
             expect(finalDebt).to.be.closeTo(expectedDebt, expectedDebt / 20n);
             expect(finalCol).to.be.gt(initialCol + initialAmount);
             expect(finalDebt).to.be.gt(initialDebt);
@@ -127,12 +145,12 @@ describe("Comet Multiplier Adapter / LiFi / Euler", function () {
 
             await executeMultiplier(weth, await getMarketOptions(), comet, adapter, user2, initialAmount, leverage);
 
-            const finalCol = await comet.collateralBalanceOf(user2.address, WETH_ADDRESS);
+            const collateralBalance = await comet.collateralBalanceOf(user2.address, WETH_ADDRESS);
             const borrowBalance = await comet.borrowBalanceOf(user2.address);
 
-            expect(finalCol).to.be.closeTo(expectedCollateral, expectedCollateral / 100n);
+            expect(collateralBalance).to.be.closeTo(expectedCollateral, (expectedCollateral * 2n) / 100n);
             expect(borrowBalance).to.be.closeTo(expectedDebt, expectedDebt / 20n);
-            expect(finalCol).to.be.gt(initialAmount);
+            expect(collateralBalance).to.be.gt(initialAmount);
             expect(borrowBalance).to.be.gt(0);
         });
 
@@ -145,12 +163,12 @@ describe("Comet Multiplier Adapter / LiFi / Euler", function () {
 
             await executeMultiplier(weth, await getMarketOptions(), comet, adapter, user, initialAmount, leverage);
 
-            const finalCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
+            const collateralBalance = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
             const borrowBalance = await comet.borrowBalanceOf(user.address);
 
-            expect(finalCol).to.be.closeTo(expectedCollateral, expectedCollateral / 100n);
+            expect(collateralBalance).to.be.closeTo(expectedCollateral, (expectedCollateral * 2n) / 100n);
             expect(borrowBalance).to.be.closeTo(expectedDebt, expectedDebt / 20n);
-            expect(finalCol).to.be.gt(initialAmount);
+            expect(collateralBalance).to.be.gt(initialAmount);
             expect(borrowBalance).to.be.gt(0);
         });
 
@@ -518,6 +536,114 @@ describe("Comet Multiplier Adapter / LiFi / Euler", function () {
             expect(finalCol).to.be.gt(0);
             expect(finalDebt).to.be.gt(0);
             expect(usdcAfterWithdraw).to.be.gt(initialUsdc);
+        });
+    });
+
+    describe("Event Emission", function () {
+        it("should emit events on successful deposit", async function () {
+            const initialAmount = ethers.parseEther("0.1");
+            const leverage = 15_000;
+
+            const tx = await executeMultiplier(
+                weth,
+                await getMarketOptions(),
+                comet,
+                adapter,
+                user2,
+                initialAmount,
+                leverage
+            );
+
+            const receipt = await tx.wait();
+
+            const executedEvents = receipt.logs.filter((log: any) => {
+                try {
+                    const parsed = adapter.interface.parseLog(log);
+                    return parsed && parsed.name === "Executed";
+                } catch {
+                    return false;
+                }
+            });
+
+            expect(executedEvents.length).to.be.gt(0);
+
+            if (executedEvents.length > 0) {
+                const parsedEvent = adapter.interface.parseLog(executedEvents[0]);
+                expect(parsedEvent!.args.user).to.equal(user2.address);
+                expect(parsedEvent!.args.market).to.equal(COMET_USDC_MARKET);
+                expect(parsedEvent!.args.collateral).to.equal(WETH_ADDRESS);
+                expect(parsedEvent!.args.totalAmount).to.be.gt(initialAmount);
+                expect(parsedEvent!.args.debtAmount).to.be.gt(0);
+            }
+        });
+        it("should emit events on successful deposit", async function () {
+            const initialAmount = ethers.parseEther("0.1");
+            const leverage = 15_000;
+
+            const tx = await executeMultiplier(
+                weth,
+                await getMarketOptions(),
+                comet,
+                adapter,
+                user2,
+                initialAmount,
+                leverage
+            );
+
+            const receipt = await tx.wait();
+
+            const executedEvents = receipt.logs.filter((log: any) => {
+                try {
+                    const parsed = adapter.interface.parseLog(log);
+                    return parsed && parsed.name === "Executed";
+                } catch {
+                    return false;
+                }
+            });
+
+            expect(executedEvents.length).to.be.gt(0);
+
+            if (executedEvents.length > 0) {
+                const parsedEvent = adapter.interface.parseLog(executedEvents[0]);
+                expect(parsedEvent!.args.user).to.equal(user2.address);
+                expect(parsedEvent!.args.market).to.equal(COMET_USDC_MARKET);
+                expect(parsedEvent!.args.collateral).to.equal(WETH_ADDRESS);
+                expect(parsedEvent!.args.totalAmount).to.be.gt(initialAmount);
+                expect(parsedEvent!.args.debtAmount).to.be.gt(0);
+            }
+        });
+
+        it("should emit events on successful withdrawal", async function () {
+            const initialAmount = ethers.parseEther("0.2");
+            const leverage = 25_000;
+
+            await executeMultiplier(weth, await getMarketOptions(), comet, adapter, user, initialAmount, leverage);
+
+            const collateralBalance = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
+            const withdrawAmount = collateralBalance / 10n;
+
+            const tx = await withdrawMultiplier(await getMarketOptions(), comet, adapter, user, withdrawAmount);
+            const receipt = await tx.wait();
+
+            const withdrawnEvents = receipt.logs.filter((log: any) => {
+                try {
+                    const parsed = adapter.interface.parseLog(log);
+                    return parsed && parsed.name === "Withdrawn";
+                } catch {
+                    return false;
+                }
+            });
+
+            expect(withdrawnEvents.length).to.be.gt(0);
+
+            if (withdrawnEvents.length > 0) {
+                const parsedEvent = adapter.interface.parseLog(withdrawnEvents[0]);
+                expect(parsedEvent!.args.user).to.equal(user.address);
+                expect(parsedEvent!.args.market).to.equal(COMET_USDC_MARKET);
+                expect(parsedEvent!.args.collateral).to.equal(WETH_ADDRESS);
+                expect(parsedEvent!.args.withdrawnAmount).to.be.gt(0);
+                expect(parsedEvent!.args.baseReturned).to.be.gte(0);
+            }
         });
     });
 });

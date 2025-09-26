@@ -4,9 +4,21 @@ pragma solidity ^0.8.30;
 import { ICometSwapPlugin } from "../../interfaces/ICometSwapPlugin.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
+/**
+ * @title LiFiPlugin
+ * @author WOOF!
+ * @notice Swap plugin for integrating LiFi aggregator with CometMultiplierAdapter
+ * @dev Implements ICometSwapPlugin interface to provide standardized token swap functionality
+ *      using the LiFi aggregation router for optimal swap execution
+ */
 contract LiFiPlugin is ICometSwapPlugin {
+    /// @notice Callback function selector for this swap plugin
+    /// @dev Used by CometMultiplierAdapter to identify and route swap calls to this plugin
     bytes4 public constant CALLBACK_SELECTOR = 0x8b9d1a3c;
 
+    /**
+     * @inheritdoc ICometSwapPlugin
+     */
     function executeSwap(
         address srcToken,
         address dstToken,

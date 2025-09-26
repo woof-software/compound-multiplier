@@ -7,7 +7,7 @@ import {
     LiFiPlugin,
     IComet,
     IERC20
-} from "./../typechain-types";
+} from "../typechain-types";
 import {
     executeWithRetry,
     calculateLeveragedAmount,
