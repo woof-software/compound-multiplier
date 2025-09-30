@@ -43,7 +43,7 @@ function SLOT_PLUGIN() external view returns (bytes32)
 ### takeFlashLoan
 
 ```solidity
-function takeFlashLoan(struct ICometFlashLoanPlugin.CallbackData data, bytes) external
+function takeFlashLoan(struct ICometFlashLoanPlugin.CallbackData data, bytes) external payable
 ```
 
 Initiates a flash loan

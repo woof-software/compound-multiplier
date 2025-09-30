@@ -23,7 +23,7 @@ bytes32 SLOT_PLUGIN
 ### takeFlashLoan
 
 ```solidity
-function takeFlashLoan(struct ICometFlashLoanPlugin.CallbackData data, bytes) public
+function takeFlashLoan(struct ICometFlashLoanPlugin.CallbackData data, bytes) public payable
 ```
 
 Initiates a flash loan
