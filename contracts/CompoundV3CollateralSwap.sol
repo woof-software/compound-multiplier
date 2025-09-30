@@ -49,6 +49,8 @@ import { ICometSwapPlugin } from "./interfaces/ICometSwapPlugin.sol";
  *      - Flash loan fees are automatically accounted for in minimum output calculations
  *      - Slippage protection is enforced through minAmountOut parameter validation
  *      - Only registered and validated plugins can execute flash loans and swaps
+ *      - Plugins are configured exclusively during contract deployment. To add or modify plugins,
+ *        redeployment of the contract is required.
  */
 contract CompoundV3CollateralSwap is AllowBySig, ICompoundV3CollateralSwap {
     /// @dev Offset for the comet contract address
@@ -250,6 +252,9 @@ contract CompoundV3CollateralSwap is AllowBySig, ICompoundV3CollateralSwap {
      * @param fromAmount The amount of the asset being swapped from.
      * @param minAmountOut The minimum amount of the asset being swapped to.
      * @param maxHealthFactorDropBps The maximum allowed drop in health factor (in basis points).
+     *
+     * @dev Liquidity is calculated based on comet implementation.
+     * Implementation: https://github.com/compound-finance/comet/blob/main/contracts/Comet.sol#L544-L553
      */
     function _checkCollateralization(
         IComet comet,
