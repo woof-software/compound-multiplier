@@ -11,6 +11,45 @@ import { ICometFlashLoanPlugin } from "./interfaces/ICometFlashLoanPlugin.sol";
 import { ICompoundV3CollateralSwap } from "./interfaces/ICompoundV3CollateralSwap.sol";
 import { ICometSwapPlugin } from "./interfaces/ICometSwapPlugin.sol";
 
+/**
+ * @title CompoundV3CollateralSwap
+ * @author WOOF! Software
+ * @custom:security-contact dmitriy@woof.software
+ *
+ * @dev This contract allows users to swap one type of collateral for another in their Compound V3 position
+ *      without needing to close their borrowing position. The process works by:
+ *      1. Taking a flash loan of the desired collateral asset
+ *      2. Supplying the flash loan to the user's Compound position
+ *      3. Withdrawing the user's existing collateral
+ *      4. Swapping the withdrawn collateral for the borrowed asset to repay the flash loan
+ *      5. Supplying any remaining dust back to the user's position
+ *
+ *      The contract supports multiple flash loan providers through a modular plugin system and
+ *      uses configurable swap plugins for executing the collateral swap.
+ * @dev Features:
+ *      - Multi-protocol flash loan support
+ *      - Modular swap execution through dedicated swap plugins
+ *      - Health factor validation to ensure position remains safe after swap
+ *      - Gas-optimized execution using delegate calls and transient storage
+ *      - Signature-based approvals for gasless transactions
+ *      - Comprehensive slippage protection and validation
+ * @dev Security Features:
+ *      - Callback validation ensures only registered plugins can execute operations
+ *      - Health factor checks prevent unsafe position modifications
+ *      - Exact balance validation before and after operations
+ *      - Transient storage prevents storage slot collisions
+ *      - Comprehensive input validation and error handling
+ * @dev Architecture:
+ *      - Uses fallback() function as a universal callback handler for flash loan providers
+ *      - Employs plugin pattern for extensibility and protocol abstraction
+ *      - Integrates with AllowBySig for meta-transaction support
+ *      - Optimized for gas efficiency through minimal storage usage
+ * @custom:security-considerations
+ *      - Users must have sufficient collateral to maintain healthy positions after swaps
+ *      - Flash loan fees are automatically accounted for in minimum output calculations
+ *      - Slippage protection is enforced through minAmountOut parameter validation
+ *      - Only registered and validated plugins can execute flash loans and swaps
+ */
 contract CompoundV3CollateralSwap is AllowBySig, ICompoundV3CollateralSwap {
     /// @dev Offset for the comet contract address
     uint256 private constant COMET_OFFSET = 0x20;
@@ -98,17 +137,18 @@ contract CompoundV3CollateralSwap is AllowBySig, ICompoundV3CollateralSwap {
         _catch(success);
 
         ICometFlashLoanPlugin.CallbackData memory data = abi.decode(payload, (ICometFlashLoanPlugin.CallbackData));
-        address asset = data.asset;
+        IERC20 asset = IERC20(data.asset);
         address user = data.user;
         uint256 debt = data.debt;
 
-        require(IERC20(asset).balanceOf(address(this)) == data.snapshot + debt, InvalidAmountOut());
+        require(asset.balanceOf(address(this)) == data.snapshot + debt, InvalidAmountOut());
 
-        (address comet, address fromAsset, uint256 fromAmount) = _tload();
+        (address cometAddr, address fromAsset, uint256 fromAmount) = _tload();
+        IComet comet = IComet(cometAddr);
 
-        IERC20(asset).approve(comet, debt);
-        IComet(comet).supplyTo(user, asset, debt);
-        IComet(comet).withdrawFrom(user, address(this), fromAsset, fromAmount);
+        asset.approve(address(comet), debt);
+        comet.supplyTo(user, address(asset), debt);
+        comet.withdrawFrom(user, address(this), fromAsset, fromAmount);
 
         uint256 repayAmount = debt + data.fee;
 
@@ -126,7 +166,7 @@ contract CompoundV3CollateralSwap is AllowBySig, ICompoundV3CollateralSwap {
         );
         _catch(success);
 
-        _supplyDust(user, fromAsset, comet, 0);
+        _supplyDust(user, IERC20(fromAsset), comet, 0);
         _supplyDust(user, asset, comet, repayAmount);
 
         (success, ) = endpoint.delegatecall(
@@ -151,7 +191,7 @@ contract CompoundV3CollateralSwap is AllowBySig, ICompoundV3CollateralSwap {
     }
 
     /// @inheritdoc ICompoundV3CollateralSwap
-    function swapWithApprove(SwapParams calldata swapParams, AllowParams calldata allowParams) external {
+    function swapWithPermit(SwapParams calldata swapParams, AllowParams calldata allowParams) external {
         _allowBySig(allowParams, swapParams.comet);
         _swap(swapParams);
     }
@@ -295,11 +335,11 @@ contract CompoundV3CollateralSwap is AllowBySig, ICompoundV3CollateralSwap {
      * @param comet The Comet contract address
      * @param repayAmount Amount reserved for repayment (excluded from dust)
      */
-    function _supplyDust(address user, address asset, address comet, uint256 repayAmount) internal {
-        uint256 balance = IERC20(asset).balanceOf(address(this)) - repayAmount;
+    function _supplyDust(address user, IERC20 asset, IComet comet, uint256 repayAmount) internal {
+        uint256 balance = asset.balanceOf(address(this)) - repayAmount;
         if (balance != 0) {
-            IERC20(asset).approve(comet, balance);
-            IComet(comet).supplyTo(user, asset, balance);
+            asset.approve(address(comet), balance);
+            comet.supplyTo(user, address(asset), balance);
         }
     }
 

@@ -318,7 +318,7 @@ describe("CompoundV3CollateralSwap", function () {
                     manager: signatureArgs.manager
                 };
 
-                await expect(collateralSwap.connect(alice).swapWithApprove(swapParams, allowParams)).to.not.be.reverted;
+                await expect(collateralSwap.connect(alice).swapWithPermit(swapParams, allowParams)).to.not.be.reverted;
 
                 // check that permission is set
                 expect(await comet.hasPermission(alice, collateralSwap)).to.be.true;

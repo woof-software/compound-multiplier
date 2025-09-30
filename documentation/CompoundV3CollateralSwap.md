@@ -209,6 +209,8 @@ npx hardhat verify --network <network> <contract_address> <constructor_args>
 ### Basic Collateral Swap
 
 ```solidity
+IComet(comet).allow(contract, true);
+
 // Swap WETH to USDC collateral
 CompoundV3CollateralSwap.SwapParams memory params = CompoundV3CollateralSwap.SwapParams({
     comet: cometAddress,
@@ -225,6 +227,8 @@ contract.swap(params);
 ```
 
 ### Swap with Signature Authorization
+
+Sign data from wallet and prepare struct with signature data (example could be find in tests)
 
 ```solidity
 // Create EIP-712 signature for authorization

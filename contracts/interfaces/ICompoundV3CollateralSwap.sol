@@ -199,5 +199,5 @@ interface ICompoundV3CollateralSwap {
      * @custom:security Prevents replay attacks using nonce validation
      * @custom:security Ensures only the signer can use their own signature
      */
-    function swapWithApprove(SwapParams calldata swapParams, AllowBySig.AllowParams calldata allowParams) external;
+    function swapWithPermit(SwapParams calldata swapParams, AllowBySig.AllowParams calldata allowParams) external;
 }

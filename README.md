@@ -18,10 +18,12 @@ This creates a leveraged position without requiring multiple manual transactions
 The system uses a plugin-based architecture:
 
 ```
-CometMultiplierAdapter
+CometMultiplierAdapter & CompoundV3CollateralSwap
 ├── Loan Plugins (Flash Loan Sources)
 │   ├── MorphoPlugin - Morpho Blue flash loans
 │   ├── EulerV2Plugin - Euler V2 flash loans
+│   ├── AAVEPlugin - AAVE flash loans
+│   ├── BalancerPlugin - Balancer vault flash loans
 │   └── UniswapV3Plugin - Uniswap V3 flash swaps
 │
 └── Swap Plugins (DEX Aggregators)
@@ -29,6 +31,74 @@ CometMultiplierAdapter
     ├── OneInchV6SwapPlugin - 1inch v6 aggregator
     └── WstEthPlugin - wstETH wrapping/unwrapping
 ```
+
+### Collateral Swap Flow
+
+The `CompoundV3CollateralSwap` contract enables users to swap collateral in their Compound v3 position without closing their borrowing position:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    COLLATERAL SWAP FLOW (WETH → USDC)                      │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+1. USER INITIATES SWAP
+   User ──► CompoundV3CollateralSwap.swap(fromAsset: WETH, toAsset: USDC)
+
+2. HEALTH FACTOR VALIDATION
+   CompoundV3CollateralSwap ──► Validates position safety after swap
+
+3. FLASH LOAN REQUEST
+   CompoundV3CollateralSwap ──► FlashLoanPlugin.takeFlashLoan(1000 USDC)
+   FlashLoanPlugin ──► AAVE/Balancer/Uniswap.flashLoan(1000 USDC)
+
+4. FLASH LOAN CALLBACK
+   AAVE/Balancer/Uniswap ──► CompoundV3CollateralSwap.fallback()
+   ✅ Contract Balance: +1000 USDC
+
+5. SUPPLY BORROWED ASSET
+   CompoundV3CollateralSwap ──► Comet.supplyTo(user, 1000 USDC)
+   ✅ User's USDC collateral increases, health factor improves
+
+6. WITHDRAW EXISTING COLLATERAL
+   CompoundV3CollateralSwap ──► Comet.withdrawFrom(user, 0.5 WETH)
+   ✅ Contract Balance: 1000 USDC + 0.5 WETH
+
+7. SWAP WITHDRAWN COLLATERAL
+   CompoundV3CollateralSwap ──► SwapPlugin.executeSwap(0.5 WETH → USDC)
+   SwapPlugin ──► 1inch/LiFi.swap(0.5 WETH → 1005 USDC)
+   ✅ Contract Balance: 2005 USDC total
+
+8. SUPPLY DUST BACK TO USER
+   CompoundV3CollateralSwap ──► Comet.supplyTo(user, dust USDC)
+   ✅ Excess USDC supplied back to user's position
+
+9. REPAY FLASH LOAN
+   CompoundV3CollateralSwap ──► FlashLoanPlugin.repayFlashLoan(1005 USDC)
+   FlashLoanPlugin ──► AAVE/Balancer/Uniswap.repay(1000 + 5 fee)
+   ✅ Contract Balance: 0
+
+RESULT: User's collateral successfully swapped from WETH to USDC in Comet
+```
+
+### Token Flow Breakdown
+
+| Stage           | Contract Balance         | Action                        | External Call                    |
+| --------------- | ------------------------ | ----------------------------- | -------------------------------- |
+| **Initial**     | 0                        | User calls `swap()`           | -                                |
+| **Flash Loan**  | +1000 USDC               | Flash loan received           | `FlashProvider.flashLoan()`      |
+| **Supply**      | 1000 USDC                | Supply borrowed asset to user | `Comet.supplyTo(user, USDC)`     |
+| **Withdraw**    | 1000 USDC<br/>+0.5 WETH  | Withdraw user's collateral    | `Comet.withdrawFrom(user, WETH)` |
+| **Swap**        | ~2005 USDC<br/>-0.5 WETH | Swap withdrawn collateral     | `DEX.swap(WETH → USDC)`          |
+| **Supply Dust** | ~1005 USDC               | Supply excess back to user    | `Comet.supplyTo(user, dust)`     |
+| **Repay**       | 0                        | Repay flash loan + fee        | `FlashProvider.repay(1005 USDC)` |
+
+### Key Features
+
+- **Health Factor Protection**: Validates position remains safe before execution
+- **Multi-Protocol Support**: Works with AAVE, Balancer, Uniswap V3, Morpho, Euler
+- **Optimal Routing**: Uses 1inch and LiFi for best swap execution
+- **Gas Efficiency**: Delegate calls and transient storage minimize gas costs
+- **Dust Management**: Automatically supplies leftover tokens back to user's position
 
 ## Modules
 
