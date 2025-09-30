@@ -45,7 +45,8 @@
         "lint:sol:fix": "pnpm solhint --fix \"contracts/**/*.sol\" && pnpm prettier --no-error-on-unmatched-pattern --write \"{contracts,test}/**/*.sol\"",
         "preinstall": "node ./scripts/project-config/setup/preinstall.js",
         "postinstall": "node ./scripts/project-config/setup/postinstall.js",
-        "prepare": "husky"
+        "prepare": "husky",
+        "aderyn": "npx aderyn --src contracts/ -o ADERYN_REPORT.md"
     },
     "files": [
         "/contracts/**/*.sol",

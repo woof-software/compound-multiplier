@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `CompoundV3CollateralSwap` contract is a sophisticated DeFi protocol that enables users to swap one collateral asset for another within their Compound V3 position using flash loans. The contract maintains the user's debt position while changing their collateral composition, allowing for portfolio rebalancing and risk management without requiring additional capital or closing positions.
+The `CompoundV3CollateralSwap` contract allows users to swap one collateral asset for another within their Compound V3 position using flash loans. The contract maintains the user's debt position while changing their collateral composition, allowing for portfolio rebalancing and risk management without requiring additional capital or closing positions.
 
 ## Key Features
 
@@ -22,20 +22,6 @@ The `CompoundV3CollateralSwap` contract is a sophisticated DeFi protocol that en
 3. **Swap Plugins**: Handle asset swapping through DEX aggregators
 4. **AllowBySig**: EIP-712 signature-based authorization system
 
-### Plugin System
-
-The contract uses a plugin architecture with two types of plugins:
-
-1. **Flash Loan Plugins**: Interface with different flash loan providers
-
-   - AAVEPlugin: Interfaces with AAVE V3 flash loans
-   - BalancerPlugin: Uses Balancer Vault flash loans
-   - MorphoPlugin: Integrates with Morpho protocol
-   - UniswapV3Plugin: Leverages Uniswap V3 flash swaps
-
-2. **Swap Plugins**: Handle token swapping
-   - LiFiPlugin: Uses LiFi DEX aggregator for optimal routing
-
 ## How It Works
 
 ### Swap Process
@@ -54,7 +40,6 @@ The contract uses a plugin architecture with two types of plugins:
 - **Health Factor Validation**: Ensures swaps don't endanger account safety
 - **Plugin Authorization**: Only registered plugins can execute callbacks
 - **Balance Verification**: Validates exact token amounts throughout execution
-- **Transient Storage**: Uses temporary storage to prevent reentrancy attacks
 - **Signature Validation**: EIP-712 signatures prevent replay attacks
 
 ## Contract Interface
@@ -114,7 +99,7 @@ pnpm install
 #### 2. Compile Contracts
 
 ```bash
-pnpm compile
+pnpm compileh
 ```
 
 #### 3. Deploy Flash Loan Plugins
@@ -202,22 +187,8 @@ After successful deployment, `deployments/<network>.json` will contain:
 ### Important Notes
 
 1. **Plugin Dependencies**: Flash loan and swap plugins MUST be deployed before the main contract
-2. **Plugin Filtering**: Currently only AAVE and Balancer plugins are enabled in production
-3. **Network Configuration**: Ensure proper network configuration in `hardhat.config.ts`
-4. **Gas Optimization**: Deploy with optimizer enabled for production
-5. **Verification**: Contracts are automatically verified on Etherscan if API key is configured
-
-### Network-Specific Considerations
-
-#### Ethereum Mainnet
-
-- AAVE V3 Pool: `0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2`
-- Balancer Vault: `0xBA12222222228d8Ba445958a75a0704d566BF2C8`
-- LiFi Diamond: `0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE`
-
-#### Testing Networks
-
-For testnets, ensure the flash loan provider addresses are updated to the correct testnet deployments.
+2. **Network Configuration**: Ensure proper network configuration in `hardhat.config.ts`
+3. **Verification**: Contracts are automatically verified on Etherscan if API key is configured
 
 ### Verification
 
@@ -319,35 +290,13 @@ The contract includes comprehensive error handling:
 - **Batch Operations**: Atomic execution reduces transaction costs
 - **Dust Management**: Efficient handling of remaining balances
 
-## Integration Guide
-
-### Frontend Integration
-
-1. **Get User Approval**: Either via standard ERC20 approval or EIP-712 signature
-2. **Calculate Swap Data**: Use LiFi API to get optimal swap routes
-3. **Validate Health Factor**: Ensure swap won't endanger position
-4. **Execute Swap**: Call appropriate swap function
-5. **Monitor Events**: Listen for swap completion events
-
-### Smart Contract Integration
-
-```solidity
-interface ICompoundV3CollateralSwap {
-  function swap(SwapParams calldata params) external;
-  function swapWithApprove(
-    SwapParams calldata params,
-    AllowParams calldata allowParams
-  ) external;
-}
-```
-
 ## Testing
 
 Run the test suite:
 
 ```bash
-# Run all tests
-pnpm test
+# Run all tests on hardhat
+pnpm testh
 
 # Run with verbose output
 pnpm testh:vvv
@@ -355,6 +304,9 @@ pnpm testh:vvv
 # Run with gas reporting
 pnpm testh:gas
 ```
+
+> **Note**: all tests are running on mainnet forking. Make sure you set FORKING=true and added your RPC URL for FORKING_URL=
+> For default all tests will be running in asynchronous mode, thus we recommend to run scenarious in individual mode through `.only` flag and setting `SERIAL=true` in `.env` file.
 
 ## Support
 

@@ -18,6 +18,16 @@ Run to view commands:
 pnpm run
 ```
 
+## Documentation
+
+This project includes detailed documentation for its core components:
+
+- **[CompoundV3CollateralSwap](./documentation/CompoundV3CollateralSwap.md)** - Comprehensive documentation for the main collateral swap contract, including architecture, usage patterns, and integration examples.
+
+- **[Flash Loan Plugins](./documentation/plugins/FlashPlugins.md)** - Complete guide to the modular flash loan plugin system, covering the unified interface, validation mechanisms, and available protocol integrations (AAVE, Balancer, Uniswap V3, Euler V2, Morpho, etc.).
+
+- **[Swap Plugins](./documentation/plugins/SwapPlugins.md)** - Detailed documentation for the modular swap plugin system, including the unified interface, validation logic, and integrations with DEX protocols and aggregators (1inch V6, LiFi, cross-chain swaps).
+
 ## Some unsorted notes
 
 ### Commands
