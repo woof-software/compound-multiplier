@@ -5,5 +5,5 @@
     "function SLOT_PLUGIN() view returns (bytes32)",
     "function onMorphoFlashLoan(uint256,bytes) returns (tuple(uint256,uint256,uint256,address,address,address,bytes))",
     "function repayFlashLoan(address,address,uint256)",
-    "function takeFlashLoan(tuple(uint256,uint256,uint256,address,address,address,bytes),bytes)"
+    "function takeFlashLoan(tuple(uint256,uint256,uint256,address,address,address,bytes),bytes) payable"
 ]

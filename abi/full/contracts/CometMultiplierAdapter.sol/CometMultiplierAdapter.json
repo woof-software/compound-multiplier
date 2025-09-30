@@ -3,11 +3,14 @@
     "error AlreadyExists()",
     "error CallbackFailed()",
     "error FlashLoanFailed()",
+    "error InvalidAllowedType()",
     "error InvalidAmountOut()",
     "error InvalidAsset()",
     "error InvalidCollateralAmount()",
     "error InvalidLeverage()",
+    "error InvalidManager()",
     "error InvalidMode()",
+    "error InvalidOwner()",
     "error InvalidPluginSelector()",
     "error NothingToDeleverage()",
     "error ReentrancyGuardReentrantCall()",
@@ -20,7 +23,9 @@
     "event PluginAdded(address indexed plugin, bytes4 pluginSelector)",
     "event Withdrawn(address indexed user, address indexed market, address indexed collateral, uint256 withdrawnAmount, uint256 baseReturned)",
     "function executeMultiplier(tuple(address market, address flp, bytes4 loanSelector, bytes4 swapSelector) opts, address collateral, uint256 collateralAmount, uint256 leverage, bytes swapData, uint256 minAmountOut) payable",
+    "function executeMultiplierBySig(tuple(address market, address flp, bytes4 loanSelector, bytes4 swapSelector) opts, address collateral, uint256 collateralAmount, uint256 leverage, bytes swapData, uint256 minAmountOut, tuple(uint256 nonce, uint256 expiry, bytes32 r, bytes32 s, address owner, bool isAllowed, address manager, uint8 v) allowParams) payable",
     "function plugins(bytes4) view returns (address endpoint, bytes config)",
     "function wEth() view returns (address)",
-    "function withdrawMultiplier(tuple(address market, address flp, bytes4 loanSelector, bytes4 swapSelector) opts, address collateral, uint256 collateralAmount, bytes swapData, uint256 minAmountOut)"
+    "function withdrawMultiplier(tuple(address market, address flp, bytes4 loanSelector, bytes4 swapSelector) opts, address collateral, uint256 collateralAmount, bytes swapData, uint256 minAmountOut)",
+    "function withdrawMultiplierBySig(tuple(address market, address flp, bytes4 loanSelector, bytes4 swapSelector) opts, address collateral, uint256 collateralAmount, bytes swapData, uint256 minAmountOut, tuple(uint256 nonce, uint256 expiry, bytes32 r, bytes32 s, address owner, bool isAllowed, address manager, uint8 v) allowParams)"
 ]

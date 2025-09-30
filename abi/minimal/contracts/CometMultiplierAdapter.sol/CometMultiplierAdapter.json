@@ -3,11 +3,14 @@
     "error AlreadyExists()",
     "error CallbackFailed()",
     "error FlashLoanFailed()",
+    "error InvalidAllowedType()",
     "error InvalidAmountOut()",
     "error InvalidAsset()",
     "error InvalidCollateralAmount()",
     "error InvalidLeverage()",
+    "error InvalidManager()",
     "error InvalidMode()",
+    "error InvalidOwner()",
     "error InvalidPluginSelector()",
     "error NothingToDeleverage()",
     "error ReentrancyGuardReentrantCall()",
@@ -20,7 +23,9 @@
     "event PluginAdded(address indexed,bytes4)",
     "event Withdrawn(address indexed,address indexed,address indexed,uint256,uint256)",
     "function executeMultiplier(tuple(address,address,bytes4,bytes4),address,uint256,uint256,bytes,uint256) payable",
+    "function executeMultiplierBySig(tuple(address,address,bytes4,bytes4),address,uint256,uint256,bytes,uint256,tuple(uint256,uint256,bytes32,bytes32,address,bool,address,uint8)) payable",
     "function plugins(bytes4) view returns (address, bytes)",
     "function wEth() view returns (address)",
-    "function withdrawMultiplier(tuple(address,address,bytes4,bytes4),address,uint256,bytes,uint256)"
+    "function withdrawMultiplier(tuple(address,address,bytes4,bytes4),address,uint256,bytes,uint256)",
+    "function withdrawMultiplierBySig(tuple(address,address,bytes4,bytes4),address,uint256,bytes,uint256,tuple(uint256,uint256,bytes32,bytes32,address,bool,address,uint8))"
 ]
