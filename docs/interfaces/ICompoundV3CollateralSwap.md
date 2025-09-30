@@ -223,10 +223,10 @@ _The main entry point for swapping collateral assets in a Compound V3 position.
 | ---- | ---- | ----------- |
 | swapParams | struct ICompoundV3CollateralSwap.SwapParams | The complete parameter struct defining the swap operation Requirements: - Caller must have sufficient collateral balance of fromAsset - Caller must have granted allowance to this contract on the Comet - The swap must not violate health factor constraints - The callbackSelector must correspond to a registered plugin - The swap must produce enough toAsset to repay the flash loan plus fees |
 
-### swapWithApprove
+### swapWithPermit
 
 ```solidity
-function swapWithApprove(struct ICompoundV3CollateralSwap.SwapParams swapParams, struct IAllowBySig.AllowParams allowParams) external
+function swapWithPermit(struct ICompoundV3CollateralSwap.SwapParams swapParams, struct IAllowBySig.AllowParams allowParams) external
 ```
 
 Executes a collateral swap with signature-based authorization in a single transaction

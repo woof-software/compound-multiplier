@@ -2,6 +2,40 @@
 
 ## CompoundV3CollateralSwap
 
+_This contract allows users to swap one type of collateral for another in their Compound V3 position
+     without needing to close their borrowing position. The process works by:
+     1. Taking a flash loan of the desired collateral asset
+     2. Supplying the flash loan to the user's Compound position
+     3. Withdrawing the user's existing collateral
+     4. Swapping the withdrawn collateral for the borrowed asset to repay the flash loan
+     5. Supplying any remaining dust back to the user's position
+
+     The contract supports multiple flash loan providers through a modular plugin system and
+     uses configurable swap plugins for executing the collateral swap.
+Features:
+     - Multi-protocol flash loan support
+     - Modular swap execution through dedicated swap plugins
+     - Health factor validation to ensure position remains safe after swap
+     - Gas-optimized execution using delegate calls and transient storage
+     - Signature-based approvals for gasless transactions
+     - Comprehensive slippage protection and validation
+Security Features:
+     - Callback validation ensures only registered plugins can execute operations
+     - Health factor checks prevent unsafe position modifications
+     - Exact balance validation before and after operations
+     - Transient storage prevents storage slot collisions
+     - Comprehensive input validation and error handling
+Architecture:
+     - Uses fallback() function as a universal callback handler for flash loan providers
+     - Employs plugin pattern for extensibility and protocol abstraction
+     - Integrates with AllowBySig for meta-transaction support
+     - Optimized for gas efficiency through minimal storage usage
+@custom:security-considerations
+     - Users must have sufficient collateral to maintain healthy positions after swaps
+     - Flash loan fees are automatically accounted for in minimum output calculations
+     - Slippage protection is enforced through minAmountOut parameter validation
+     - Only registered and validated plugins can execute flash loans and swaps_
+
 ### FACTOR_SCALE
 
 ```solidity
@@ -127,10 +161,10 @@ _The main entry point for swapping collateral assets in a Compound V3 position.
 | ---- | ---- | ----------- |
 | swapParams | struct ICompoundV3CollateralSwap.SwapParams | The complete parameter struct defining the swap operation Requirements: - Caller must have sufficient collateral balance of fromAsset - Caller must have granted allowance to this contract on the Comet - The swap must not violate health factor constraints - The callbackSelector must correspond to a registered plugin - The swap must produce enough toAsset to repay the flash loan plus fees |
 
-### swapWithApprove
+### swapWithPermit
 
 ```solidity
-function swapWithApprove(struct ICompoundV3CollateralSwap.SwapParams swapParams, struct IAllowBySig.AllowParams allowParams) external
+function swapWithPermit(struct ICompoundV3CollateralSwap.SwapParams swapParams, struct IAllowBySig.AllowParams allowParams) external
 ```
 
 Executes a collateral swap with signature-based authorization in a single transaction
@@ -223,7 +257,7 @@ _Validates swap parameters for correctness and safety_
 ### _supplyDust
 
 ```solidity
-function _supplyDust(address user, address asset, address comet, uint256 repayAmount) internal
+function _supplyDust(address user, contract IERC20 asset, contract IComet comet, uint256 repayAmount) internal
 ```
 
 _Supplies any remaining asset balance back to user's Comet position_
@@ -233,8 +267,8 @@ _Supplies any remaining asset balance back to user's Comet position_
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | user | address | The user to supply dust to |
-| asset | address | The asset to supply |
-| comet | address | The Comet contract address |
+| asset | contract IERC20 | The asset to supply |
+| comet | contract IComet | The Comet contract address |
 | repayAmount | uint256 | Amount reserved for repayment (excluded from dust) |
 
 ### _catch
