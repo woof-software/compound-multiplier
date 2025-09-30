@@ -8,6 +8,8 @@
 bytes4 CALLBACK_SELECTOR
 ```
 
+The selector of the callback function
+
 ### WHALE
 
 ```solidity
@@ -20,10 +22,12 @@ address WHALE
 bytes32 SLOT_PLUGIN
 ```
 
+Storage slot to store the flash loan ID
+
 ### takeFlashLoan
 
 ```solidity
-function takeFlashLoan(struct ICometFlashLoanPlugin.CallbackData data, bytes) public
+function takeFlashLoan(struct ICometFlashLoanPlugin.CallbackData data, bytes) public payable
 ```
 
 Initiates a flash loan

@@ -226,7 +226,7 @@ _The main entry point for swapping collateral assets in a Compound V3 position.
 ### swapWithApprove
 
 ```solidity
-function swapWithApprove(struct ICompoundV3CollateralSwap.SwapParams swapParams, struct AllowBySig.AllowParams allowParams) external
+function swapWithApprove(struct ICompoundV3CollateralSwap.SwapParams swapParams, struct IAllowBySig.AllowParams allowParams) external
 ```
 
 Executes a collateral swap with signature-based authorization in a single transaction
@@ -243,5 +243,5 @@ _Combines Comet authorization via EIP-712 signature with collateral swap executi
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | swapParams | struct ICompoundV3CollateralSwap.SwapParams | The complete parameter struct defining the swap operation |
-| allowParams | struct AllowBySig.AllowParams | The EIP-712 signature parameters for Comet authorization Requirements: - All requirements from swap() function - allowParams.owner must equal msg.sender - allowParams.manager must equal this contract address - allowParams.isAllowed must be true - The signature must be valid and not expired - The nonce must match the user's current nonce in Comet |
+| allowParams | struct IAllowBySig.AllowParams | The EIP-712 signature parameters for Comet authorization Requirements: - All requirements from swap() function - allowParams.owner must equal msg.sender - allowParams.manager must equal this contract address - allowParams.isAllowed must be true - The signature must be valid and not expired - The nonce must match the user's current nonce in Comet |
 

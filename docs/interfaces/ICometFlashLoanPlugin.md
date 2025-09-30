@@ -14,6 +14,12 @@ error UnauthorizedCallback()
 error InvalidFlashLoanId()
 ```
 
+### InvalidFlashLoanData
+
+```solidity
+error InvalidFlashLoanData()
+```
+
 ### CallbackData
 
 ```solidity
@@ -34,16 +40,20 @@ struct CallbackData {
 function CALLBACK_SELECTOR() external view returns (bytes4)
 ```
 
+The selector of the callback function
+
 ### SLOT_PLUGIN
 
 ```solidity
 function SLOT_PLUGIN() external view returns (bytes32)
 ```
 
+Storage slot to store the flash loan ID
+
 ### takeFlashLoan
 
 ```solidity
-function takeFlashLoan(struct ICometFlashLoanPlugin.CallbackData data, bytes) external
+function takeFlashLoan(struct ICometFlashLoanPlugin.CallbackData data, bytes) external payable
 ```
 
 Initiates a flash loan

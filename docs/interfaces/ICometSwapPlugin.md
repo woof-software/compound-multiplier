@@ -2,16 +2,22 @@
 
 ## ICometSwapPlugin
 
+### SwapExecuted
+
+```solidity
+event SwapExecuted(address router, address srcToken, address dstToken, uint256 actualAmountOut)
+```
+
 ### InvalidAmountOut
 
 ```solidity
 error InvalidAmountOut()
 ```
 
-### InvaildInput
+### InvalidInput
 
 ```solidity
-error InvaildInput()
+error InvalidInput()
 ```
 
 ### ZeroAddress
@@ -20,10 +26,16 @@ error InvaildInput()
 error ZeroAddress()
 ```
 
-### SwapExecuted
+### InvalidSwapParameters
 
 ```solidity
-event SwapExecuted(address router, address srcToken, address dstToken, uint256 amountOut)
+error InvalidSwapParameters()
+```
+
+### SwapFailed
+
+```solidity
+error SwapFailed()
 ```
 
 ### CALLBACK_SELECTOR
