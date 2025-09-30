@@ -6,7 +6,7 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import { AllowBySig } from "./base/AllowBySig.sol";
 
-import { IComet } from "./interfaces/IComet.sol";
+import { IComet } from "./external/IComet.sol";
 import { ICometFlashLoanPlugin } from "./interfaces/ICometFlashLoanPlugin.sol";
 import { ICompoundV3CollateralSwap } from "./interfaces/ICompoundV3CollateralSwap.sol";
 import { ICometSwapPlugin } from "./interfaces/ICometSwapPlugin.sol";
@@ -87,14 +87,12 @@ contract CompoundV3CollateralSwap is AllowBySig, ICompoundV3CollateralSwap {
      *
      * Reverts:
      * - UnknownCallbackSelector: If msg.sig doesn't match any registered plugin
-     * - UnauthorizedCallback: If msg.sender is not the authorized flash loan provider
      * - InvalidAmountOut: If token balances don't match expectations after operations
      * - May revert with plugin-specific errors if delegate calls fail
      */
     fallback() external {
         address endpoint = plugins[msg.sig].endpoint;
         require(endpoint != address(0), UnknownCallbackSelector());
-        require(msg.sender == plugins[msg.sig].flp, UnauthorizedCallback());
 
         (bool success, bytes memory payload) = endpoint.delegatecall(msg.data);
         _catch(success);

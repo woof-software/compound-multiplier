@@ -22,7 +22,18 @@ interface ICometFlashLoanPlugin {
     /// @notice Storage slot to store the flash loan ID
     function SLOT_PLUGIN() external view returns (bytes32);
 
-    function takeFlashLoan(CallbackData memory data, bytes memory config) external;
+    /**
+     * @notice Initiates a flash loan
+     * @param data Flash loan parameters including debt amount, asset, and user information
+     * @dev Stores flash loan ID in transient storage for callback validation
+     */
+    function takeFlashLoan(CallbackData memory data, bytes memory) external payable;
 
-    function repayFlashLoan(address flp, address asset, uint256 amount) external;
+    /**
+     * @notice Repays the flash loan
+     * @param flp Address of the flash loan provider
+     * @param baseAsset Address of the borrowed asset
+     * @param amount Total repayment amount (principal + fee)
+     */
+    function repayFlashLoan(address flp, address baseAsset, uint256 amount) external;
 }

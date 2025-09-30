@@ -1,0 +1,4 @@
+[
+    "function eVault() view returns (address)",
+    "function flashLoan(uint256,bytes)"
+]

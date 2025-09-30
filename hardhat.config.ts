@@ -147,7 +147,7 @@ const config: HardhatUserConfig = {
     },
     mocha: {
         timeout: 100000,
-        parallel: !mochaSerial,
+        //parallel: !mochaSerial,
         bail: mochaBail
     },
     docgen: {

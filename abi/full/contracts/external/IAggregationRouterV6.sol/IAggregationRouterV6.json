@@ -1,0 +1,4 @@
+[
+    "function swap(address caller, tuple(address srcToken, address dstToken, address srcReceiver, address dstReceiver, uint256 amount, uint256 minReturnAmount, uint256 flags) desc, bytes data) payable returns (uint256 returnAmount, uint256 spentAmount)",
+    "function unoswap(address srcToken, uint256 amount, uint256 minReturn, uint256[] pools) payable returns (uint256 returnAmount)"
+]

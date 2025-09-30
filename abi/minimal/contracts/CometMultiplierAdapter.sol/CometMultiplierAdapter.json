@@ -1,10 +1,11 @@
 [
-    "constructor(tuple(address,bytes)[])",
+    "constructor(tuple(address,bytes)[],address)",
     "error AlreadyExists()",
     "error CallbackFailed()",
     "error FlashLoanFailed()",
     "error InvalidAmountOut()",
     "error InvalidAsset()",
+    "error InvalidCollateralAmount()",
     "error InvalidLeverage()",
     "error InvalidMode()",
     "error InvalidPluginSelector()",
@@ -13,11 +14,13 @@
     "error SafeERC20FailedOperation(address)",
     "error UnknownCallbackSelector()",
     "error UnknownMarket()",
-    "error UnknownSwapPlugin()",
     "error UnsupportedPriceFeed()",
     "event AssetAdded(address indexed,bytes4)",
+    "event Executed(address indexed,address indexed,address indexed,uint256,uint256)",
     "event PluginAdded(address indexed,bytes4)",
-    "function executeMultiplier(tuple(address,address,bytes4,bytes4),address,uint256,uint256,bytes,uint256)",
+    "event Withdrawn(address indexed,address indexed,address indexed,uint256,uint256)",
+    "function executeMultiplier(tuple(address,address,bytes4,bytes4),address,uint256,uint256,bytes,uint256) payable",
     "function plugins(bytes4) view returns (address, bytes)",
+    "function wEth() view returns (address)",
     "function withdrawMultiplier(tuple(address,address,bytes4,bytes4),address,uint256,bytes,uint256)"
 ]

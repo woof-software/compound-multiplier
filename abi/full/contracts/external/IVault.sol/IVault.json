@@ -1,0 +1,5 @@
+[
+    "function checkAccountStatus(address account, address[] collaterals) returns (bytes4 magicValue)",
+    "function checkVaultStatus() returns (bytes4 magicValue)",
+    "function disableController()"
+]

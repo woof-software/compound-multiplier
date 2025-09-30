@@ -123,19 +123,19 @@ describe("LiFi Plugin", function () {
         it("reverts if srcTokens is dstToken", async () => {
             await expect(
                 lifiPlugin.executeSwap(weth, weth, fromAmount, minAmountOut, config, swapData)
-            ).to.be.revertedWithCustomError(lifiPlugin, "InvalidSwapParameters");
+            ).to.be.revertedWithCustomError(lifiPlugin, "InvalidInput");
         });
 
         it("reverts if amountIn is 0", async () => {
             await expect(
                 lifiPlugin.executeSwap(weth, usdc, 0, minAmountOut, config, swapData)
-            ).to.be.revertedWithCustomError(lifiPlugin, "InvalidSwapParameters");
+            ).to.be.revertedWithCustomError(lifiPlugin, "InvalidInput");
         });
 
         it("reverts if minAmountOut is 0", async () => {
             await expect(
                 lifiPlugin.executeSwap(weth, usdc, fromAmount, 0, config, swapData)
-            ).to.be.revertedWithCustomError(lifiPlugin, "InvalidSwapParameters");
+            ).to.be.revertedWithCustomError(lifiPlugin, "InvalidInput");
         });
 
         it("reverts if swap call is failed", async () => {

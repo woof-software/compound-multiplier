@@ -1,9 +1,11 @@
-import { impersonateAccount, setBalance } from "@nomicfoundation/hardhat-network-helpers";
 import axios from "axios";
-import { Addressable } from "ethers";
+
+import { impersonateAccount, setBalance } from "@nomicfoundation/hardhat-network-helpers";
+import { Addressable, Signer } from "ethers";
 import { ethers } from "hardhat";
+import { CometMultiplierAdapter, IComet, IERC20 } from "../../typechain-types";
+import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 import { $CompoundV3CollateralSwap } from "../../typechain-types/contracts-exposed/CompoundV3CollateralSwap.sol/$CompoundV3CollateralSwap";
-import { IComet, IERC20 } from "../../typechain-types";
 export { SnapshotRestorer, takeSnapshot, time } from "@nomicfoundation/hardhat-network-helpers";
 
 export interface Plugin {
@@ -39,7 +41,17 @@ export const RS_ETH_WHALE = "0x2D62109243b87C4bA3EE7bA1D91B0dD0A074d7b1";
 export const R_ETH_WHALE = "0xCc9EE9483f662091a1de4795249E24aC0aC2630f";
 export const WBTC_WHALE = "0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb";
 
-export async function executeWithRetry(operation: Function, maxRetries = 10) {
+// Adapter constants
+export const WETH_ADDRESS = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
+export const USDC_ADDRESS = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
+export const COMET_USDC_MARKET = "0xc3d688B66703497DAA19211EEdff47f25384cdc3";
+export const ONE_INCH_ROUTER_V6 = "0x111111125421cA6dc452d289314280a0f8842A65";
+export const USDC_EVAULT = "0x797DD80692c3b2dAdabCe8e30C07fDE5307D48a9";
+export const MORPHO = "0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb";
+export const UNI_V3_USDC_WETH_005 = "0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640";
+export const LIFI_ROUTER = "0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE";
+
+export async function executeWithRetry(operation: Function, maxRetries = 5) {
     for (let i = 0; i < maxRetries; i++) {
         try {
             return await operation();
@@ -141,6 +153,39 @@ export async function getLiquidity(comet: IComet, token: IERC20, amount: bigint)
                                 API DATA
 //////////////////////////////////////////////////////////////*/
 
+export async function get1inchSwapData(
+    fromToken: string,
+    toToken: string,
+    amount: string,
+    userAddress: string,
+    slippage: string = "1"
+): Promise<string> {
+    const apiKey = process.env.ONE_INCH_API_KEY;
+    const url = `https://api.1inch.dev/swap/v6.1/1/swap?src=${fromToken}&dst=${toToken}&amount=${amount}&from=${userAddress}&slippage=${slippage}&disableEstimate=true&includeTokensInfo=true`;
+    const res = await axios.get(url, {
+        headers: { Authorization: `Bearer ${apiKey}` }
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    return res.data.tx.data;
+}
+
+export async function get1inchQuote(
+    fromToken: string,
+    toToken: string,
+    amount: string,
+    slippage: string = "1"
+): Promise<string> {
+    const apiKey = process.env.ONE_INCH_API_KEY;
+    const url = `https://api.1inch.dev/swap/v6.1/1/quote?src=${fromToken}&dst=${toToken}&amount=${amount}&slippage=${slippage}`;
+    const res = await axios.get(url, {
+        headers: { Authorization: `Bearer ${apiKey}` }
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    return res.data.dstAmount;
+}
+
 export async function getQuote(
     fromChain: string,
     toChain: string,
@@ -149,9 +194,9 @@ export async function getQuote(
     fromAmount: string,
     fromAddress: string | Addressable
 ) {
-    const apiKey = process.env.LIFI_API_KEY;
     const quoteData = (
         await axios.get("https://li.quest/v1/quote", {
+            headers: { "x-lifi-api-key": process.env.LIFI_API_KEY },
             params: {
                 fromChain,
                 toChain,
@@ -159,11 +204,11 @@ export async function getQuote(
                 toToken,
                 fromAmount,
                 fromAddress
-            },
-            headers: apiKey ? { "x-lifi-api-key": apiKey } : undefined
+            }
         })
     ).data;
 
+    await new Promise((resolve) => setTimeout(resolve, 1200));
     return {
         toAmountMin: BigInt(quoteData.estimate.toAmountMin),
         toAmount: BigInt(quoteData.estimate.toAmount),
@@ -181,4 +226,368 @@ export function exp(value: number | bigint, decimals: number | bigint = 0, preci
     const prec = typeof precision === "bigint" ? Number(precision) : precision;
 
     return (BigInt(Math.floor(val * 10 ** prec)) * 10n ** BigInt(dec)) / 10n ** BigInt(prec);
+}
+
+///////////////////////////////////////////////////////////////
+//                               ADAPTER
+///////////////////////////////////////////////////////////////
+export async function previewTake(
+    comet: IComet,
+    user: string,
+    collateral: string,
+    requestedCollateral: bigint,
+    blockTag?: number
+): Promise<bigint> {
+    const tag = blockTag ?? (await ethers.provider.getBlockNumber());
+
+    const [info, baseScale, userCol, repayAmount] = await Promise.all([
+        comet.getAssetInfoByAddress(collateral, { blockTag: tag }),
+        comet.baseScale({ blockTag: tag }),
+        comet.collateralBalanceOf(user, collateral, { blockTag: tag }),
+        comet.borrowBalanceOf(user, { blockTag: tag })
+    ]);
+
+    const price = await comet.getPrice(info.priceFeed, { blockTag: tag });
+    const priceFeed = await ethers.getContractAt("AggregatorV3Interface", info.priceFeed);
+    const decs = await priceFeed.decimals({ blockTag: tag });
+    const num = BigInt(price) * BigInt(baseScale) * BigInt(info.borrowCollateralFactor);
+    const den = 10n ** BigInt(decs) * BigInt(info.scale) * 10n ** 18n;
+
+    const req = requestedCollateral;
+    const debtFromRequested = req === ethers.MaxUint256 ? repayAmount : (req * num) / den;
+
+    const loanDebt = debtFromRequested < repayAmount ? debtFromRequested : repayAmount;
+
+    if (loanDebt === 0n) return 0n;
+
+    let unlocked = (loanDebt * den) / num;
+
+    const reqCap = req === ethers.MaxUint256 ? BigInt(userCol) : req < BigInt(userCol) ? req : BigInt(userCol);
+    const take = unlocked < reqCap ? unlocked : reqCap;
+
+    return take > 0n ? take : 0n;
+}
+
+export async function calculateLeveragedAmount(comet: IComet, collateralAmount: bigint, leverage: number) {
+    const info = await comet.getAssetInfoByAddress(WETH_ADDRESS);
+    const price = await comet.getPrice(info.priceFeed);
+    const baseScale = await comet.baseScale();
+
+    const initialValueBase = (collateralAmount * price * baseScale) / (info.scale * 100_000_000n);
+    const delta = BigInt(leverage - 10_000);
+    return (initialValueBase * delta) / 10_000n;
+}
+
+export async function calculateExpectedCollateral(collateralAmount: bigint, leverage: number): Promise<bigint> {
+    const theoretical = (collateralAmount * BigInt(leverage)) / 10_000n;
+    const borrowedPortion = theoretical - collateralAmount;
+    const slippageAdjusted = (borrowedPortion * 99n) / 100n;
+    return collateralAmount + slippageAdjusted;
+}
+
+export async function calculateMaxLeverage(comet: IComet): Promise<number> {
+    const info = await comet.getAssetInfoByAddress(WETH_ADDRESS);
+    const borrowCollateralFactor = Number(info.borrowCollateralFactor) / 1e18;
+    const theoreticalMax = (1 / (1 - borrowCollateralFactor)) * 10_000;
+    return Math.floor(theoreticalMax * 0.97);
+}
+
+export async function calculateMaxSafeWithdrawal(
+    comet: IComet,
+    userAddress: string,
+    collateralAddress: string,
+    targetHealthRatio: bigint = 110n
+): Promise<bigint> {
+    const info = await comet.getAssetInfoByAddress(collateralAddress);
+    const price = await comet.getPrice(info.priceFeed);
+    const baseScale = await comet.baseScale();
+
+    const currentCol = await comet.collateralBalanceOf(userAddress, collateralAddress);
+    const currentDebt = await comet.borrowBalanceOf(userAddress);
+
+    if (currentDebt === 0n) return currentCol;
+
+    const minCollateralValue = (currentDebt * targetHealthRatio) / 100n;
+    const minCollateralAmount =
+        (minCollateralValue * info.scale * 100_000_000n) / (price * baseScale * BigInt(info.borrowCollateralFactor));
+
+    const maxWithdrawal = currentCol > minCollateralAmount ? currentCol - minCollateralAmount : 0n;
+
+    return maxWithdrawal;
+}
+
+export async function executeMultiplier1Inch(
+    weth: IERC20,
+    market: any,
+    comet: IComet,
+    adapter: CometMultiplierAdapter,
+    signer: SignerWithAddress,
+    collateralAmount: bigint,
+    leverage: number,
+    minAmountOut = 1n
+) {
+    await weth.connect(signer).approve(await adapter.getAddress(), collateralAmount);
+
+    const baseAmount = await calculateLeveragedAmount(comet, collateralAmount, leverage);
+
+    return executeWithRetry(async () => {
+        const swapData = await get1inchSwapData(
+            USDC_ADDRESS,
+            WETH_ADDRESS,
+            baseAmount.toString(),
+            await adapter.getAddress()
+        );
+
+        return adapter
+            .connect(signer)
+            .executeMultiplier(market, WETH_ADDRESS, collateralAmount, leverage, swapData, minAmountOut);
+    });
+}
+
+export async function withdrawMultiplier1Inch(
+    market: any,
+    comet: IComet,
+    adapter: CometMultiplierAdapter,
+    signer: SignerWithAddress,
+    requestedCollateral: bigint,
+    minAmountOut?: bigint
+) {
+    const blockTag = await ethers.provider.getBlockNumber();
+    let take = await previewTake(comet, signer.address, WETH_ADDRESS, requestedCollateral, blockTag);
+    let quote = 0n;
+    if (take > 0n) {
+        quote =
+            minAmountOut ??
+            (await executeWithRetry(async () => {
+                const q = await get1inchQuote(WETH_ADDRESS, USDC_ADDRESS, take.toString());
+                return (BigInt(q) * 99n) / 100n;
+            }));
+    }
+
+    return executeWithRetry(async () => {
+        const swapData =
+            take == 0n
+                ? "0x"
+                : await get1inchSwapData(WETH_ADDRESS, USDC_ADDRESS, take.toString(), await adapter.getAddress());
+
+        return adapter.connect(signer).withdrawMultiplier(market, WETH_ADDRESS, requestedCollateral, swapData, quote);
+    });
+}
+
+export async function executeMultiplierLiFi(
+    weth: IERC20,
+    market: any,
+    comet: IComet,
+    adapter: CometMultiplierAdapter,
+    signer: SignerWithAddress,
+    collateralAmount: bigint,
+    leverage: number,
+    minAmountOut = 1n
+) {
+    await weth.connect(signer).approve(await adapter.getAddress(), collateralAmount);
+
+    const baseAmount = await calculateLeveragedAmount(comet, collateralAmount, leverage);
+
+    return executeWithRetry(async () => {
+        const swapData = await getQuote(
+            "1",
+            "1",
+            USDC_ADDRESS,
+            WETH_ADDRESS,
+            baseAmount.toString(),
+            await adapter.getAddress()
+        ).then((q) => q.swapCalldata);
+
+        return adapter
+            .connect(signer)
+            .executeMultiplier(market, WETH_ADDRESS, collateralAmount, leverage, swapData, minAmountOut);
+    });
+}
+
+export async function withdrawMultiplierLiFi(
+    market: any,
+    comet: IComet,
+    adapter: CometMultiplierAdapter,
+    signer: SignerWithAddress,
+    requestedCollateral: bigint,
+    minAmountOut?: bigint
+) {
+    const blockTag = await ethers.provider.getBlockNumber();
+    let take = await previewTake(comet, signer.address, WETH_ADDRESS, requestedCollateral, blockTag);
+    let quote = 0n;
+    if (take > 0n) {
+        quote =
+            minAmountOut ??
+            (await executeWithRetry(async () => {
+                const q = await getQuote(
+                    "1",
+                    "1",
+                    WETH_ADDRESS,
+                    USDC_ADDRESS,
+                    take.toString(),
+                    await adapter.getAddress()
+                ).then((q) => q.toAmountMin);
+                return (BigInt(q) * 99n) / 100n;
+            }));
+    }
+
+    return executeWithRetry(async () => {
+        const swapData =
+            take == 0n
+                ? "0x"
+                : await getQuote(
+                      "1",
+                      "1",
+                      WETH_ADDRESS,
+                      USDC_ADDRESS,
+                      take.toString(),
+                      await adapter.getAddress()
+                  ).then((q) => q.swapCalldata);
+
+        return adapter.connect(signer).withdrawMultiplier(market, WETH_ADDRESS, requestedCollateral, swapData, quote);
+    });
+}
+
+export async function calculateHealthFactor(
+    comet: IComet,
+    userAddress: string,
+    collateralAddress: string
+): Promise<bigint> {
+    const info = await comet.getAssetInfoByAddress(collateralAddress);
+    const price = await comet.getPrice(info.priceFeed);
+    const baseScale = await comet.baseScale();
+    const collateralBalance = await comet.collateralBalanceOf(userAddress, collateralAddress);
+    const borrowBalance = await comet.borrowBalanceOf(userAddress);
+
+    const collateralValue = (collateralBalance * price * baseScale) / (info.scale * 100_000_000n);
+    const healthRatio = (collateralValue * BigInt(info.borrowCollateralFactor)) / ethers.parseEther("1");
+
+    return healthRatio;
+}
+
+const DOMAIN_TYPEHASH = ethers.keccak256(
+    ethers.toUtf8Bytes("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)")
+);
+
+const AUTHORIZATION_TYPEHASH = ethers.keccak256(
+    ethers.toUtf8Bytes("Authorization(address owner,address manager,bool isAllowed,uint256 nonce,uint256 expiry)")
+);
+
+/**
+ * Gets the current nonce for a user from the Comet contract
+ */
+export async function getUserNonce(comet: any, userAddress: string): Promise<bigint> {
+    return await comet.userNonce(userAddress);
+}
+
+/**
+ * Generates an EIP-712 signature for allowBySig
+ */
+/**
+ * Generates an EIP-712 signature for allowBySig using TypedData signing
+ */
+export async function signAllowBySig(
+    signer: SignerWithAddress,
+    cometAddress: string,
+    managerAddress: string,
+    isAllowed: boolean,
+    nonce: bigint,
+    expiry: bigint,
+    chainId: number
+): Promise<{ v: number; r: string; s: string }> {
+    // Get Comet contract name and version
+    const comet = await ethers.getContractAt("ICometExt", cometAddress);
+    const name = await comet.name();
+    const version = await comet.version();
+
+    // EIP-712 Domain
+    const domain = {
+        name: name,
+        version: version,
+        chainId: chainId,
+        verifyingContract: cometAddress
+    };
+
+    // EIP-712 Types
+    const types = {
+        Authorization: [
+            { name: "owner", type: "address" },
+            { name: "manager", type: "address" },
+            { name: "isAllowed", type: "bool" },
+            { name: "nonce", type: "uint256" },
+            { name: "expiry", type: "uint256" }
+        ]
+    };
+
+    // Message data
+    const value = {
+        owner: signer.address,
+        manager: managerAddress,
+        isAllowed: isAllowed,
+        nonce: nonce,
+        expiry: expiry
+    };
+
+    // Sign using EIP-712 typed data (this is the correct way)
+    const signature = await signer.signTypedData(domain, types, value);
+    const sig = ethers.Signature.from(signature);
+
+    return {
+        v: sig.v,
+        r: sig.r,
+        s: sig.s
+    };
+}
+
+/**
+ * Executes allowBySig on the Comet contract
+ */
+export async function executeAllowBySig(
+    comet: any,
+    owner: string,
+    manager: string,
+    isAllowed: boolean,
+    nonce: bigint,
+    expiry: bigint,
+    v: number,
+    r: string,
+    s: string,
+    opts?: any
+): Promise<any> {
+    return await comet.allowBySig(owner, manager, isAllowed, nonce, expiry, v, r, s, opts || {});
+}
+
+/**
+ * Helper to get a future expiry timestamp (default 1 hour from now)
+ */
+export function getFutureExpiry(secondsFromNow: number = 3600): bigint {
+    return BigInt(Math.floor(Date.now() / 1000) + secondsFromNow);
+}
+
+/**
+ * Combined helper: sign and execute allowBySig in one call
+ */
+export async function allowBySigHelper(
+    comet: any,
+    signer: SignerWithAddress,
+    managerAddress: string,
+    isAllowed: boolean,
+    opts?: any
+): Promise<any> {
+    const cometAddress = await comet.getAddress();
+    const nonce = await getUserNonce(comet, signer.address);
+    const expiry = getFutureExpiry();
+    const chainId = (await ethers.provider.getNetwork()).chainId;
+
+    const { v, r, s } = await signAllowBySig(
+        signer,
+        cometAddress,
+        managerAddress,
+        isAllowed,
+        nonce,
+        expiry,
+        Number(chainId)
+    );
+
+    return await executeAllowBySig(comet, signer.address, managerAddress, isAllowed, nonce, expiry, v, r, s, opts);
 }

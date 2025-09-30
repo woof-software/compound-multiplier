@@ -374,34 +374,6 @@ describe("CompoundV3CollateralSwap", function () {
                 );
             });
 
-            it("reverts when unauthorized callback caller", async () => {
-                const abi = [
-                    "function executeOperation(address asset, uint256 amount, uint256 premium, address initiator, bytes params)"
-                ];
-                const iface = new ethers.Interface(abi);
-
-                const asset = wstETH.target;
-                const amount = exp(1, 18);
-                const premium = 0;
-                const initiator = alice.address;
-                const params = "0x";
-
-                const calldata = iface.encodeFunctionData("executeOperation", [
-                    asset,
-                    amount,
-                    premium,
-                    initiator,
-                    params
-                ]);
-
-                await expect(
-                    alice.sendTransaction({
-                        to: collateralSwap,
-                        data: calldata
-                    })
-                ).to.be.revertedWithCustomError(collateralSwap, "UnauthorizedCallback");
-            });
-
             it("reverts when incorrect contract balance of loaned token after flash loan", async () => {
                 const attackContract = await ethers.deployContract("FlashloanPluginTest", [aavePl, aavePl]);
 
