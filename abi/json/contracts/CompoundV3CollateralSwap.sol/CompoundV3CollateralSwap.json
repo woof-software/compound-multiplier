@@ -362,7 +362,7 @@
                         "type": "uint8"
                     }
                 ],
-                "internalType": "struct AllowBySig.AllowParams",
+                "internalType": "struct IAllowBySig.AllowParams",
                 "name": "allowParams",
                 "type": "tuple"
             }

@@ -44,6 +44,11 @@
     },
     {
         "inputs": [],
+        "name": "InvalidAllowedType",
+        "type": "error"
+    },
+    {
+        "inputs": [],
         "name": "InvalidAmountOut",
         "type": "error"
     },
@@ -64,7 +69,17 @@
     },
     {
         "inputs": [],
+        "name": "InvalidManager",
+        "type": "error"
+    },
+    {
+        "inputs": [],
         "name": "InvalidMode",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "InvalidOwner",
         "type": "error"
     },
     {
@@ -287,6 +302,113 @@
     {
         "inputs": [
             {
+                "components": [
+                    {
+                        "internalType": "address",
+                        "name": "market",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "flp",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "bytes4",
+                        "name": "loanSelector",
+                        "type": "bytes4"
+                    },
+                    {
+                        "internalType": "bytes4",
+                        "name": "swapSelector",
+                        "type": "bytes4"
+                    }
+                ],
+                "internalType": "struct ICometMultiplierAdapter.Options",
+                "name": "opts",
+                "type": "tuple"
+            },
+            {
+                "internalType": "address",
+                "name": "collateral",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "collateralAmount",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "leverage",
+                "type": "uint256"
+            },
+            {
+                "internalType": "bytes",
+                "name": "swapData",
+                "type": "bytes"
+            },
+            {
+                "internalType": "uint256",
+                "name": "minAmountOut",
+                "type": "uint256"
+            },
+            {
+                "components": [
+                    {
+                        "internalType": "uint256",
+                        "name": "nonce",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "expiry",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "bytes32",
+                        "name": "r",
+                        "type": "bytes32"
+                    },
+                    {
+                        "internalType": "bytes32",
+                        "name": "s",
+                        "type": "bytes32"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "owner",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "isAllowed",
+                        "type": "bool"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "manager",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint8",
+                        "name": "v",
+                        "type": "uint8"
+                    }
+                ],
+                "internalType": "struct IAllowBySig.AllowParams",
+                "name": "allowParams",
+                "type": "tuple"
+            }
+        ],
+        "name": "executeMultiplierBySig",
+        "outputs": [],
+        "stateMutability": "payable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
                 "internalType": "bytes4",
                 "name": "",
                 "type": "bytes4"
@@ -372,6 +494,108 @@
             }
         ],
         "name": "withdrawMultiplier",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "address",
+                        "name": "market",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "flp",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "bytes4",
+                        "name": "loanSelector",
+                        "type": "bytes4"
+                    },
+                    {
+                        "internalType": "bytes4",
+                        "name": "swapSelector",
+                        "type": "bytes4"
+                    }
+                ],
+                "internalType": "struct ICometMultiplierAdapter.Options",
+                "name": "opts",
+                "type": "tuple"
+            },
+            {
+                "internalType": "address",
+                "name": "collateral",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "collateralAmount",
+                "type": "uint256"
+            },
+            {
+                "internalType": "bytes",
+                "name": "swapData",
+                "type": "bytes"
+            },
+            {
+                "internalType": "uint256",
+                "name": "minAmountOut",
+                "type": "uint256"
+            },
+            {
+                "components": [
+                    {
+                        "internalType": "uint256",
+                        "name": "nonce",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "expiry",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "bytes32",
+                        "name": "r",
+                        "type": "bytes32"
+                    },
+                    {
+                        "internalType": "bytes32",
+                        "name": "s",
+                        "type": "bytes32"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "owner",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "isAllowed",
+                        "type": "bool"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "manager",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint8",
+                        "name": "v",
+                        "type": "uint8"
+                    }
+                ],
+                "internalType": "struct IAllowBySig.AllowParams",
+                "name": "allowParams",
+                "type": "tuple"
+            }
+        ],
+        "name": "withdrawMultiplierBySig",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"

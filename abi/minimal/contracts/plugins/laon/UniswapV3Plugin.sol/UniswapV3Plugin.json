@@ -1,9 +1,0 @@
-[
-    "error InvalidFlashLoanId()",
-    "error UnauthorizedCallback()",
-    "function CALLBACK_SELECTOR() view returns (bytes4)",
-    "function SLOT_PLUGIN() view returns (bytes32)",
-    "function repayFlashLoan(address,address,uint256)",
-    "function takeFlashLoan(tuple(uint256,uint256,uint256,address,address,address,bytes),bytes)",
-    "function uniswapV3FlashCallback(uint256,uint256,bytes) returns (tuple(uint256,uint256,uint256,address,address,address,bytes))"
-]
