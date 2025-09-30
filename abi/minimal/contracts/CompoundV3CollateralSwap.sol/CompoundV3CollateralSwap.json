@@ -21,5 +21,5 @@
     "function swap(tuple(address,bytes4,address,uint256,address,bytes,uint256,uint256))",
     "function swapPlugin() view returns (address)",
     "function swapRouter() view returns (address)",
-    "function swapWithApprove(tuple(address,bytes4,address,uint256,address,bytes,uint256,uint256),tuple(uint256,uint256,bytes32,bytes32,address,bool,address,uint8))"
+    "function swapWithPermit(tuple(address,bytes4,address,uint256,address,bytes,uint256,uint256),tuple(uint256,uint256,bytes32,bytes32,address,bool,address,uint8))"
 ]

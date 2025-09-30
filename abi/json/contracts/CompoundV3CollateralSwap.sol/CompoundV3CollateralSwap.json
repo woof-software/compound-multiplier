@@ -367,7 +367,7 @@
                 "type": "tuple"
             }
         ],
-        "name": "swapWithApprove",
+        "name": "swapWithPermit",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
