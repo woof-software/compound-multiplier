@@ -34,7 +34,9 @@ Architecture:
      - Users must have sufficient collateral to maintain healthy positions after swaps
      - Flash loan fees are automatically accounted for in minimum output calculations
      - Slippage protection is enforced through minAmountOut parameter validation
-     - Only registered and validated plugins can execute flash loans and swaps_
+     - Only registered and validated plugins can execute flash loans and swaps
+     - Plugins are configured exclusively during contract deployment. To add or modify plugins,
+       redeployment of the contract is required._
 
 ### FACTOR_SCALE
 
@@ -195,7 +197,9 @@ function _swap(struct ICompoundV3CollateralSwap.SwapParams swapParams) internal
 function _checkCollateralization(contract IComet comet, address assetFrom, address assetTo, uint256 fromAmount, uint256 minAmountOut, uint256 maxHealthFactorDropBps) internal view returns (bool)
 ```
 
-_Checks if the collateralization is sufficient for the swap._
+_Checks if the collateralization is sufficient for the swap.
+Liquidity is calculated based on comet implementation.
+Implementation: https://github.com/compound-finance/comet/blob/main/contracts/Comet.sol#L544-L553_
 
 #### Parameters
 
