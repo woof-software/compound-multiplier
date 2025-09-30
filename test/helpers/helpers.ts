@@ -451,3 +451,130 @@ export async function calculateHealthFactor(
 
     return healthRatio;
 }
+
+const DOMAIN_TYPEHASH = ethers.keccak256(
+    ethers.toUtf8Bytes("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)")
+);
+
+const AUTHORIZATION_TYPEHASH = ethers.keccak256(
+    ethers.toUtf8Bytes("Authorization(address owner,address manager,bool isAllowed,uint256 nonce,uint256 expiry)")
+);
+
+/**
+ * Gets the current nonce for a user from the Comet contract
+ */
+export async function getUserNonce(comet: any, userAddress: string): Promise<bigint> {
+    return await comet.userNonce(userAddress);
+}
+
+/**
+ * Generates an EIP-712 signature for allowBySig
+ */
+/**
+ * Generates an EIP-712 signature for allowBySig using TypedData signing
+ */
+export async function signAllowBySig(
+    signer: SignerWithAddress,
+    cometAddress: string,
+    managerAddress: string,
+    isAllowed: boolean,
+    nonce: bigint,
+    expiry: bigint,
+    chainId: number
+): Promise<{ v: number; r: string; s: string }> {
+    // Get Comet contract name and version
+    const comet = await ethers.getContractAt("ICometExt", cometAddress);
+    const name = await comet.name();
+    const version = await comet.version();
+
+    // EIP-712 Domain
+    const domain = {
+        name: name,
+        version: version,
+        chainId: chainId,
+        verifyingContract: cometAddress
+    };
+
+    // EIP-712 Types
+    const types = {
+        Authorization: [
+            { name: "owner", type: "address" },
+            { name: "manager", type: "address" },
+            { name: "isAllowed", type: "bool" },
+            { name: "nonce", type: "uint256" },
+            { name: "expiry", type: "uint256" }
+        ]
+    };
+
+    // Message data
+    const value = {
+        owner: signer.address,
+        manager: managerAddress,
+        isAllowed: isAllowed,
+        nonce: nonce,
+        expiry: expiry
+    };
+
+    // Sign using EIP-712 typed data (this is the correct way)
+    const signature = await signer.signTypedData(domain, types, value);
+    const sig = ethers.Signature.from(signature);
+
+    return {
+        v: sig.v,
+        r: sig.r,
+        s: sig.s
+    };
+}
+
+/**
+ * Executes allowBySig on the Comet contract
+ */
+export async function executeAllowBySig(
+    comet: any,
+    owner: string,
+    manager: string,
+    isAllowed: boolean,
+    nonce: bigint,
+    expiry: bigint,
+    v: number,
+    r: string,
+    s: string,
+    opts?: any
+): Promise<any> {
+    return await comet.allowBySig(owner, manager, isAllowed, nonce, expiry, v, r, s, opts || {});
+}
+
+/**
+ * Helper to get a future expiry timestamp (default 1 hour from now)
+ */
+export function getFutureExpiry(secondsFromNow: number = 3600): bigint {
+    return BigInt(Math.floor(Date.now() / 1000) + secondsFromNow);
+}
+
+/**
+ * Combined helper: sign and execute allowBySig in one call
+ */
+export async function allowBySigHelper(
+    comet: any,
+    signer: SignerWithAddress,
+    managerAddress: string,
+    isAllowed: boolean,
+    opts?: any
+): Promise<any> {
+    const cometAddress = await comet.getAddress();
+    const nonce = await getUserNonce(comet, signer.address);
+    const expiry = getFutureExpiry();
+    const chainId = (await ethers.provider.getNetwork()).chainId;
+
+    const { v, r, s } = await signAllowBySig(
+        signer,
+        cometAddress,
+        managerAddress,
+        isAllowed,
+        nonce,
+        expiry,
+        Number(chainId)
+    );
+
+    return await executeAllowBySig(comet, signer.address, managerAddress, isAllowed, nonce, expiry, v, r, s, opts);
+}

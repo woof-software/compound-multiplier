@@ -24,7 +24,7 @@ interface ICometFlashLoanPlugin {
      * @param data Flash loan parameters including debt amount, asset, and user information
      * @dev Stores flash loan ID in transient storage for callback validation
      */
-    function takeFlashLoan(CallbackData memory data, bytes memory) external;
+    function takeFlashLoan(CallbackData memory data, bytes memory) external payable;
 
     /**
      * @notice Repays the flash loan

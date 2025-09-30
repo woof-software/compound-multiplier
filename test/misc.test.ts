@@ -205,5 +205,25 @@ describe("Comet Multiplier Adapter / Misc", function () {
                 "InvalidPluginSelector"
             );
         });
+
+        it("Should revert if invalid weth address", async function () {
+            const plugins = [
+                {
+                    endpoint: await loanPlugin.getAddress(),
+                    config: "0x"
+                },
+                {
+                    endpoint: await swapPlugin.getAddress(),
+                    config: ethers.AbiCoder.defaultAbiCoder().encode(["address"], [ONE_INCH_ROUTER_V6])
+                }
+            ];
+
+            const Adapter = await ethers.getContractFactory("CometMultiplierAdapter", owner);
+
+            await expect(Adapter.deploy(plugins, ethers.ZeroAddress, opts)).to.be.revertedWithCustomError(
+                Adapter,
+                "InvalidAsset"
+            );
+        });
     });
 });

@@ -18,7 +18,7 @@ contract FakeFlashLoanPlugin is ICometFlashLoanPlugin {
 
     bytes32 public constant SLOT_PLUGIN = bytes32(uint256(keccak256("FakeFalshLoanPlugin.plugin")) - 1);
 
-    function takeFlashLoan(CallbackData memory data, bytes memory) public {
+    function takeFlashLoan(CallbackData memory data, bytes memory) public payable {
         bytes memory _data = abi.encode(data);
         bytes32 flid = keccak256(_data);
         bytes32 slot = SLOT_PLUGIN;

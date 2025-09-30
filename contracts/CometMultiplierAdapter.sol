@@ -1,16 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import { IComet } from "./external/IComet.sol";
 import { ICometMultiplierAdapter } from "./interfaces/ICometMultiplierAdapter.sol";
 import { ICometSwapPlugin } from "./interfaces/ICometSwapPlugin.sol";
 import { ICometFlashLoanPlugin } from "./interfaces/ICometFlashLoanPlugin.sol";
+
 import { IWEth } from "./external/IWEth.sol";
+import { IComet } from "./external/IComet.sol";
+import { AllowBySig } from "./base/AllowBySig.sol";
+
 import { AggregatorV3Interface } from "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/utils/math/Math.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /**
  * @title CometMultiplierAdapter
@@ -20,7 +23,7 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
  * @dev This contract uses a plugin architecture to support different flash loan providers and DEX aggregators.
  *      It leverages transient storage (EIP-1153) for gas-efficient temporary data storage during operations.
  */
-contract CometMultiplierAdapter is ReentrancyGuard, ICometMultiplierAdapter {
+contract CometMultiplierAdapter is ReentrancyGuard, AllowBySig, ICometMultiplierAdapter {
     using SafeERC20 for IERC20;
 
     /// @notice Precision constant for leverage calculations (represents 1x leverage)
@@ -100,6 +103,64 @@ contract CometMultiplierAdapter is ReentrancyGuard, ICometMultiplierAdapter {
         bytes calldata swapData,
         uint256 minAmountOut
     ) external payable nonReentrant {
+        _executeMultiplier(opts, collateral, collateralAmount, leverage, swapData, minAmountOut);
+    }
+
+    /**
+     * @inheritdoc ICometMultiplierAdapter
+     */
+    function executeMultiplierBySig(
+        Options memory opts,
+        address collateral,
+        uint256 collateralAmount,
+        uint256 leverage,
+        bytes calldata swapData,
+        uint256 minAmountOut,
+        AllowParams calldata allowParams
+    ) external payable nonReentrant {
+        _allowBySig(allowParams, opts.market);
+        _executeMultiplier(opts, collateral, collateralAmount, leverage, swapData, minAmountOut);
+    }
+
+    /**
+     * @inheritdoc ICometMultiplierAdapter
+     */
+    function withdrawMultiplier(
+        Options memory opts,
+        address collateral,
+        uint256 collateralAmount,
+        bytes calldata swapData,
+        uint256 minAmountOut
+    ) external nonReentrant {
+        _withdrawMultiplier(opts, collateral, collateralAmount, swapData, minAmountOut);
+    }
+
+    /**
+     * @inheritdoc ICometMultiplierAdapter
+     */
+    function withdrawMultiplierBySig(
+        Options memory opts,
+        address collateral,
+        uint256 collateralAmount,
+        bytes calldata swapData,
+        uint256 minAmountOut,
+        AllowParams calldata allowParams
+    ) external nonReentrant {
+        _allowBySig(allowParams, opts.market);
+        _withdrawMultiplier(opts, collateral, collateralAmount, swapData, minAmountOut);
+    }
+
+    /**
+     * @notice Internal implementation of executeMultiplier
+     */
+    function _executeMultiplier(
+        Options memory opts,
+        address collateral,
+        uint256 collateralAmount,
+        uint256 leverage,
+        bytes calldata swapData,
+        uint256 minAmountOut
+    ) internal {
         Plugin memory plugin = plugins[opts.loanSelector];
         require(plugin.endpoint != address(0), InvalidPluginSelector());
         IComet comet = IComet(opts.market);
@@ -134,15 +195,15 @@ contract CometMultiplierAdapter is ReentrancyGuard, ICometMultiplierAdapter {
     }
 
     /**
-     * @inheritdoc ICometMultiplierAdapter
+     * @notice Internal implementation of withdrawMultiplier
      */
-    function withdrawMultiplier(
+    function _withdrawMultiplier(
         Options memory opts,
         address collateral,
         uint256 collateralAmount,
         bytes calldata swapData,
         uint256 minAmountOut
-    ) external nonReentrant {
+    ) internal {
         Plugin memory loanPlugin = plugins[opts.loanSelector];
         IComet comet = IComet(opts.market);
         uint256 loanDebt;

@@ -21,7 +21,7 @@ contract UniswapV3Plugin is ICometFlashLoanPlugin {
     /**
      * @inheritdoc ICometFlashLoanPlugin
      */
-    function takeFlashLoan(CallbackData memory data, bytes memory) public {
+    function takeFlashLoan(CallbackData memory data, bytes memory) public payable {
         bytes memory _data = abi.encode(data);
         bytes32 flid = keccak256(_data);
         bytes32 slot = SLOT_PLUGIN;

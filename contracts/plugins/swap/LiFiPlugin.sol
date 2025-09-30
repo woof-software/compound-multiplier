@@ -50,8 +50,6 @@ contract LiFiPlugin is ICometSwapPlugin {
         uint256 balAfter = IERC20(dstToken).balanceOf(address(this));
         amountOut = balAfter - balBefore;
 
-        require(amountOut >= minAmountOut, InvalidAmountOut());
-
         emit SwapExecuted(router, srcToken, dstToken, amountOut);
     }
 }
