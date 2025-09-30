@@ -168,17 +168,6 @@ describe("CompoundV3CollateralSwap", function () {
         });
     });
 
-    describe("receive function", function () {
-        it("reverts when sending ETH directly", async () => {
-            await expect(
-                alice.sendTransaction({
-                    to: collateralSwap,
-                    value: 1 // 1 wei
-                })
-            ).to.be.revertedWith("Can not receive ETH");
-        });
-    });
-
     describe("swap params validation", function () {
         let swapParams: ICompoundV3CollateralSwap.SwapParamsStruct;
         beforeEach(async () => {

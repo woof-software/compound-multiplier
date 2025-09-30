@@ -12,6 +12,12 @@ import { ICompoundV3CollateralSwap } from "./interfaces/ICompoundV3CollateralSwa
 import { ICometSwapPlugin } from "./interfaces/ICometSwapPlugin.sol";
 
 contract CompoundV3CollateralSwap is AllowBySig, ICompoundV3CollateralSwap {
+    /// @dev Offset for the comet contract address
+    uint256 private constant COMET_OFFSET = 0x20;
+
+    /// @dev Offset for the fromAsset parameter
+    uint256 private constant FROM_ASSET_OFFSET = 0x40;
+
     /// @dev The scale for factors
     uint64 public constant FACTOR_SCALE = 1e18;
 
@@ -137,14 +143,6 @@ contract CompoundV3CollateralSwap is AllowBySig, ICompoundV3CollateralSwap {
         }
     }
 
-    /**
-     * @notice Rejects any direct ETH transfers
-     * @dev This contract does not handle ETH, all operations are with ERC20 tokens
-     */
-    receive() external payable {
-        revert("Can not receive ETH");
-    }
-
     /*//////////////////////////////////////////////////////////////
                                 EXTERNAL
     //////////////////////////////////////////////////////////////*/
@@ -253,8 +251,8 @@ contract CompoundV3CollateralSwap is AllowBySig, ICompoundV3CollateralSwap {
         bytes32 slot = SLOT_ADAPTER;
         assembly {
             tstore(slot, fromAmount)
-            tstore(add(slot, 0x20), comet)
-            tstore(add(slot, 0x40), fromAsset)
+            tstore(add(slot, COMET_OFFSET), comet)
+            tstore(add(slot, FROM_ASSET_OFFSET), fromAsset)
         }
     }
 
@@ -268,12 +266,12 @@ contract CompoundV3CollateralSwap is AllowBySig, ICompoundV3CollateralSwap {
         bytes32 slot = SLOT_ADAPTER;
         assembly {
             fromAmount := tload(slot)
-            comet := tload(add(slot, 0x20))
-            fromAsset := tload(add(slot, 0x40))
+            comet := tload(add(slot, COMET_OFFSET))
+            fromAsset := tload(add(slot, FROM_ASSET_OFFSET))
 
             tstore(slot, 0)
-            tstore(add(slot, 0x20), 0)
-            tstore(add(slot, 0x40), 0)
+            tstore(add(slot, COMET_OFFSET), 0)
+            tstore(add(slot, FROM_ASSET_OFFSET), 0)
         }
     }
 
