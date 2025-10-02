@@ -16,8 +16,6 @@ Callback selector: keccak256("uniswapV3FlashCallback(uint256,uint256,bytes)") = 
 bytes32 SLOT_PLUGIN
 ```
 
-Storage slot to store the flash loan ID
-
 ### takeFlashLoan
 
 ```solidity
