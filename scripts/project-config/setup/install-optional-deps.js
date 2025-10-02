@@ -22,8 +22,8 @@ async function updateHardhatConfig(imports) {
     const configPath = join(process.cwd(), "hardhat.config.ts");
 
     console.log("Adding new import statements to the Hardhat config...");
-    for (const package of imports) {
-        const importStatement = `import "${package}"`;
+    for (const additionalPackage of imports) {
+        const importStatement = `import "${additionalPackage}"`;
         try {
             let configContent = await readFile(configPath, "utf-8");
 
