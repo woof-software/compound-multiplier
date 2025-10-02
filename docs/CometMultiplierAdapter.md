@@ -16,6 +16,38 @@ uint256 LEVERAGE_PRECISION
 
 Precision constant for leverage calculations (represents 1x leverage)
 
+### AMOUNT_OFFSET
+
+```solidity
+uint8 AMOUNT_OFFSET
+```
+
+Offset constants for transient storage slots
+
+### MARKET_OFFSET
+
+```solidity
+uint8 MARKET_OFFSET
+```
+
+### COLLATERAL_OFFSET
+
+```solidity
+uint8 COLLATERAL_OFFSET
+```
+
+### MIN_AMOUNT_OUT_OFFSET
+
+```solidity
+uint8 MIN_AMOUNT_OUT_OFFSET
+```
+
+### SWAP_SELECTOR_OFFSET
+
+```solidity
+uint8 SWAP_SELECTOR_OFFSET
+```
+
 ### SLOT_ADAPTER
 
 ```solidity

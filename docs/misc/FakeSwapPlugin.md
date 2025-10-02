@@ -17,6 +17,6 @@ address WHALE
 ### executeSwap
 
 ```solidity
-function executeSwap(address srcToken, address dstToken, uint256 amountIn, uint256 minAmountOut, bytes, bytes swapData) external returns (uint256 amountOut)
+function executeSwap(address srcToken, address, uint256 amountIn, uint256, bytes, bytes) external returns (uint256 amountOut)
 ```
 

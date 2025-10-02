@@ -16,20 +16,26 @@ Callback function selector for this swap plugin
 
 _Used by CometMultiplierAdapter to identify and route swap calls to this plugin_
 
-### receive
+### WSTETH_ADDRESS
 
 ```solidity
-receive() external payable
+address WSTETH_ADDRESS
 ```
 
-Allows the contract to receive ETH for staking operations
+Address of the wstETH token contract
 
-_Required for receiving ETH from WETH unwrapping and stETH withdrawals_
+### STETH_ADDRESS
+
+```solidity
+address STETH_ADDRESS
+```
+
+Address of the stETH token contract
 
 ### executeSwap
 
 ```solidity
-function executeSwap(address srcToken, address dstToken, uint256 amountIn, uint256 minAmountOut, bytes config, bytes swapData) external returns (uint256 amountOut)
+function executeSwap(address srcToken, address dstToken, uint256 amountIn, uint256 minAmountOut, bytes, bytes) external returns (uint256 amountOut)
 ```
 
 Executes a token swap between two assets
@@ -42,8 +48,8 @@ Executes a token swap between two assets
 | dstToken | address | Address of the destination token to swap to |
 | amountIn | uint256 | Amount of source tokens to swap |
 | minAmountOut | uint256 | Minimum amount of destination tokens expected |
-| config | bytes | Encoded configuration specific to the swap plugin |
-| swapData | bytes | Encoded data required by the underlying swap mechanism |
+|  | bytes |  |
+|  | bytes |  |
 
 #### Return Values
 
