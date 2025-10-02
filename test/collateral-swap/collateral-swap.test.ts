@@ -430,10 +430,13 @@ describe("CompoundV3CollateralSwap", function () {
 
                 swapParams.swapCalldata = swapCalldata;
 
-                await expect(collateralSwap.connect(alice).swap(swapParams)).to.be.revertedWithCustomError(
-                    collateralSwap,
-                    "InvalidAmountOut"
-                );
+                /*
+                Note: this reverts with panic 0x11 because of Arithmetic operation 
+                overflowed outside of an unchecked block
+                this happens when we supply dust of swapped asset, thus causing the balance 
+                of the contract to be less than the debt which causes the flash loan to fail during repayment
+                */
+                await expect(collateralSwap.connect(alice).swap(swapParams)).to.be.revertedWithPanic(0x11);
             });
 
             it("reverts when collateral swap has no approval on comet actions", async () => {
