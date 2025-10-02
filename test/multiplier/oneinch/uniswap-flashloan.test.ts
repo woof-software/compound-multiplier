@@ -1,32 +1,33 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
-import { CometMultiplierAdapter, EulerV2Plugin, OneInchV6SwapPlugin, IComet, IERC20 } from "../../typechain-types";
+import { CometMultiplierAdapter, UniswapV3Plugin, OneInchV6SwapPlugin, IComet, IERC20 } from "../../../typechain-types";
 import { get1inchQuote, get1inchSwapData } from "../helpers/helpers";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 import {
     executeWithRetry,
-    COMET_USDC_MARKET,
-    USDC_ADDRESS,
-    WETH_ADDRESS,
-    ONE_INCH_ROUTER_V6,
-    USDC_EVAULT,
-    WETH_WHALE,
-    calculateExpectedCollateral,
-    calculateLeveragedAmount,
-    calculateMaxLeverage,
-    calculateMaxSafeWithdrawal,
-    previewTake,
+    UNI_V3_USDC_WETH_005,
     executeMultiplier1Inch as executeMultiplier,
     withdrawMultiplier1Inch as withdrawMultiplier,
-    calculateHealthFactor
+    calculateMaxLeverage,
+    calculateLeveragedAmount,
+    calculateExpectedCollateral,
+    calculateHealthFactor,
+    calculateMaxSafeWithdrawal,
+    previewTake
 } from "../helpers/helpers";
-import { Log } from "ethers";
+
+const WETH_ADDRESS = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
+const USDC_ADDRESS = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
+const COMET_USDC_MARKET = "0xc3d688B66703497DAA19211EEdff47f25384cdc3";
+const ONE_INCH_ROUTER_V6 = "0x111111125421cA6dc452d289314280a0f8842A65";
+
+const WETH_WHALE = "0xF04a5cC80B1E94C69B48f5ee68a08CD2F09A7c3E";
 
 const opts = { maxFeePerGas: 4_000_000_000 };
 
-describe("Comet Multiplier Adapter / 1inch / Euler", function () {
+describe("Comet Multiplier Adapter / 1inch / UniswapV3", function () {
     let adapter: CometMultiplierAdapter;
-    let loanPlugin: EulerV2Plugin;
+    let loanPlugin: UniswapV3Plugin;
     let swapPlugin: OneInchV6SwapPlugin;
     let comet: IComet;
     let weth: IERC20;
@@ -41,7 +42,7 @@ describe("Comet Multiplier Adapter / 1inch / Euler", function () {
             market: COMET_USDC_MARKET,
             loanSelector: await loanPlugin.CALLBACK_SELECTOR(),
             swapSelector: await swapPlugin.CALLBACK_SELECTOR(),
-            flp: USDC_EVAULT
+            flp: UNI_V3_USDC_WETH_005
         };
     }
 
@@ -54,7 +55,7 @@ describe("Comet Multiplier Adapter / 1inch / Euler", function () {
 
         [owner, user, user2] = await ethers.getSigners();
 
-        const LoanFactory = await ethers.getContractFactory("EulerV2Plugin", owner);
+        const LoanFactory = await ethers.getContractFactory("UniswapV3Plugin", owner);
         loanPlugin = await LoanFactory.deploy(opts);
 
         const SwapFactory = await ethers.getContractFactory("OneInchV6SwapPlugin", owner);
@@ -463,7 +464,6 @@ describe("Comet Multiplier Adapter / 1inch / Euler", function () {
         });
 
         it("should handle small collateral withdrawals", async function () {
-            /// !!! slippage > 0.1%
             const smallAmount = ethers.parseEther("0.001");
             const initialCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
             const initialUsdc = await usdc.balanceOf(user.address);

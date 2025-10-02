@@ -1,6 +1,6 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
-import { CometMultiplierAdapter, MorphoPlugin, OneInchV6SwapPlugin, IComet, IERC20 } from "../../typechain-types";
+import { CometMultiplierAdapter, MorphoPlugin, OneInchV6SwapPlugin, IComet, IERC20 } from "../../../typechain-types";
 import { get1inchQuote, get1inchSwapData } from "../helpers/helpers";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 import {

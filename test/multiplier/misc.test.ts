@@ -1,6 +1,12 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
-import { CometMultiplierAdapter, OneInchV6SwapPlugin, IComet, IERC20, FakeFlashLoanPlugin } from "../typechain-types";
+import {
+    CometMultiplierAdapter,
+    OneInchV6SwapPlugin,
+    IComet,
+    IERC20,
+    FakeFlashLoanPlugin
+} from "../../typechain-types";
 import { get1inchSwapData, calculateLeveragedAmount } from "./helpers/helpers";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 

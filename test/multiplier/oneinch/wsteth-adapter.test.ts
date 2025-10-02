@@ -7,7 +7,7 @@ import {
     IERC20,
     WstEthPlugin,
     OneInchV6SwapPlugin
-} from "../../typechain-types";
+} from "../../../typechain-types";
 import { get1inchSwapData } from "../helpers/helpers";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 import { executeWithRetry } from "../helpers/helpers";

@@ -37,7 +37,7 @@ contract CometMultiplierAdapter is ReentrancyGuard, AllowBySig, ICometMultiplier
     mapping(bytes4 => Plugin) public plugins;
 
     /// @notice Wrapped ETH (WETH) token address
-    address public wEth;
+    address public immutable wEth;
 
     /**
      * @notice Initializes the adapter with flash loan and swap plugins
@@ -74,7 +74,7 @@ contract CometMultiplierAdapter is ReentrancyGuard, AllowBySig, ICometMultiplier
         bytes32 slot = SLOT_ADAPTER;
         Mode mode;
         assembly {
-            mode := tload(add(slot, 0xa0))
+            mode := tload(slot)
         }
 
         if (mode == Mode.EXECUTE) {
@@ -181,15 +181,15 @@ contract CometMultiplierAdapter is ReentrancyGuard, AllowBySig, ICometMultiplier
 
         _loan(
             plugin.endpoint,
-            ICometFlashLoanPlugin.CallbackData(
-                leveraged,
-                0,
-                IERC20(baseAsset).balanceOf(address(this)),
-                msg.sender,
-                opts.flp,
-                baseAsset,
-                swapData
-            ),
+            ICometFlashLoanPlugin.CallbackData({
+                debt: leveraged,
+                fee: 0,
+                snapshot: IERC20(baseAsset).balanceOf(address(this)),
+                user: msg.sender,
+                flp: opts.flp,
+                asset: baseAsset,
+                swapData: swapData
+            }),
             plugin.config
         );
     }
@@ -248,13 +248,13 @@ contract CometMultiplierAdapter is ReentrancyGuard, AllowBySig, ICometMultiplier
      *      3. Withdraws base asset from user's position to repay the flash loan
      */
     function _execute(ICometFlashLoanPlugin.CallbackData memory data, address endpoint) private {
-        (uint256 amount, address market, address collateral, uint256 minAmountOut, bytes4 swapSelector) = _tload();
+        (uint256 amount, IComet market, address collateral, uint256 minAmountOut, bytes4 swapSelector) = _tload();
         uint256 totalAmount = _swap(data.asset, collateral, data.debt, minAmountOut, swapSelector, data.swapData) +
             amount;
 
-        IERC20(collateral).approve(market, totalAmount);
-        IComet(market).supplyTo(data.user, collateral, totalAmount);
-        IComet(market).withdrawFrom(data.user, address(this), data.asset, data.debt + data.fee);
+        IERC20(collateral).approve(address(market), totalAmount);
+        market.supplyTo(data.user, collateral, totalAmount);
+        market.withdrawFrom(data.user, address(this), data.asset, data.debt + data.fee);
 
         (bool done, ) = endpoint.delegatecall(
             abi.encodeWithSelector(
@@ -281,14 +281,14 @@ contract CometMultiplierAdapter is ReentrancyGuard, AllowBySig, ICometMultiplier
      *      4. Repays flash loan and returns any remaining tokens to user
      */
     function _withdraw(ICometFlashLoanPlugin.CallbackData memory data, address endpoint) private {
-        (uint256 amount, address market, address collateral, uint256 minAmountOut, bytes4 swapSelector) = _tload();
+        (uint256 amount, IComet market, address collateral, uint256 minAmountOut, bytes4 swapSelector) = _tload();
 
-        IERC20(data.asset).approve(market, data.debt);
-        IComet(market).supplyTo(data.user, data.asset, data.debt);
+        IERC20(data.asset).approve(address(market), data.debt);
+        market.supplyTo(data.user, data.asset, data.debt);
         uint128 take = uint128(
-            amount == type(uint256).max ? IComet(market).collateralBalanceOf(data.user, collateral) : amount
+            amount == type(uint256).max ? market.collateralBalanceOf(data.user, collateral) : amount
         );
-        IComet(market).withdrawFrom(data.user, address(this), collateral, take);
+        market.withdrawFrom(data.user, address(this), collateral, take);
         uint256 repaymentAmount = data.debt + data.fee;
 
         _swap(collateral, data.asset, take, minAmountOut, swapSelector, data.swapData);
@@ -370,23 +370,23 @@ contract CometMultiplierAdapter is ReentrancyGuard, AllowBySig, ICometMultiplier
     /**
      * @notice Calculates the required loan amount for a given leverage ratio
      * @param comet The Comet market interface
-     * @param collateralAsset Address of the collateral token
-     * @param initialAmount Initial amount of collateral being supplied
+     * @param collateral Address of the collateral token
+     * @param collateralAmount Amount of collateral being supplied
      * @param leverage Leverage multiplier (e.g., 20000 = 2x)
      * @return Required loan amount in base asset terms
      * @dev Formula: loan = (initialValue * (leverage - 1)) / LEVERAGE_PRECISION
      */
     function _leveraged(
         IComet comet,
-        address collateralAsset,
-        uint256 initialAmount,
+        address collateral,
+        uint256 collateralAmount,
         uint256 leverage
     ) internal view returns (uint256) {
-        IComet.AssetInfo memory info = comet.getAssetInfoByAddress(collateralAsset);
+        IComet.AssetInfo memory info = comet.getAssetInfoByAddress(collateral);
         uint256 price = comet.getPrice(info.priceFeed);
 
         uint256 initialValueBase = Math.mulDiv(
-            Math.mulDiv(initialAmount, price, 10 ** AggregatorV3Interface(info.priceFeed).decimals()),
+            Math.mulDiv(collateralAmount, price, 10 ** AggregatorV3Interface(info.priceFeed).decimals()),
             comet.baseScale(),
             info.scale
         );
@@ -397,20 +397,20 @@ contract CometMultiplierAdapter is ReentrancyGuard, AllowBySig, ICometMultiplier
     /**
      * @notice Converts between collateral and base asset amounts using market prices
      * @param comet The Comet market interface
-     * @param colllateral Address of the collateral token
-     * @param amount Amount to convert
+     * @param collateral Address of the collateral token
+     * @param collateralAmount Amount to convert
      * @return Converted amount in the target denomination
      * @dev Accounts for collateral factors and price feed decimals in conversions
      */
-    function _convert(IComet comet, address colllateral, uint256 amount) internal view returns (uint256) {
-        IComet.AssetInfo memory info = comet.getAssetInfoByAddress(colllateral);
+    function _convert(IComet comet, address collateral, uint256 collateralAmount) internal view returns (uint256) {
+        IComet.AssetInfo memory info = comet.getAssetInfoByAddress(collateral);
         uint256 price = comet.getPrice(info.priceFeed);
         uint64 collateralFactor = info.borrowCollateralFactor;
 
         uint256 num = price * comet.baseScale() * uint256(collateralFactor);
         uint256 den = _scale(info.priceFeed, uint256(info.scale)) * 1e18;
 
-        return Math.mulDiv(amount, num, den);
+        return Math.mulDiv(collateralAmount, num, den);
     }
 
     /**
@@ -444,12 +444,12 @@ contract CometMultiplierAdapter is ReentrancyGuard, AllowBySig, ICometMultiplier
     ) internal {
         bytes32 slot = SLOT_ADAPTER;
         assembly {
-            tstore(slot, amount)
-            tstore(add(slot, 0x20), market)
-            tstore(add(slot, 0x40), collateral)
-            tstore(add(slot, 0x60), minAmountOut)
-            tstore(add(slot, 0x80), swapSelector)
-            tstore(add(slot, 0xa0), mode)
+            tstore(slot, mode)
+            tstore(add(slot, 0x20), amount)
+            tstore(add(slot, 0x40), market)
+            tstore(add(slot, 0x60), collateral)
+            tstore(add(slot, 0x80), minAmountOut)
+            tstore(add(slot, 0xA0), swapSelector)
         }
     }
 
@@ -464,21 +464,20 @@ contract CometMultiplierAdapter is ReentrancyGuard, AllowBySig, ICometMultiplier
      */
     function _tload()
         internal
-        returns (uint256 amount, address market, address collateral, uint256 minAmountOut, bytes4 swapSelector)
+        returns (uint256 amount, IComet market, address collateral, uint256 minAmountOut, bytes4 swapSelector)
     {
         bytes32 slot = SLOT_ADAPTER;
         assembly {
-            amount := tload(slot)
-            market := tload(add(slot, 0x20))
-            collateral := tload(add(slot, 0x40))
-            minAmountOut := tload(add(slot, 0x60))
-            swapSelector := tload(add(slot, 0x80))
-            //mode excluded, loaded in the fallback
-            tstore(slot, 0)
+            amount := tload(add(slot, 0x20))
+            market := tload(add(slot, 0x40))
+            collateral := tload(add(slot, 0x60))
+            minAmountOut := tload(add(slot, 0x80))
+            swapSelector := tload(add(slot, 0xA0))
             tstore(add(slot, 0x20), 0)
             tstore(add(slot, 0x40), 0)
             tstore(add(slot, 0x60), 0)
             tstore(add(slot, 0x80), 0)
+            tstore(add(slot, 0xA0), 0)
         }
     }
 

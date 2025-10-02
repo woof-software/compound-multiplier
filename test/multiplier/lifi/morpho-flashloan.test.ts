@@ -1,35 +1,34 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
-import { CometMultiplierAdapter, UniswapV3Plugin, LiFiPlugin, IComet, IERC20 } from "../../typechain-types";
+import { CometMultiplierAdapter, MorphoPlugin, LiFiPlugin, IComet, IERC20 } from "../../../typechain-types";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 import {
     executeWithRetry,
-    UNI_V3_USDC_WETH_005,
-    executeMultiplierLiFi as executeMultiplier,
-    withdrawMultiplierLiFi as withdrawMultiplier,
+    WETH_ADDRESS,
+    USDC_ADDRESS,
+    WETH_WHALE,
+    COMET_USDC_MARKET,
+    MORPHO,
     calculateMaxLeverage,
     calculateLeveragedAmount,
     calculateExpectedCollateral,
+    previewTake,
+    executeMultiplierLiFi as executeMultiplier,
+    withdrawMultiplierLiFi as withdrawMultiplier,
     calculateHealthFactor,
     calculateMaxSafeWithdrawal,
-    previewTake,
     getQuote,
     getUserNonce,
     getFutureExpiry,
     signAllowBySig
 } from "../helpers/helpers";
 
-const WETH_ADDRESS = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
-const USDC_ADDRESS = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
-const COMET_USDC_MARKET = "0xc3d688B66703497DAA19211EEdff47f25384cdc3";
 const LIFI_ROUTER = "0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE";
-const WETH_WHALE = "0xF04a5cC80B1E94C69B48f5ee68a08CD2F09A7c3E";
-
 const opts = { maxFeePerGas: 4_000_000_000 };
 
-describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
+describe.only("Comet Multiplier Adapter / LiFi / Morpho", function () {
     let adapter: CometMultiplierAdapter;
-    let loanPlugin: UniswapV3Plugin;
+    let loanPlugin: MorphoPlugin;
     let swapPlugin: LiFiPlugin;
     let comet: IComet;
     let weth: IERC20;
@@ -45,7 +44,7 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
             market: COMET_USDC_MARKET,
             loanSelector: await loanPlugin.CALLBACK_SELECTOR(),
             swapSelector: await swapPlugin.CALLBACK_SELECTOR(),
-            flp: UNI_V3_USDC_WETH_005
+            flp: MORPHO
         };
     }
 
@@ -58,7 +57,7 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
 
         [owner, user, user2, user3] = await ethers.getSigners();
 
-        const LoanFactory = await ethers.getContractFactory("UniswapV3Plugin", owner);
+        const LoanFactory = await ethers.getContractFactory("MorphoPlugin", owner);
         loanPlugin = await LoanFactory.deploy(opts);
 
         const SwapFactory = await ethers.getContractFactory("LiFiPlugin", owner);
@@ -87,6 +86,7 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
         await ethers.provider.send("hardhat_setBalance", [whale.address, "0xffffffffffffffffffffff"]);
         await weth.connect(whale).transfer(user.address, ethers.parseEther("10"), opts);
         await weth.connect(whale).transfer(user2.address, ethers.parseEther("10"), opts);
+        await weth.connect(whale).transfer(user3.address, ethers.parseEther("10"), opts);
 
         const allowAbi = ["function allow(address, bool)"];
         const cometAsUser = new ethers.Contract(COMET_USDC_MARKET, allowAbi, user);
@@ -97,12 +97,12 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
         initialSnapshot = await ethers.provider.send("evm_snapshot");
     });
 
-    beforeEach(async function () {
-        await ethers.provider.send("evm_revert", [initialSnapshot]);
-        initialSnapshot = await ethers.provider.send("evm_snapshot");
-    });
-
     describe("Execute Multiplier", function () {
+        beforeEach(async function () {
+            await ethers.provider.send("evm_revert", [initialSnapshot]);
+            initialSnapshot = await ethers.provider.send("evm_snapshot");
+        });
+
         it("should execute with 1.1x leverage", async function () {
             const initialAmount = ethers.parseEther("1");
             const leverage = 11_000;
@@ -384,6 +384,8 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
 
     describe("Position Health", function () {
         beforeEach(async function () {
+            await ethers.provider.send("evm_revert", [initialSnapshot]);
+            initialSnapshot = await ethers.provider.send("evm_snapshot");
             const initialAmount = ethers.parseEther("0.2");
             const leverage = 25_000;
             await executeMultiplier(weth, await getMarketOptions(), comet, adapter, user, initialAmount, leverage);
@@ -459,6 +461,8 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
 
     describe("Withdraw Multiplier", function () {
         beforeEach(async function () {
+            await ethers.provider.send("evm_revert", [initialSnapshot]);
+            initialSnapshot = await ethers.provider.send("evm_snapshot");
             const initialAmount = ethers.parseEther("0.2");
             const leverage = 25_000;
             await executeMultiplier(weth, await getMarketOptions(), comet, adapter, user, initialAmount, leverage);
@@ -598,6 +602,7 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
         });
 
         it("should handle small collateral withdrawals", async function () {
+            /// !!! slippage > 0.1%
             const smallAmount = ethers.parseEther("0.001");
             const initialCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
             const initialUsdc = await usdc.balanceOf(user.address);
@@ -624,9 +629,35 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
             expect(finalUsdc).to.be.gt(initialUsdc);
             expect(healthFactor).to.be.gt(await comet.borrowBalanceOf(user.address));
         });
+
+        it("should revert when user has no debt to deleverage", async function () {
+            const collateralToWithdraw = ethers.parseEther("0.1");
+            const market = await getMarketOptions();
+
+            await expect(
+                adapter.connect(user3).withdrawMultiplier(market, WETH_ADDRESS, collateralToWithdraw, "0x", 1n, opts)
+            ).to.be.revertedWithCustomError(adapter, "NothingToDeleverage");
+        });
+
+        it("should revert when calculated loan debt is zero", async function () {
+            const tinyAmount = 1n;
+            const market = await getMarketOptions();
+
+            const initialAmount = ethers.parseEther("0.1");
+            const leverage = 20_000;
+            await executeMultiplier(weth, market, comet, adapter, user2, initialAmount, leverage);
+            await expect(
+                adapter.connect(user2).withdrawMultiplier(market, WETH_ADDRESS, tinyAmount, "0x", 0n, opts)
+            ).to.be.revertedWithCustomError(adapter, "InvalidLeverage");
+        });
     });
 
     describe("Multiple Operations", function () {
+        beforeEach(async function () {
+            await ethers.provider.send("evm_revert", [initialSnapshot]);
+            initialSnapshot = await ethers.provider.send("evm_snapshot");
+        });
+
         it("should handle multiple sequential collateral withdrawals", async function () {
             const initialAmount = ethers.parseEther("0.3");
             const leverage = 20_000;
@@ -711,6 +742,42 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
                 expect(parsedEvent!.args.debtAmount).to.be.gt(0);
             }
         });
+        it("should emit events on successful deposit", async function () {
+            const initialAmount = ethers.parseEther("0.1");
+            const leverage = 15_000;
+
+            const tx = await executeMultiplier(
+                weth,
+                await getMarketOptions(),
+                comet,
+                adapter,
+                user2,
+                initialAmount,
+                leverage
+            );
+
+            const receipt = await tx.wait();
+
+            const executedEvents = receipt.logs.filter((log: any) => {
+                try {
+                    const parsed = adapter.interface.parseLog(log);
+                    return parsed && parsed.name === "Executed";
+                } catch {
+                    return false;
+                }
+            });
+
+            expect(executedEvents.length).to.be.gt(0);
+
+            if (executedEvents.length > 0) {
+                const parsedEvent = adapter.interface.parseLog(executedEvents[0]);
+                expect(parsedEvent!.args.user).to.equal(user2.address);
+                expect(parsedEvent!.args.market).to.equal(COMET_USDC_MARKET);
+                expect(parsedEvent!.args.collateral).to.equal(WETH_ADDRESS);
+                expect(parsedEvent!.args.totalAmount).to.be.gt(initialAmount);
+                expect(parsedEvent!.args.debtAmount).to.be.gt(0);
+            }
+        });
 
         it("should emit events on successful withdrawal", async function () {
             const initialAmount = ethers.parseEther("0.2");
@@ -745,7 +812,6 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
             }
         });
     });
-
     describe("Execute and Withdraw with AllowBySig", function () {
         it("should execute leveraged position with allowBySig (no prior authorization)", async function () {
             const adapterAddress = await adapter.getAddress();
