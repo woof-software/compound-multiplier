@@ -67,7 +67,7 @@
             },
             {
                 "internalType": "address",
-                "name": "dstToken",
+                "name": "",
                 "type": "address"
             },
             {
@@ -77,7 +77,7 @@
             },
             {
                 "internalType": "uint256",
-                "name": "minAmountOut",
+                "name": "",
                 "type": "uint256"
             },
             {
@@ -87,7 +87,7 @@
             },
             {
                 "internalType": "bytes",
-                "name": "swapData",
+                "name": "",
                 "type": "bytes"
             }
         ],
