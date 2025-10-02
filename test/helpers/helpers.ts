@@ -3,7 +3,7 @@ import axios from "axios";
 import { impersonateAccount, setBalance } from "@nomicfoundation/hardhat-network-helpers";
 import { Addressable, Signer } from "ethers";
 import { ethers } from "hardhat";
-import { CometMultiplierAdapter, IComet, IERC20 } from "../../../typechain-types";
+import { CometMultiplierAdapter, IComet, IERC20 } from "../../typechain-types";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 export { SnapshotRestorer, takeSnapshot, time } from "@nomicfoundation/hardhat-network-helpers";
 
@@ -277,7 +277,7 @@ export async function calculateMaxLeverage(comet: IComet): Promise<number> {
     const info = await comet.getAssetInfoByAddress(WETH_ADDRESS);
     const borrowCollateralFactor = Number(info.borrowCollateralFactor) / 1e18;
     const theoreticalMax = (1 / (1 - borrowCollateralFactor)) * 10_000;
-    return Math.floor(theoreticalMax * 0.97);
+    return Math.floor(theoreticalMax * 0.95);
 }
 
 export async function calculateMaxSafeWithdrawal(

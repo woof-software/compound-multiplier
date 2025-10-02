@@ -1,7 +1,7 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
 import { CometMultiplierAdapter, UniswapV3Plugin, OneInchV6SwapPlugin, IComet, IERC20 } from "../../../typechain-types";
-import { get1inchQuote, get1inchSwapData } from "../helpers/helpers";
+import { get1inchQuote, get1inchSwapData } from "../../helpers/helpers";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 import {
     executeWithRetry,
@@ -14,7 +14,7 @@ import {
     calculateHealthFactor,
     calculateMaxSafeWithdrawal,
     previewTake
-} from "../helpers/helpers";
+} from "../../helpers/helpers";
 
 const WETH_ADDRESS = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
 const USDC_ADDRESS = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
@@ -82,8 +82,8 @@ describe("Comet Multiplier Adapter / 1inch / UniswapV3", function () {
 
         const whale = await ethers.getImpersonatedSigner(WETH_WHALE);
         await ethers.provider.send("hardhat_setBalance", [whale.address, "0xffffffffffffffffffffff"]);
-        await weth.connect(whale).transfer(user.address, ethers.parseEther("10"), opts);
-        await weth.connect(whale).transfer(user2.address, ethers.parseEther("10"), opts);
+        await weth.connect(whale).transfer(user.address, ethers.parseEther("20"), opts);
+        await weth.connect(whale).transfer(user2.address, ethers.parseEther("20"), opts);
 
         const allowAbi = ["function allow(address, bool)"];
         const cometAsUser = new ethers.Contract(COMET_USDC_MARKET, allowAbi, user);

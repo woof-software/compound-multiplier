@@ -8,9 +8,9 @@ import {
     WstEthPlugin,
     OneInchV6SwapPlugin
 } from "../../../typechain-types";
-import { get1inchSwapData } from "../helpers/helpers";
+import { get1inchSwapData } from "../../helpers/helpers";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
-import { executeWithRetry } from "../helpers/helpers";
+import { executeWithRetry } from "../../helpers/helpers";
 
 const WETH_ADDRESS = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
 const STETH_ADDRESS = "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84";
@@ -38,11 +38,11 @@ describe("Comet Multiplier Adapter / 1inch / wstETH", function () {
     let user: SignerWithAddress;
     let initialSnapshot: any;
 
-    async function getMarketOptions() {
+    async function getMarketOptions(isIn: boolean) {
         return {
             market: COMET_WETH_MARKET,
             loanSelector: await loanPlugin.CALLBACK_SELECTOR(),
-            swapSelector: await swapPlugin.CALLBACK_SELECTOR(),
+            swapSelector: isIn ? await swapPlugin.CALLBACK_SELECTOR() : await oneInchPlugin.CALLBACK_SELECTOR(),
             flp: WETH_EVAULT
         };
     }
@@ -55,7 +55,7 @@ describe("Comet Multiplier Adapter / 1inch / wstETH", function () {
     ) {
         await wsteth.connect(signer).approve(await adapter.getAddress(), collateralAmount);
 
-        const market = await getMarketOptions();
+        const market = await getMarketOptions(true);
 
         return adapter
             .connect(signer)
@@ -65,7 +65,7 @@ describe("Comet Multiplier Adapter / 1inch / wstETH", function () {
     async function withdrawMultiplier(signer: SignerWithAddress, collateralAmount: bigint, minAmountOut: bigint = 1n) {
         const blockTag = await ethers.provider.getBlockNumber();
         let take = await previewTake(comet, signer.address, WSTETH_ADDRESS, collateralAmount, blockTag);
-        const market = await getMarketOptions();
+        const market = await getMarketOptions(false);
 
         return executeWithRetry(async () => {
             const swapData = await get1inchSwapData(

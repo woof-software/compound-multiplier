@@ -17,7 +17,7 @@ import {
     getUserNonce,
     getFutureExpiry,
     signAllowBySig
-} from "../helpers/helpers";
+} from "../../helpers/helpers";
 
 const WETH_ADDRESS = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
 const USDC_ADDRESS = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
@@ -27,7 +27,7 @@ const WETH_WHALE = "0xF04a5cC80B1E94C69B48f5ee68a08CD2F09A7c3E";
 
 const opts = { maxFeePerGas: 4_000_000_000 };
 
-describe.only("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
+describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
     let adapter: CometMultiplierAdapter;
     let loanPlugin: UniswapV3Plugin;
     let swapPlugin: LiFiPlugin;
@@ -85,9 +85,9 @@ describe.only("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
 
         const whale = await ethers.getImpersonatedSigner(WETH_WHALE);
         await ethers.provider.send("hardhat_setBalance", [whale.address, "0xffffffffffffffffffffff"]);
-        await weth.connect(whale).transfer(user.address, ethers.parseEther("10"), opts);
-        await weth.connect(whale).transfer(user2.address, ethers.parseEther("10"), opts);
-        await weth.connect(whale).transfer(user3.address, ethers.parseEther("10"), opts);
+        await weth.connect(whale).transfer(user.address, ethers.parseEther("20"), opts);
+        await weth.connect(whale).transfer(user2.address, ethers.parseEther("20"), opts);
+        await weth.connect(whale).transfer(user3.address, ethers.parseEther("20"), opts);
 
         const allowAbi = ["function allow(address, bool)"];
         const cometAsUser = new ethers.Contract(COMET_USDC_MARKET, allowAbi, user);
@@ -800,7 +800,6 @@ describe.only("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
                 );
             });
             const swapData = quote.swapCalldata;
-            const minAmountOut = (BigInt(quote.toAmountMin) * 90n) / 100n;
 
             await adapter
                 .connect(user3)
@@ -810,7 +809,7 @@ describe.only("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
                     initialAmount,
                     leverage,
                     swapData,
-                    minAmountOut,
+                    quote.toAmountMin,
                     allowParams,
                     opts
                 );
@@ -864,8 +863,6 @@ describe.only("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
 
             const market = await getMarketOptions();
 
-            const blockTag = await ethers.provider.getBlockNumber();
-
             const quote = await executeWithRetry(async () => {
                 const q = await getQuote(
                     "1",
@@ -878,10 +875,6 @@ describe.only("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
                 return q;
             });
             const swapData = quote.swapCalldata;
-            const minAmountOut = (BigInt(quote.toAmountMin) * 95n) / 100n;
-
-            const col = await comet.collateralBalanceOf(user3.address, WETH_ADDRESS);
-            const debt = await comet.borrowBalanceOf(user3.address);
 
             await adapter
                 .connect(user3)
@@ -890,7 +883,7 @@ describe.only("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
                     WETH_ADDRESS,
                     collateralToWithdraw,
                     swapData,
-                    minAmountOut,
+                    quote.toAmountMin,
                     allowParams,
                     opts
                 );

@@ -29,6 +29,13 @@ contract CometMultiplierAdapter is ReentrancyGuard, AllowBySig, ICometMultiplier
     /// @notice Precision constant for leverage calculations (represents 1x leverage)
     uint256 constant LEVERAGE_PRECISION = 10_000;
 
+    /// @notice Offset constants for transient storage slots
+    uint8 constant AMOUNT_OFFSET = 0x20;
+    uint8 constant MARKET_OFFSET = 0x40;
+    uint8 constant COLLATERAL_OFFSET = 0x60;
+    uint8 constant MIN_AMOUNT_OUT_OFFSET = 0x80;
+    uint8 constant SWAP_SELECTOR_OFFSET = 0xA0;
+
     /// @notice Storage slot for transient data, derived from contract name hash
     bytes32 constant SLOT_ADAPTER = bytes32(uint256(keccak256("CometMultiplierAdapter.adapter")) - 1);
 
@@ -183,7 +190,7 @@ contract CometMultiplierAdapter is ReentrancyGuard, AllowBySig, ICometMultiplier
             plugin.endpoint,
             ICometFlashLoanPlugin.CallbackData({
                 debt: leveraged,
-                fee: 0,
+                fee: 0, // to be handled by plugin
                 snapshot: IERC20(baseAsset).balanceOf(address(this)),
                 user: msg.sender,
                 flp: opts.flp,
@@ -227,7 +234,7 @@ contract CometMultiplierAdapter is ReentrancyGuard, AllowBySig, ICometMultiplier
             loanPlugin.endpoint,
             ICometFlashLoanPlugin.CallbackData({
                 debt: loanDebt,
-                fee: 0,
+                fee: 0, // to be handled by plugin
                 snapshot: IERC20(baseAsset).balanceOf(address(this)),
                 user: msg.sender,
                 flp: opts.flp,
@@ -445,11 +452,11 @@ contract CometMultiplierAdapter is ReentrancyGuard, AllowBySig, ICometMultiplier
         bytes32 slot = SLOT_ADAPTER;
         assembly {
             tstore(slot, mode)
-            tstore(add(slot, 0x20), amount)
-            tstore(add(slot, 0x40), market)
-            tstore(add(slot, 0x60), collateral)
-            tstore(add(slot, 0x80), minAmountOut)
-            tstore(add(slot, 0xA0), swapSelector)
+            tstore(add(slot, AMOUNT_OFFSET), amount)
+            tstore(add(slot, MARKET_OFFSET), market)
+            tstore(add(slot, COLLATERAL_OFFSET), collateral)
+            tstore(add(slot, MIN_AMOUNT_OUT_OFFSET), minAmountOut)
+            tstore(add(slot, SWAP_SELECTOR_OFFSET), swapSelector)
         }
     }
 
@@ -468,16 +475,16 @@ contract CometMultiplierAdapter is ReentrancyGuard, AllowBySig, ICometMultiplier
     {
         bytes32 slot = SLOT_ADAPTER;
         assembly {
-            amount := tload(add(slot, 0x20))
-            market := tload(add(slot, 0x40))
-            collateral := tload(add(slot, 0x60))
-            minAmountOut := tload(add(slot, 0x80))
-            swapSelector := tload(add(slot, 0xA0))
-            tstore(add(slot, 0x20), 0)
-            tstore(add(slot, 0x40), 0)
-            tstore(add(slot, 0x60), 0)
-            tstore(add(slot, 0x80), 0)
-            tstore(add(slot, 0xA0), 0)
+            amount := tload(add(slot, AMOUNT_OFFSET))
+            market := tload(add(slot, MARKET_OFFSET))
+            collateral := tload(add(slot, COLLATERAL_OFFSET))
+            minAmountOut := tload(add(slot, MIN_AMOUNT_OUT_OFFSET))
+            swapSelector := tload(add(slot, SWAP_SELECTOR_OFFSET))
+            tstore(add(slot, AMOUNT_OFFSET), 0)
+            tstore(add(slot, MARKET_OFFSET), 0)
+            tstore(add(slot, COLLATERAL_OFFSET), 0)
+            tstore(add(slot, MIN_AMOUNT_OUT_OFFSET), 0)
+            tstore(add(slot, SWAP_SELECTOR_OFFSET), 0)
         }
     }
 

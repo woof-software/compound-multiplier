@@ -21,12 +21,12 @@ import {
     getUserNonce,
     getFutureExpiry,
     signAllowBySig
-} from "../helpers/helpers";
+} from "../../helpers/helpers";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 
 const opts = { maxFeePerGas: 4_000_000_000 };
 
-describe.only("Comet Multiplier Adapter / LiFi / Euler", function () {
+describe("Comet Multiplier Adapter / LiFi / Euler", function () {
     let adapter: CometMultiplierAdapter;
     let loanPlugin: EulerV2Plugin;
     let swapPlugin: LiFiPlugin;
@@ -84,9 +84,9 @@ describe.only("Comet Multiplier Adapter / LiFi / Euler", function () {
 
         const whale = await ethers.getImpersonatedSigner(WETH_WHALE);
         await ethers.provider.send("hardhat_setBalance", [whale.address, "0xffffffffffffffffffffff"]);
-        await weth.connect(whale).transfer(user.address, ethers.parseEther("10"), opts);
-        await weth.connect(whale).transfer(user2.address, ethers.parseEther("10"), opts);
-        await weth.connect(whale).transfer(user3.address, ethers.parseEther("10"), opts);
+        await weth.connect(whale).transfer(user.address, ethers.parseEther("20"), opts);
+        await weth.connect(whale).transfer(user2.address, ethers.parseEther("20"), opts);
+        await weth.connect(whale).transfer(user3.address, ethers.parseEther("20"), opts);
 
         const allowAbi = ["function allow(address, bool)"];
         const cometAsUser = new ethers.Contract(COMET_USDC_MARKET, allowAbi, user);
@@ -175,7 +175,7 @@ describe.only("Comet Multiplier Adapter / LiFi / Euler", function () {
         });
 
         it("should handle large collateral amounts", async function () {
-            const initialAmount = ethers.parseEther("1.0");
+            const initialAmount = ethers.parseEther("20");
             const leverage = 15_000;
 
             const expectedDebt = await calculateLeveragedAmount(comet, initialAmount, leverage);
