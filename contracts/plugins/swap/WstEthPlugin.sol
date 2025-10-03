@@ -8,7 +8,7 @@ import { ICometMultiplierAdapter } from "../../interfaces/ICometMultiplierAdapte
 
 import { IWstEth } from "../../external/lido/IWstEth.sol";
 import { IStEth } from "../../external/lido/IStEth.sol";
-import { IWEth } from "../../external/IWEth.sol";
+import { IWEth } from "../../external/weth/IWEth.sol";
 
 /**
  * @title WstEthPlugin
@@ -37,10 +37,12 @@ contract WstEthPlugin is ICometSwapPlugin {
         bytes calldata,
         bytes calldata
     ) external returns (uint256 amountOut) {
-        require(srcToken != dstToken && amountIn > 0 && minAmountOut > 0, InvaildInput());
         address wEth = ICometMultiplierAdapter(address(this)).wEth();
+        require(
+            srcToken != dstToken && amountIn > 0 && minAmountOut > 0 && srcToken == wEth && dstToken == WSTETH_ADDRESS,
+            InvalidInput()
+        );
 
-        require(srcToken == wEth && dstToken == WSTETH_ADDRESS, InvaildInput());
         return _lidoSwap(wEth, WSTETH_ADDRESS, STETH_ADDRESS, amountIn, minAmountOut);
     }
 

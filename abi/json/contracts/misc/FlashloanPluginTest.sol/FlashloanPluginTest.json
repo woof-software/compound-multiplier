@@ -1,0 +1,366 @@
+[
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_flp",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "_endpoint",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "constructor"
+    },
+    {
+        "stateMutability": "payable",
+        "type": "fallback"
+    },
+    {
+        "inputs": [],
+        "name": "CALLBACK_SELECTOR",
+        "outputs": [
+            {
+                "internalType": "bytes4",
+                "name": "",
+                "type": "bytes4"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "amm",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "uint256",
+                        "name": "debt",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "fee",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "snapshot",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "user",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "flp",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "asset",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "bytes",
+                        "name": "swapData",
+                        "type": "bytes"
+                    }
+                ],
+                "internalType": "struct ICometFlashLoanPlugin.CallbackData",
+                "name": "data",
+                "type": "tuple"
+            },
+            {
+                "internalType": "address",
+                "name": "asset",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "premium",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "initiator",
+                "type": "address"
+            },
+            {
+                "internalType": "bool",
+                "name": "toFailFlid",
+                "type": "bool"
+            }
+        ],
+        "name": "attackAAVE",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "uint256",
+                        "name": "debt",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "fee",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "snapshot",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "user",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "flp",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "asset",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "bytes",
+                        "name": "swapData",
+                        "type": "bytes"
+                    }
+                ],
+                "internalType": "struct ICometFlashLoanPlugin.CallbackData",
+                "name": "data",
+                "type": "tuple"
+            },
+            {
+                "internalType": "contract IERC20[]",
+                "name": "tokens",
+                "type": "address[]"
+            },
+            {
+                "internalType": "uint256[]",
+                "name": "amounts",
+                "type": "uint256[]"
+            },
+            {
+                "internalType": "uint256[]",
+                "name": "feeAmounts",
+                "type": "uint256[]"
+            },
+            {
+                "internalType": "bool",
+                "name": "toFailFlid",
+                "type": "bool"
+            }
+        ],
+        "name": "attackBalancer",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "attackCallback",
+        "outputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "uint256",
+                        "name": "debt",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "fee",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "snapshot",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "user",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "flp",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "asset",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "bytes",
+                        "name": "swapData",
+                        "type": "bytes"
+                    }
+                ],
+                "internalType": "struct ICometFlashLoanPlugin.CallbackData",
+                "name": "",
+                "type": "tuple"
+            }
+        ],
+        "stateMutability": "pure",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "endpoint",
+        "outputs": [
+            {
+                "internalType": "contract ICometFlashLoanPlugin",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "uint256",
+                        "name": "debt",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "fee",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "snapshot",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "user",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "flp",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "asset",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "bytes",
+                        "name": "swapData",
+                        "type": "bytes"
+                    }
+                ],
+                "internalType": "struct ICometFlashLoanPlugin.CallbackData",
+                "name": "data",
+                "type": "tuple"
+            }
+        ],
+        "name": "flash",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "flp",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "lastCallbackData",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "debt",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "fee",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "snapshot",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "user",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "flp",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "asset",
+                "type": "address"
+            },
+            {
+                "internalType": "bytes",
+                "name": "swapData",
+                "type": "bytes"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "stateMutability": "payable",
+        "type": "receive"
+    }
+]

@@ -46,6 +46,7 @@
         "preinstall": "node ./scripts/project-config/setup/preinstall.js",
         "postinstall": "node ./scripts/project-config/setup/postinstall.js",
         "prepare": "husky",
+        "aderyn": "npx aderyn --src contracts/ -o ADERYN_REPORT.md",
         "deploy:mainnet": "hardhat run scripts/deploy/deploy.main.ts --network mainnet"
     },
     "files": [

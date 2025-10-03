@@ -1,4 +1,5 @@
 [
+    "error InvalidFlashLoanData()",
     "error InvalidFlashLoanId()",
     "error UnauthorizedCallback()",
     "function CALLBACK_SELECTOR() view returns (bytes4)",

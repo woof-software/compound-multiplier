@@ -481,6 +481,72 @@
                 "type": "address"
             },
             {
+                "internalType": "bool",
+                "name": "isAllowed",
+                "type": "bool"
+            }
+        ],
+        "name": "allow",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "owner",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "manager",
+                "type": "address"
+            },
+            {
+                "internalType": "bool",
+                "name": "isAllowed",
+                "type": "bool"
+            },
+            {
+                "internalType": "uint256",
+                "name": "nonce",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "expiry",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint8",
+                "name": "v",
+                "type": "uint8"
+            },
+            {
+                "internalType": "bytes32",
+                "name": "r",
+                "type": "bytes32"
+            },
+            {
+                "internalType": "bytes32",
+                "name": "s",
+                "type": "bytes32"
+            }
+        ],
+        "name": "allowBySig",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "manager",
+                "type": "address"
+            },
+            {
                 "internalType": "address",
                 "name": "asset",
                 "type": "address"
@@ -993,6 +1059,30 @@
         "type": "function"
     },
     {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "owner",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "manager",
+                "type": "address"
+            }
+        ],
+        "name": "hasPermission",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
         "inputs": [],
         "name": "initializeStorage",
         "outputs": [],
@@ -1097,6 +1187,19 @@
                 "internalType": "bool",
                 "name": "",
                 "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "name",
+        "outputs": [
+            {
+                "internalType": "string",
+                "name": "",
+                "type": "string"
             }
         ],
         "stateMutability": "view",
@@ -1473,6 +1576,74 @@
             }
         ],
         "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "user",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "asset",
+                "type": "address"
+            }
+        ],
+        "name": "userCollateral",
+        "outputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "uint128",
+                        "name": "balance",
+                        "type": "uint128"
+                    },
+                    {
+                        "internalType": "uint128",
+                        "name": "_reserved",
+                        "type": "uint128"
+                    }
+                ],
+                "internalType": "struct IComet.UserCollateral",
+                "name": "",
+                "type": "tuple"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "user",
+                "type": "address"
+            }
+        ],
+        "name": "userNonce",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "version",
+        "outputs": [
+            {
+                "internalType": "string",
+                "name": "",
+                "type": "string"
+            }
+        ],
+        "stateMutability": "view",
         "type": "function"
     },
     {

@@ -1,12 +1,22 @@
 [
     {
         "inputs": [],
-        "name": "InvaildInput",
+        "name": "InvalidAmountOut",
         "type": "error"
     },
     {
         "inputs": [],
-        "name": "InvalidAmountOut",
+        "name": "InvalidInput",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "InvalidSwapParameters",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "SwapFailed",
         "type": "error"
     },
     {
@@ -38,7 +48,7 @@
             {
                 "indexed": false,
                 "internalType": "uint256",
-                "name": "amountOut",
+                "name": "actualAmountOut",
                 "type": "uint256"
             }
         ],

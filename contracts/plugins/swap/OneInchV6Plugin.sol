@@ -27,9 +27,9 @@ contract OneInchV6SwapPlugin is ICometSwapPlugin {
         bytes calldata config,
         bytes calldata swapData
     ) external returns (uint256 amountOut) {
-        require(minAmountOut > 0, InvaildInput());
-        require(amountIn > 0, InvaildInput());
-        require(srcToken != dstToken, InvaildInput());
+        require(minAmountOut > 0, InvalidInput());
+        require(amountIn > 0, InvalidInput());
+        require(srcToken != dstToken, InvalidInput());
         require(srcToken != address(0) && dstToken != address(0), ZeroAddress());
 
         address router = abi.decode(config, (address));

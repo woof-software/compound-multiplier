@@ -1,0 +1,12 @@
+[
+    "constructor(address _flp, address _endpoint)",
+    "function CALLBACK_SELECTOR() view returns (bytes4)",
+    "function amm() view returns (uint256)",
+    "function attackAAVE(tuple(uint256 debt, uint256 fee, uint256 snapshot, address user, address flp, address asset, bytes swapData) data, address asset, uint256 amount, uint256 premium, address initiator, bool toFailFlid)",
+    "function attackBalancer(tuple(uint256 debt, uint256 fee, uint256 snapshot, address user, address flp, address asset, bytes swapData) data, address[] tokens, uint256[] amounts, uint256[] feeAmounts, bool toFailFlid)",
+    "function attackCallback() pure returns (tuple(uint256 debt, uint256 fee, uint256 snapshot, address user, address flp, address asset, bytes swapData))",
+    "function endpoint() view returns (address)",
+    "function flash(tuple(uint256 debt, uint256 fee, uint256 snapshot, address user, address flp, address asset, bytes swapData) data)",
+    "function flp() view returns (address)",
+    "function lastCallbackData() view returns (uint256 debt, uint256 fee, uint256 snapshot, address user, address flp, address asset, bytes swapData)"
+]

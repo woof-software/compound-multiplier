@@ -2,11 +2,18 @@
 pragma solidity ^0.8.30;
 
 interface ICometSwapPlugin {
-    error InvalidAmountOut();
-    error InvaildInput();
-    error ZeroAddress();
+    event SwapExecuted(
+        address indexed router,
+        address indexed srcToken,
+        address indexed dstToken,
+        uint256 actualAmountOut
+    );
 
-    event SwapExecuted(address indexed router, address indexed srcToken, address indexed dstToken, uint256 amountOut);
+    error InvalidAmountOut();
+    error InvalidInput();
+    error ZeroAddress();
+    error InvalidSwapParameters();
+    error SwapFailed();
 
     function CALLBACK_SELECTOR() external view returns (bytes4);
 

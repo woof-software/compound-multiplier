@@ -1,6 +1,8 @@
 [
-    "error InvaildInput()",
     "error InvalidAmountOut()",
+    "error InvalidInput()",
+    "error InvalidSwapParameters()",
+    "error SwapFailed()",
     "error ZeroAddress()",
     "event SwapExecuted(address indexed,address indexed,address indexed,uint256)",
     "function CALLBACK_SELECTOR() view returns (bytes4)",

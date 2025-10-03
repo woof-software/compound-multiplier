@@ -1,9 +1,10 @@
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
 interface ICometFlashLoanPlugin {
     error UnauthorizedCallback();
-
     error InvalidFlashLoanId();
+    error InvalidFlashLoanData();
 
     struct CallbackData {
         uint256 debt;
@@ -15,8 +16,10 @@ interface ICometFlashLoanPlugin {
         bytes swapData;
     }
 
+    /// @notice The selector of the callback function
     function CALLBACK_SELECTOR() external view returns (bytes4);
 
+    /// @notice Storage slot to store the flash loan ID
     function SLOT_PLUGIN() external view returns (bytes32);
 
     /**

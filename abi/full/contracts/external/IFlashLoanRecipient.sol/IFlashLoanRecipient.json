@@ -1,0 +1,3 @@
+[
+    "function receiveFlashLoan(address[] tokens, uint256[] amounts, uint256[] feeAmounts, bytes userData) returns (tuple(uint256 debt, uint256 fee, uint256 snapshot, address user, address flp, address asset, bytes swapData) _data)"
+]

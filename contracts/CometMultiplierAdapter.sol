@@ -1,19 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import { ICometMultiplierAdapter } from "./interfaces/ICometMultiplierAdapter.sol";
-import { ICometSwapPlugin } from "./interfaces/ICometSwapPlugin.sol";
-import { ICometFlashLoanPlugin } from "./interfaces/ICometFlashLoanPlugin.sol";
-
-import { IWEth } from "./external/IWEth.sol";
-import { IComet } from "./external/compound/IComet.sol";
-import { AllowBySig } from "./base/AllowBySig.sol";
-
 import { AggregatorV3Interface } from "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+
+import { AllowBySig } from "./base/AllowBySig.sol";
+
+import { IWEth } from "./external/weth/IWEth.sol";
+
+import { IComet } from "./external/compound/IComet.sol";
+import { ICometMultiplierAdapter } from "./interfaces/ICometMultiplierAdapter.sol";
+import { ICometSwapPlugin } from "./interfaces/ICometSwapPlugin.sol";
+import { ICometFlashLoanPlugin } from "./interfaces/ICometFlashLoanPlugin.sol";
 
 /**
  * @title CometMultiplierAdapter

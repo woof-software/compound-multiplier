@@ -215,4 +215,34 @@ interface IComet {
     function decimals() external view returns (uint8);
 
     function initializeStorage() external;
+
+    function allowBySig(
+        address owner,
+        address manager,
+        bool isAllowed,
+        uint256 nonce,
+        uint256 expiry,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external;
+
+    function version() external view returns (string memory);
+
+    function name() external view returns (string memory);
+
+    function hasPermission(address owner, address manager) external view returns (bool);
+
+    function userNonce(address user) external view returns (uint256);
+
+    function allow(address manager, bool isAllowed) external;
+
+    struct UserCollateral {
+        uint128 balance;
+        uint128 _reserved;
+    }
+
+    /// @notice Mapping of users to collateral data per collateral asset
+    // mapping(address => mapping(address => UserCollateral)) public userCollateral;
+    function userCollateral(address user, address asset) external view returns (UserCollateral memory);
 }

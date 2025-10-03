@@ -97,10 +97,10 @@ const config: HardhatUserConfig = {
             forking: {
                 url: envs.FORKING_URL ?? "",
                 enabled: enableForking
-            }
+            },
             // Uncomment if "Error: cannot estimate gas; transaction may fail or may require manual gas limit...".
             // gas: 3E7,
-            // gasPrice: 8E9
+            gasPrice: 14e9
         },
         // Ethereum:
         ethereum: {

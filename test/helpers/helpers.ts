@@ -5,6 +5,7 @@ import { Addressable, Signer } from "ethers";
 import { ethers } from "hardhat";
 import { CometMultiplierAdapter, IComet, IERC20 } from "../../typechain-types";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
+import { $CometCollateralSwap } from "../../typechain-types/contracts-exposed/CometCollateralSwap.sol/$CometCollateralSwap";
 export { SnapshotRestorer, takeSnapshot, time } from "@nomicfoundation/hardhat-network-helpers";
 
 export interface Plugin {
@@ -104,6 +105,18 @@ export async function getSwapPlugins() {
     return {
         lifiPlugin: { endpoint: await ethers.deployContract("LiFiPlugin", []), router: SWAP_ROUTER }
     };
+}
+
+export async function deployCollateralSwap(
+    flashLoanPlugins: Plugin[],
+    swapRouter: string,
+    swapPlugin: string | Addressable
+): Promise<$CometCollateralSwap> {
+    return (await ethers.deployContract("$CometCollateralSwap", [
+        flashLoanPlugins,
+        swapRouter,
+        swapPlugin
+    ])) as unknown as $CometCollateralSwap;
 }
 
 export async function calcMinAmountOut(

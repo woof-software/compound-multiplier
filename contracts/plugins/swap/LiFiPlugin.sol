@@ -28,9 +28,9 @@ contract LiFiPlugin is ICometSwapPlugin {
         bytes calldata swapData
     ) external returns (uint256 amountOut) {
         require(srcToken != address(0) && dstToken != address(0), ZeroAddress());
-        require(srcToken != dstToken, InvaildInput());
-        require(amountIn > 0, InvaildInput());
-        require(minAmountOut > 0, InvaildInput());
+        require(srcToken != dstToken, InvalidInput());
+        require(amountIn > 0, InvalidInput());
+        require(minAmountOut > 0, InvalidInput());
 
         address router = abi.decode(config, (address));
 

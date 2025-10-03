@@ -8,6 +8,8 @@
 bytes4 CALLBACK_SELECTOR
 ```
 
+The selector of the callback function
+
 ### WHALE
 
 ```solidity
@@ -19,6 +21,8 @@ address WHALE
 ```solidity
 bytes32 SLOT_PLUGIN
 ```
+
+Storage slot to store the flash loan ID
 
 ### takeFlashLoan
 
