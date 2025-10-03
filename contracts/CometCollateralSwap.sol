@@ -6,13 +6,13 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import { AllowBySig } from "./base/AllowBySig.sol";
 
-import { IComet } from "./external/IComet.sol";
+import { IComet } from "./external/compound/IComet.sol";
 import { ICometFlashLoanPlugin } from "./interfaces/ICometFlashLoanPlugin.sol";
-import { ICompoundV3CollateralSwap } from "./interfaces/ICompoundV3CollateralSwap.sol";
+import { ICometCollateralSwap } from "./interfaces/ICometCollateralSwap.sol";
 import { ICometSwapPlugin } from "./interfaces/ICometSwapPlugin.sol";
 
 /**
- * @title CompoundV3CollateralSwap
+ * @title CometCollateralSwap
  * @author WOOF! Software
  * @custom:security-contact dmitriy@woof.software
  *
@@ -52,7 +52,7 @@ import { ICometSwapPlugin } from "./interfaces/ICometSwapPlugin.sol";
  *      - Plugins are configured exclusively during contract deployment. To add or modify plugins,
  *        redeployment of the contract is required.
  */
-contract CompoundV3CollateralSwap is AllowBySig, ICompoundV3CollateralSwap {
+contract CometCollateralSwap is AllowBySig, ICometCollateralSwap {
     /// @dev Offset for the comet contract address
     uint256 private constant COMET_OFFSET = 0x20;
 
@@ -66,12 +66,12 @@ contract CompoundV3CollateralSwap is AllowBySig, ICompoundV3CollateralSwap {
     uint16 public constant BPS_DROP_DENOMINATOR = 10_000;
 
     /// @dev Storage slot for temporary adapter data
-    bytes32 public constant SLOT_ADAPTER = bytes32(uint256(keccak256("CompoundV3CollateralSwap.adapter")) - 1);
+    bytes32 public constant SLOT_ADAPTER = bytes32(uint256(keccak256("CometCollateralSwap.adapter")) - 1);
 
-    /// @inheritdoc ICompoundV3CollateralSwap
+    /// @inheritdoc ICometCollateralSwap
     address public immutable swapRouter;
 
-    /// @inheritdoc ICompoundV3CollateralSwap
+    /// @inheritdoc ICometCollateralSwap
     address public immutable swapPlugin;
 
     /// @notice Maps plugins callback selector to the plugin endpoint address
@@ -187,12 +187,12 @@ contract CompoundV3CollateralSwap is AllowBySig, ICompoundV3CollateralSwap {
                                 EXTERNAL
     //////////////////////////////////////////////////////////////*/
 
-    /// @inheritdoc ICompoundV3CollateralSwap
+    /// @inheritdoc ICometCollateralSwap
     function swap(SwapParams calldata swapParams) external {
         _swap(swapParams);
     }
 
-    /// @inheritdoc ICompoundV3CollateralSwap
+    /// @inheritdoc ICometCollateralSwap
     function swapWithPermit(SwapParams calldata swapParams, AllowParams calldata allowParams) external {
         _allowBySig(allowParams, swapParams.comet);
         _swap(swapParams);

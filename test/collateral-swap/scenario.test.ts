@@ -1,4 +1,4 @@
-import { AAVEPlugin, BalancerPlugin, IComet, ICompoundV3CollateralSwap, IERC20 } from "../../typechain-types";
+import { AAVEPlugin, BalancerPlugin, IComet, ICometCollateralSwap, IERC20 } from "../../typechain-types";
 import {
     deployCollateralSwap,
     ethers,
@@ -17,14 +17,14 @@ import {
     executeWithRetry
 } from "../helpers/helpers";
 import { expect } from "chai";
-import { $CompoundV3CollateralSwap } from "../../typechain-types/contracts-exposed/CompoundV3CollateralSwap.sol/$CompoundV3CollateralSwap";
+import { $CometCollateralSwap } from "../../typechain-types/contracts-exposed/CometCollateralSwap.sol/$CometCollateralSwap";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 
 describe("Collateral Swap Scenarios", function () {
     let snapshot: SnapshotRestorer;
 
     // Contracts
-    let collateralSwap: $CompoundV3CollateralSwap;
+    let collateralSwap: $CometCollateralSwap;
     let comet: IComet;
 
     // Tokens
@@ -107,7 +107,7 @@ describe("Collateral Swap Scenarios", function () {
         const supplyAmountCollateralA = SUPPLY_AMOUNT;
         const fromAmount = (supplyAmountCollateralA * 9995n) / 2n / 10000n;
 
-        let swapParams: ICompoundV3CollateralSwap.SwapParamsStruct = {
+        let swapParams: ICometCollateralSwap.SwapParamsStruct = {
             comet: comet,
             callbackSelector: await aavePl.CALLBACK_SELECTOR(),
             fromAsset: collateralA,
@@ -181,7 +181,7 @@ describe("Collateral Swap Scenarios", function () {
         const supplyAmountCollateralB = SUPPLY_AMOUNT;
         const fromAmount = (supplyAmountCollateralB * 9995n) / 2n / 10000n;
 
-        let swapParams: ICompoundV3CollateralSwap.SwapParamsStruct = {
+        let swapParams: ICometCollateralSwap.SwapParamsStruct = {
             comet: comet,
             callbackSelector: await aavePl.CALLBACK_SELECTOR(),
             fromAsset: collateralB,
@@ -271,7 +271,7 @@ describe("Collateral Swap Scenarios", function () {
         const supplyAmountCollateralB = SUPPLY_AMOUNT;
         const fromAmount = (supplyAmountCollateralB * 9995n) / 2n / 10000n;
 
-        let swapParams: ICompoundV3CollateralSwap.SwapParamsStruct = {
+        let swapParams: ICometCollateralSwap.SwapParamsStruct = {
             comet: comet,
             callbackSelector: await aavePl.CALLBACK_SELECTOR(),
             fromAsset: collateralB,
@@ -360,7 +360,7 @@ describe("Collateral Swap Scenarios", function () {
         const supplyAmountCollateralC = exp(0.001, 8);
         const fromAmount = (supplyAmountCollateralB * 9995n) / 2n / 10000n;
 
-        let swapParams: ICompoundV3CollateralSwap.SwapParamsStruct = {
+        let swapParams: ICometCollateralSwap.SwapParamsStruct = {
             comet: comet,
             callbackSelector: await aavePl.CALLBACK_SELECTOR(),
             fromAsset: collateralB,
@@ -462,7 +462,7 @@ describe("Collateral Swap Scenarios", function () {
             String(collateralSwap.target)
         );
 
-        let swapParamsA: ICompoundV3CollateralSwap.SwapParamsStruct = {
+        let swapParamsA: ICometCollateralSwap.SwapParamsStruct = {
             comet: comet,
             callbackSelector: await aavePl.CALLBACK_SELECTOR(),
             fromAsset: collateralA,
@@ -508,7 +508,7 @@ describe("Collateral Swap Scenarios", function () {
             String(collateralSwap.target)
         );
 
-        let swapParamsB: ICompoundV3CollateralSwap.SwapParamsStruct = {
+        let swapParamsB: ICometCollateralSwap.SwapParamsStruct = {
             comet: comet,
             callbackSelector: await balancerPl.CALLBACK_SELECTOR(),
             fromAsset: collateralB, // wstETH
@@ -577,7 +577,7 @@ describe("Collateral Swap Scenarios", function () {
             String(collateralSwap.target)
         );
 
-        let swapParamsB: ICompoundV3CollateralSwap.SwapParamsStruct = {
+        let swapParamsB: ICometCollateralSwap.SwapParamsStruct = {
             comet: comet,
             callbackSelector: await aavePl.CALLBACK_SELECTOR(),
             fromAsset: collateralA,
@@ -598,7 +598,7 @@ describe("Collateral Swap Scenarios", function () {
             String(collateralSwap.target)
         );
 
-        let swapParamsC: ICompoundV3CollateralSwap.SwapParamsStruct = {
+        let swapParamsC: ICometCollateralSwap.SwapParamsStruct = {
             comet: comet,
             callbackSelector: await aavePl.CALLBACK_SELECTOR(),
             fromAsset: collateralA,
@@ -690,7 +690,7 @@ describe("Collateral Swap Scenarios", function () {
         const supplyAmountCollateralA = SUPPLY_AMOUNT;
         const fromAmount = (supplyAmountCollateralA * 9995n) / 2n / 10000n;
 
-        let swapParams: ICompoundV3CollateralSwap.SwapParamsStruct = {
+        let swapParams: ICometCollateralSwap.SwapParamsStruct = {
             comet: comet,
             callbackSelector: await balancerPl.CALLBACK_SELECTOR(),
             fromAsset: collateralA,

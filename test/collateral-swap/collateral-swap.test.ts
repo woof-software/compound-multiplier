@@ -1,4 +1,4 @@
-import { AAVEPlugin, BalancerPlugin, IComet, ICompoundV3CollateralSwap, IERC20 } from "../../typechain-types";
+import { AAVEPlugin, BalancerPlugin, IComet, ICometCollateralSwap, IERC20 } from "../../typechain-types";
 import {
     deployCollateralSwap,
     ethers,
@@ -17,14 +17,14 @@ import {
     time
 } from "../helpers/helpers";
 import { expect } from "chai";
-import { $CompoundV3CollateralSwap } from "../../typechain-types/contracts-exposed/CompoundV3CollateralSwap.sol/$CompoundV3CollateralSwap";
+import { $CometCollateralSwap } from "../../typechain-types/contracts-exposed/CometCollateralSwap.sol/$CometCollateralSwap";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 
-describe("CompoundV3CollateralSwap", function () {
+describe("CometCollateralSwap", function () {
     let snapshot: SnapshotRestorer;
 
     // Contracts
-    let collateralSwap: $CompoundV3CollateralSwap;
+    let collateralSwap: $CometCollateralSwap;
     let comet: IComet;
 
     // Tokens
@@ -100,7 +100,7 @@ describe("CompoundV3CollateralSwap", function () {
 
     describe("deployment", function () {
         it("deploys with correct params", async () => {
-            const collateralSwap = await ethers.deployContract("CompoundV3CollateralSwap", [
+            const collateralSwap = await ethers.deployContract("CometCollateralSwap", [
                 [balancerPluginA, aavePluginA],
                 SWAP_ROUTER,
                 lifiPlugin.endpoint
@@ -129,7 +129,7 @@ describe("CompoundV3CollateralSwap", function () {
             const aaveSelector = await aavePl.CALLBACK_SELECTOR();
 
             expect(
-                await ethers.deployContract("CompoundV3CollateralSwap", [
+                await ethers.deployContract("CometCollateralSwap", [
                     [balancerPluginA, aavePluginA],
                     SWAP_ROUTER,
                     lifiPlugin.endpoint
@@ -143,7 +143,7 @@ describe("CompoundV3CollateralSwap", function () {
 
         it("reverts when swapRouter is zero address", async () => {
             await expect(
-                ethers.deployContract("CompoundV3CollateralSwap", [
+                ethers.deployContract("CometCollateralSwap", [
                     [balancerPluginA, aavePluginA],
                     ZERO_ADDRESS,
                     lifiPlugin.endpoint
@@ -153,7 +153,7 @@ describe("CompoundV3CollateralSwap", function () {
 
         it("reverts when swapPlugin is zero address", async () => {
             await expect(
-                ethers.deployContract("CompoundV3CollateralSwap", [
+                ethers.deployContract("CometCollateralSwap", [
                     [balancerPluginA, aavePluginA],
                     SWAP_ROUTER,
                     ZERO_ADDRESS
@@ -163,13 +163,13 @@ describe("CompoundV3CollateralSwap", function () {
 
         it("reverts when deploying with empty plugins array", async () => {
             await expect(
-                ethers.deployContract("CompoundV3CollateralSwap", [[], SWAP_ROUTER, lifiPlugin.endpoint])
+                ethers.deployContract("CometCollateralSwap", [[], SWAP_ROUTER, lifiPlugin.endpoint])
             ).to.be.revertedWithCustomError(collateralSwap, "ZeroLength");
         });
     });
 
     describe("swap params validation", function () {
-        let swapParams: ICompoundV3CollateralSwap.SwapParamsStruct;
+        let swapParams: ICometCollateralSwap.SwapParamsStruct;
         beforeEach(async () => {
             swapParams = {
                 comet: comet,
@@ -227,7 +227,7 @@ describe("CompoundV3CollateralSwap", function () {
 
     describe("swap", function () {
         describe("happy cases", function () {
-            let swapParams: ICompoundV3CollateralSwap.SwapParamsStruct;
+            let swapParams: ICometCollateralSwap.SwapParamsStruct;
 
             beforeEach(async () => {
                 swapParams = {
@@ -352,7 +352,7 @@ describe("CompoundV3CollateralSwap", function () {
 
         describe("revert cases", function () {
             it("reverts when callbackSelector refers to an unregistered plugin", async () => {
-                const swapParams: ICompoundV3CollateralSwap.SwapParamsStruct = {
+                const swapParams: ICometCollateralSwap.SwapParamsStruct = {
                     comet: comet,
                     callbackSelector: "0x12345678", // Unregistered selector
                     fromAsset: wstETH,
@@ -387,7 +387,7 @@ describe("CompoundV3CollateralSwap", function () {
                     flp: alice
                 };
 
-                const collateralSwap = await ethers.deployContract("CompoundV3CollateralSwap", [
+                const collateralSwap = await ethers.deployContract("CometCollateralSwap", [
                     [plugin],
                     SWAP_ROUTER,
                     lifiPlugin.endpoint

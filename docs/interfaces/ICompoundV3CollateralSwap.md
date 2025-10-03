@@ -1,6 +1,6 @@
 # Solidity API
 
-## ICompoundV3CollateralSwap
+## ICometCollateralSwap
 
 Interface for CompoundV3 collateral swap contract
 
@@ -202,7 +202,7 @@ _The plugin encapsulates swap logic and integrates with the chosen DEX aggregato
 ### swap
 
 ```solidity
-function swap(struct ICompoundV3CollateralSwap.SwapParams swapParams) external
+function swap(struct ICometCollateralSwap.SwapParams swapParams) external
 ```
 
 Executes a collateral swap using flash loans
@@ -221,12 +221,12 @@ _The main entry point for swapping collateral assets in a Compound V3 position.
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| swapParams | struct ICompoundV3CollateralSwap.SwapParams | The complete parameter struct defining the swap operation Requirements: - Caller must have sufficient collateral balance of fromAsset - Caller must have granted allowance to this contract on the Comet - The swap must not violate health factor constraints - The callbackSelector must correspond to a registered plugin - The swap must produce enough toAsset to repay the flash loan plus fees |
+| swapParams | struct ICometCollateralSwap.SwapParams | The complete parameter struct defining the swap operation Requirements: - Caller must have sufficient collateral balance of fromAsset - Caller must have granted allowance to this contract on the Comet - The swap must not violate health factor constraints - The callbackSelector must correspond to a registered plugin - The swap must produce enough toAsset to repay the flash loan plus fees |
 
 ### swapWithPermit
 
 ```solidity
-function swapWithPermit(struct ICompoundV3CollateralSwap.SwapParams swapParams, struct IAllowBySig.AllowParams allowParams) external
+function swapWithPermit(struct ICometCollateralSwap.SwapParams swapParams, struct IAllowBySig.AllowParams allowParams) external
 ```
 
 Executes a collateral swap with signature-based authorization in a single transaction
@@ -242,6 +242,6 @@ _Combines Comet authorization via EIP-712 signature with collateral swap executi
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| swapParams | struct ICompoundV3CollateralSwap.SwapParams | The complete parameter struct defining the swap operation |
+| swapParams | struct ICometCollateralSwap.SwapParams | The complete parameter struct defining the swap operation |
 | allowParams | struct IAllowBySig.AllowParams | The EIP-712 signature parameters for Comet authorization Requirements: - All requirements from swap() function - allowParams.owner must equal msg.sender - allowParams.manager must equal this contract address - allowParams.isAllowed must be true - The signature must be valid and not expired - The nonce must match the user's current nonce in Comet |
 

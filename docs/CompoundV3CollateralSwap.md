@@ -1,6 +1,6 @@
 # Solidity API
 
-## CompoundV3CollateralSwap
+## CometCollateralSwap
 
 _This contract allows users to swap one type of collateral for another in their Compound V3 position
      without needing to close their borrowing position. The process works by:
@@ -95,7 +95,7 @@ _The plugin encapsulates swap logic and integrates with the chosen DEX aggregato
 ### plugins
 
 ```solidity
-mapping(bytes4 => struct ICompoundV3CollateralSwap.Plugin) plugins
+mapping(bytes4 => struct ICometCollateralSwap.Plugin) plugins
 ```
 
 Maps plugins callback selector to the plugin endpoint address
@@ -103,7 +103,7 @@ Maps plugins callback selector to the plugin endpoint address
 ### constructor
 
 ```solidity
-constructor(struct ICompoundV3CollateralSwap.Plugin[] plugins_, address swapRouter_, address swapPlugin_) public
+constructor(struct ICometCollateralSwap.Plugin[] plugins_, address swapRouter_, address swapPlugin_) public
 ```
 
 Constructor
@@ -114,7 +114,7 @@ _Emits PluginRegistered event for each registered plugin_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| plugins_ | struct ICompoundV3CollateralSwap.Plugin[] | Array of flash loan plugins structs |
+| plugins_ | struct ICometCollateralSwap.Plugin[] | Array of flash loan plugins structs |
 | swapRouter_ | address | Address of the swap router |
 | swapPlugin_ | address | Address of the swap plugin |
 
@@ -142,7 +142,7 @@ Temporary storage (tstore/tload) is used to pass swap parameters between functio
 ### swap
 
 ```solidity
-function swap(struct ICompoundV3CollateralSwap.SwapParams swapParams) external
+function swap(struct ICometCollateralSwap.SwapParams swapParams) external
 ```
 
 Executes a collateral swap using flash loans
@@ -161,12 +161,12 @@ _The main entry point for swapping collateral assets in a Compound V3 position.
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| swapParams | struct ICompoundV3CollateralSwap.SwapParams | The complete parameter struct defining the swap operation Requirements: - Caller must have sufficient collateral balance of fromAsset - Caller must have granted allowance to this contract on the Comet - The swap must not violate health factor constraints - The callbackSelector must correspond to a registered plugin - The swap must produce enough toAsset to repay the flash loan plus fees |
+| swapParams | struct ICometCollateralSwap.SwapParams | The complete parameter struct defining the swap operation Requirements: - Caller must have sufficient collateral balance of fromAsset - Caller must have granted allowance to this contract on the Comet - The swap must not violate health factor constraints - The callbackSelector must correspond to a registered plugin - The swap must produce enough toAsset to repay the flash loan plus fees |
 
 ### swapWithPermit
 
 ```solidity
-function swapWithPermit(struct ICompoundV3CollateralSwap.SwapParams swapParams, struct IAllowBySig.AllowParams allowParams) external
+function swapWithPermit(struct ICometCollateralSwap.SwapParams swapParams, struct IAllowBySig.AllowParams allowParams) external
 ```
 
 Executes a collateral swap with signature-based authorization in a single transaction
@@ -182,13 +182,13 @@ _Combines Comet authorization via EIP-712 signature with collateral swap executi
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| swapParams | struct ICompoundV3CollateralSwap.SwapParams | The complete parameter struct defining the swap operation |
+| swapParams | struct ICometCollateralSwap.SwapParams | The complete parameter struct defining the swap operation |
 | allowParams | struct IAllowBySig.AllowParams | The EIP-712 signature parameters for Comet authorization Requirements: - All requirements from swap() function - allowParams.owner must equal msg.sender - allowParams.manager must equal this contract address - allowParams.isAllowed must be true - The signature must be valid and not expired - The nonce must match the user's current nonce in Comet |
 
 ### _swap
 
 ```solidity
-function _swap(struct ICompoundV3CollateralSwap.SwapParams swapParams) internal
+function _swap(struct ICometCollateralSwap.SwapParams swapParams) internal
 ```
 
 ### _checkCollateralization
@@ -247,7 +247,7 @@ _Loads and clears swap parameters from transient storage_
 ### _validateSwapParams
 
 ```solidity
-function _validateSwapParams(struct ICompoundV3CollateralSwap.SwapParams swapParams) internal pure
+function _validateSwapParams(struct ICometCollateralSwap.SwapParams swapParams) internal pure
 ```
 
 _Validates swap parameters for correctness and safety_
@@ -256,7 +256,7 @@ _Validates swap parameters for correctness and safety_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| swapParams | struct ICompoundV3CollateralSwap.SwapParams | The swap parameters to validate |
+| swapParams | struct ICometCollateralSwap.SwapParams | The swap parameters to validate |
 
 ### _supplyDust
 

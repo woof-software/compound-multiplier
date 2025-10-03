@@ -5,7 +5,7 @@ import { Addressable, Signer } from "ethers";
 import { ethers } from "hardhat";
 import { CometMultiplierAdapter, IComet, IERC20 } from "../../typechain-types";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
-import { $CompoundV3CollateralSwap } from "../../typechain-types/contracts-exposed/CompoundV3CollateralSwap.sol/$CompoundV3CollateralSwap";
+import { $CometCollateralSwap } from "../../typechain-types/contracts-exposed/CometCollateralSwap.sol/$CometCollateralSwap";
 export { SnapshotRestorer, takeSnapshot, time } from "@nomicfoundation/hardhat-network-helpers";
 
 export interface Plugin {
@@ -51,7 +51,7 @@ export const MORPHO = "0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb";
 export const UNI_V3_USDC_WETH_005 = "0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640";
 export const LIFI_ROUTER = "0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE";
 
-export async function executeWithRetry(operation: Function, maxRetries = 5) {
+export async function executeWithRetry(operation: Function, maxRetries = 10) {
     for (let i = 0; i < maxRetries; i++) {
         try {
             return await operation();
@@ -111,12 +111,12 @@ export async function deployCollateralSwap(
     flashLoanPlugins: Plugin[],
     swapRouter: string,
     swapPlugin: string | Addressable
-): Promise<$CompoundV3CollateralSwap> {
-    return (await ethers.deployContract("$CompoundV3CollateralSwap", [
+): Promise<$CometCollateralSwap> {
+    return (await ethers.deployContract("$CometCollateralSwap", [
         flashLoanPlugins,
         swapRouter,
         swapPlugin
-    ])) as unknown as $CompoundV3CollateralSwap;
+    ])) as unknown as $CometCollateralSwap;
 }
 
 export async function calcMinAmountOut(
@@ -160,13 +160,13 @@ export async function get1inchSwapData(
     userAddress: string,
     slippage: string = "1"
 ): Promise<string> {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
     const apiKey = process.env.ONE_INCH_API_KEY;
     const url = `https://api.1inch.dev/swap/v6.1/1/swap?src=${fromToken}&dst=${toToken}&amount=${amount}&from=${userAddress}&slippage=${slippage}&disableEstimate=true&includeTokensInfo=true`;
     const res = await axios.get(url, {
         headers: { Authorization: `Bearer ${apiKey}` }
     });
 
-    await new Promise((resolve) => setTimeout(resolve, 1000));
     return res.data.tx.data;
 }
 
@@ -176,13 +176,13 @@ export async function get1inchQuote(
     amount: string,
     slippage: string = "1"
 ): Promise<string> {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
     const apiKey = process.env.ONE_INCH_API_KEY;
     const url = `https://api.1inch.dev/swap/v6.1/1/quote?src=${fromToken}&dst=${toToken}&amount=${amount}&slippage=${slippage}`;
     const res = await axios.get(url, {
         headers: { Authorization: `Bearer ${apiKey}` }
     });
-
-    await new Promise((resolve) => setTimeout(resolve, 1000));
     return res.data.dstAmount;
 }
 
@@ -194,6 +194,8 @@ export async function getQuote(
     fromAmount: string,
     fromAddress: string | Addressable
 ) {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
     const quoteData = (
         await axios.get("https://li.quest/v1/quote", {
             headers: { "x-lifi-api-key": process.env.LIFI_API_KEY },
@@ -208,7 +210,6 @@ export async function getQuote(
         })
     ).data;
 
-    await new Promise((resolve) => setTimeout(resolve, 1200));
     return {
         toAmountMin: BigInt(quoteData.estimate.toAmountMin),
         toAmount: BigInt(quoteData.estimate.toAmount),
@@ -289,7 +290,7 @@ export async function calculateMaxLeverage(comet: IComet): Promise<number> {
     const info = await comet.getAssetInfoByAddress(WETH_ADDRESS);
     const borrowCollateralFactor = Number(info.borrowCollateralFactor) / 1e18;
     const theoreticalMax = (1 / (1 - borrowCollateralFactor)) * 10_000;
-    return Math.floor(theoreticalMax * 0.97);
+    return Math.floor(theoreticalMax * 0.95);
 }
 
 export async function calculateMaxSafeWithdrawal(
@@ -364,7 +365,7 @@ export async function withdrawMultiplier1Inch(
             }));
     }
 
-    return executeWithRetry(async () => {
+    return await executeWithRetry(async () => {
         const swapData =
             take == 0n
                 ? "0x"
@@ -388,7 +389,7 @@ export async function executeMultiplierLiFi(
 
     const baseAmount = await calculateLeveragedAmount(comet, collateralAmount, leverage);
 
-    return executeWithRetry(async () => {
+    return await executeWithRetry(async () => {
         const swapData = await getQuote(
             "1",
             "1",
@@ -431,7 +432,7 @@ export async function withdrawMultiplierLiFi(
             }));
     }
 
-    return executeWithRetry(async () => {
+    return await executeWithRetry(async () => {
         const swapData =
             take == 0n
                 ? "0x"
@@ -464,14 +465,6 @@ export async function calculateHealthFactor(
 
     return healthRatio;
 }
-
-const DOMAIN_TYPEHASH = ethers.keccak256(
-    ethers.toUtf8Bytes("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)")
-);
-
-const AUTHORIZATION_TYPEHASH = ethers.keccak256(
-    ethers.toUtf8Bytes("Authorization(address owner,address manager,bool isAllowed,uint256 nonce,uint256 expiry)")
-);
 
 /**
  * Gets the current nonce for a user from the Comet contract

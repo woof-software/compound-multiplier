@@ -16,6 +16,38 @@ uint256 LEVERAGE_PRECISION
 
 Precision constant for leverage calculations (represents 1x leverage)
 
+### AMOUNT_OFFSET
+
+```solidity
+uint8 AMOUNT_OFFSET
+```
+
+Offset constants for transient storage slots
+
+### MARKET_OFFSET
+
+```solidity
+uint8 MARKET_OFFSET
+```
+
+### COLLATERAL_OFFSET
+
+```solidity
+uint8 COLLATERAL_OFFSET
+```
+
+### MIN_AMOUNT_OUT_OFFSET
+
+```solidity
+uint8 MIN_AMOUNT_OUT_OFFSET
+```
+
+### SWAP_SELECTOR_OFFSET
+
+```solidity
+uint8 SWAP_SELECTOR_OFFSET
+```
+
 ### SLOT_ADAPTER
 
 ```solidity
@@ -235,7 +267,7 @@ _Uses delegatecall to execute the flash loan in this contract's context_
 ### _leveraged
 
 ```solidity
-function _leveraged(contract IComet comet, address collateralAsset, uint256 initialAmount, uint256 leverage) internal view returns (uint256)
+function _leveraged(contract IComet comet, address collateral, uint256 collateralAmount, uint256 leverage) internal view returns (uint256)
 ```
 
 Calculates the required loan amount for a given leverage ratio
@@ -247,8 +279,8 @@ _Formula: loan = (initialValue * (leverage - 1)) / LEVERAGE_PRECISION_
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | comet | contract IComet | The Comet market interface |
-| collateralAsset | address | Address of the collateral token |
-| initialAmount | uint256 | Initial amount of collateral being supplied |
+| collateral | address | Address of the collateral token |
+| collateralAmount | uint256 | Amount of collateral being supplied |
 | leverage | uint256 | Leverage multiplier (e.g., 20000 = 2x) |
 
 #### Return Values
@@ -260,7 +292,7 @@ _Formula: loan = (initialValue * (leverage - 1)) / LEVERAGE_PRECISION_
 ### _convert
 
 ```solidity
-function _convert(contract IComet comet, address colllateral, uint256 amount) internal view returns (uint256)
+function _convert(contract IComet comet, address collateral, uint256 collateralAmount) internal view returns (uint256)
 ```
 
 Converts between collateral and base asset amounts using market prices
@@ -272,8 +304,8 @@ _Accounts for collateral factors and price feed decimals in conversions_
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | comet | contract IComet | The Comet market interface |
-| colllateral | address | Address of the collateral token |
-| amount | uint256 | Amount to convert |
+| collateral | address | Address of the collateral token |
+| collateralAmount | uint256 | Amount to convert |
 
 #### Return Values
 
@@ -328,7 +360,7 @@ _Uses EIP-1153 transient storage for gas-efficient temporary data storage_
 ### _tload
 
 ```solidity
-function _tload() internal returns (uint256 amount, address market, address collateral, uint256 minAmountOut, bytes4 swapSelector)
+function _tload() internal returns (uint256 amount, contract IComet market, address collateral, uint256 minAmountOut, bytes4 swapSelector)
 ```
 
 Retrieves and clears operation parameters from transient storage
@@ -340,7 +372,7 @@ _Automatically clears the storage slots after reading to prevent reuse_
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | amount | uint256 | Collateral amount being processed |
-| market | address | Address of the Comet market |
+| market | contract IComet | Address of the Comet market |
 | collateral | address | Address of the collateral token |
 | minAmountOut | uint256 | Minimum expected output amount |
 | swapSelector | bytes4 | Function selector for the swap plugin |

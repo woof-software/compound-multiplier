@@ -18,7 +18,7 @@ This creates a leveraged position without requiring multiple manual transactions
 The system uses a plugin-based architecture:
 
 ```
-CometMultiplierAdapter & CompoundV3CollateralSwap
+CometMultiplierAdapter & CometCollateralSwap
 ├── Loan Plugins (Flash Loan Sources)
 │   ├── MorphoPlugin - Morpho Blue flash loans
 │   ├── EulerV2Plugin - Euler V2 flash loans
@@ -34,7 +34,7 @@ CometMultiplierAdapter & CompoundV3CollateralSwap
 
 ### Collateral Swap Flow
 
-The `CompoundV3CollateralSwap` contract enables users to swap collateral in their Compound v3 position without closing their borrowing position:
+The `CometCollateralSwap` contract enables users to swap collateral in their Compound v3 position without closing their borrowing position:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -42,38 +42,38 @@ The `CompoundV3CollateralSwap` contract enables users to swap collateral in thei
 └─────────────────────────────────────────────────────────────────────────────┘
 
 1. USER INITIATES SWAP
-   User ──► CompoundV3CollateralSwap.swap(fromAsset: WETH, toAsset: USDC)
+   User ──► CometCollateralSwap.swap(fromAsset: WETH, toAsset: USDC)
 
 2. HEALTH FACTOR VALIDATION
-   CompoundV3CollateralSwap ──► Validates position safety after swap
+   CometCollateralSwap ──► Validates position safety after swap
 
 3. FLASH LOAN REQUEST
-   CompoundV3CollateralSwap ──► FlashLoanPlugin.takeFlashLoan(1000 USDC)
+   CometCollateralSwap ──► FlashLoanPlugin.takeFlashLoan(1000 USDC)
    FlashLoanPlugin ──► AAVE/Balancer/Uniswap.flashLoan(1000 USDC)
 
 4. FLASH LOAN CALLBACK
-   AAVE/Balancer/Uniswap ──► CompoundV3CollateralSwap.fallback()
+   AAVE/Balancer/Uniswap ──► CometCollateralSwap.fallback()
    ✅ Contract Balance: +1000 USDC
 
 5. SUPPLY BORROWED ASSET
-   CompoundV3CollateralSwap ──► Comet.supplyTo(user, 1000 USDC)
+   CometCollateralSwap ──► Comet.supplyTo(user, 1000 USDC)
    ✅ User's USDC collateral increases, health factor improves
 
 6. WITHDRAW EXISTING COLLATERAL
-   CompoundV3CollateralSwap ──► Comet.withdrawFrom(user, 0.5 WETH)
+   CometCollateralSwap ──► Comet.withdrawFrom(user, 0.5 WETH)
    ✅ Contract Balance: 1000 USDC + 0.5 WETH
 
 7. SWAP WITHDRAWN COLLATERAL
-   CompoundV3CollateralSwap ──► SwapPlugin.executeSwap(0.5 WETH → USDC)
+   CometCollateralSwap ──► SwapPlugin.executeSwap(0.5 WETH → USDC)
    SwapPlugin ──► 1inch/LiFi.swap(0.5 WETH → 1005 USDC)
    ✅ Contract Balance: 2005 USDC total
 
 8. SUPPLY DUST BACK TO USER
-   CompoundV3CollateralSwap ──► Comet.supplyTo(user, dust USDC)
+   CometCollateralSwap ──► Comet.supplyTo(user, dust USDC)
    ✅ Excess USDC supplied back to user's position
 
 9. REPAY FLASH LOAN
-   CompoundV3CollateralSwap ──► FlashLoanPlugin.repayFlashLoan(1005 USDC)
+   CometCollateralSwap ──► FlashLoanPlugin.repayFlashLoan(1005 USDC)
    FlashLoanPlugin ──► AAVE/Balancer/Uniswap.repay(1000 + 5 fee)
    ✅ Contract Balance: 0
 
@@ -203,7 +203,7 @@ export const deployConfig: Record<string, DeployConfig> = {
 
 This project includes detailed documentation for its core components:
 
-- **[CompoundV3CollateralSwap](./documentation/CompoundV3CollateralSwap.md)** - Comprehensive documentation for the main collateral swap contract, including architecture, usage patterns, and integration examples.
+- **[CometCollateralSwap](./documentation/CometCollateralSwap.md)** - Comprehensive documentation for the main collateral swap contract, including architecture, usage patterns, and integration examples.
 
 - **[Flash Loan Plugins](./documentation/plugins/FlashPlugins.md)** - Complete guide to the modular flash loan plugin system, covering the unified interface, validation mechanisms, and available protocol integrations (AAVE, Balancer, Uniswap V3, Euler V2, Morpho, etc.).
 

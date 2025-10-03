@@ -124,13 +124,13 @@ event PluginAdded(address plugin, bytes4 pluginSelector)
 ### Executed
 
 ```solidity
-event Executed(address user, address market, address collateral, uint256 totalAmount, uint256 debtAmount)
+event Executed(address user, contract IComet market, address collateral, uint256 totalAmount, uint256 debtAmount)
 ```
 
 ### Withdrawn
 
 ```solidity
-event Withdrawn(address user, address market, address collateral, uint256 withdrawnAmount, uint256 baseReturned)
+event Withdrawn(address user, contract IComet market, address collateral, uint256 withdrawnAmount, uint256 baseReturned)
 ```
 
 ### wEth

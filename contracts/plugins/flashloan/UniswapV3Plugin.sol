@@ -2,8 +2,8 @@
 pragma solidity ^0.8.30;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { ICometFlashLoanPlugin } from "../../interfaces/ICometFlashLoanPlugin.sol";
 import { IUniswapV3Pool } from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
+import { ICometFlashLoanPlugin } from "../../interfaces/ICometFlashLoanPlugin.sol";
 
 /**
  * @title UniswapV3Plugin

@@ -1,5 +1,5 @@
 import { ethers } from "hardhat";
-import { $CompoundV3CollateralSwap } from "../typechain-types/contracts-exposed/CompoundV3CollateralSwap.sol/$CompoundV3CollateralSwap";
+import { $CometCollateralSwap } from "../typechain-types/contracts-exposed/CometCollateralSwap.sol/$CometCollateralSwap";
 import { SnapshotRestorer, takeSnapshot, time } from "@nomicfoundation/hardhat-network-helpers";
 import { IComet } from "../typechain-types";
 import { expect } from "chai";
@@ -16,7 +16,7 @@ describe("Allow By Signature", function () {
     let attacker: HardhatEthersSigner;
 
     // Contracts
-    let collateralSwap: $CompoundV3CollateralSwap;
+    let collateralSwap: $CometCollateralSwap;
     let comet: IComet;
 
     // Mainnet data
@@ -64,10 +64,10 @@ describe("Allow By Signature", function () {
         const { lifiPlugin } = await getSwapPlugins();
 
         collateralSwap = (await ethers.deployContract(
-            "$CompoundV3CollateralSwap",
+            "$CometCollateralSwap",
             [[balancerPlugin], SWAP_ROUTER, lifiPlugin.endpoint],
             deployer
-        )) as unknown as $CompoundV3CollateralSwap;
+        )) as unknown as $CometCollateralSwap;
 
         comet = await ethers.getContractAt("IComet", COMET);
 

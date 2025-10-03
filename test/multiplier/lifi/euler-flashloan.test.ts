@@ -1,39 +1,42 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
-import { CometMultiplierAdapter, EulerV2Plugin, OneInchV6SwapPlugin, IComet, IERC20 } from "../../typechain-types";
-import { get1inchQuote, get1inchSwapData } from "../helpers/helpers";
-import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
+import { CometMultiplierAdapter, EulerV2Plugin, LiFiPlugin, IComet, IERC20, ICometExt } from "../../../typechain-types";
 import {
-    executeWithRetry,
-    COMET_USDC_MARKET,
-    USDC_ADDRESS,
-    WETH_ADDRESS,
-    ONE_INCH_ROUTER_V6,
-    USDC_EVAULT,
-    WETH_WHALE,
-    calculateExpectedCollateral,
-    calculateLeveragedAmount,
-    calculateMaxLeverage,
     calculateMaxSafeWithdrawal,
+    calculateHealthFactor,
+    executeMultiplierLiFi as executeMultiplier,
+    withdrawMultiplierLiFi as withdrawMultiplier,
+    calculateMaxLeverage,
+    calculateLeveragedAmount,
+    calculateExpectedCollateral,
     previewTake,
-    executeMultiplier1Inch as executeMultiplier,
-    withdrawMultiplier1Inch as withdrawMultiplier,
-    calculateHealthFactor
-} from "../helpers/helpers";
-import { Log } from "ethers";
+    executeWithRetry,
+    getQuote,
+    WETH_ADDRESS,
+    USDC_ADDRESS,
+    WETH_WHALE,
+    COMET_USDC_MARKET,
+    LIFI_ROUTER,
+    USDC_EVAULT,
+    getUserNonce,
+    getFutureExpiry,
+    signAllowBySig
+} from "../../helpers/helpers";
+import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 
 const opts = { maxFeePerGas: 4_000_000_000 };
 
-describe("Comet Multiplier Adapter / 1inch / Euler", function () {
+describe("Comet Multiplier Adapter / LiFi / Euler", function () {
     let adapter: CometMultiplierAdapter;
     let loanPlugin: EulerV2Plugin;
-    let swapPlugin: OneInchV6SwapPlugin;
+    let swapPlugin: LiFiPlugin;
     let comet: IComet;
     let weth: IERC20;
     let usdc: IERC20;
     let owner: SignerWithAddress;
     let user: SignerWithAddress;
     let user2: SignerWithAddress;
+    let user3: SignerWithAddress;
     let initialSnapshot: any;
 
     async function getMarketOptions() {
@@ -52,12 +55,12 @@ describe("Comet Multiplier Adapter / 1inch / Euler", function () {
             }
         ]);
 
-        [owner, user, user2] = await ethers.getSigners();
+        [owner, user, user2, user3] = await ethers.getSigners();
 
         const LoanFactory = await ethers.getContractFactory("EulerV2Plugin", owner);
         loanPlugin = await LoanFactory.deploy(opts);
 
-        const SwapFactory = await ethers.getContractFactory("OneInchV6SwapPlugin", owner);
+        const SwapFactory = await ethers.getContractFactory("LiFiPlugin", owner);
         swapPlugin = await SwapFactory.deploy(opts);
 
         const plugins = [
@@ -67,7 +70,7 @@ describe("Comet Multiplier Adapter / 1inch / Euler", function () {
             },
             {
                 endpoint: await swapPlugin.getAddress(),
-                config: ethers.AbiCoder.defaultAbiCoder().encode(["address"], [ONE_INCH_ROUTER_V6])
+                config: ethers.AbiCoder.defaultAbiCoder().encode(["address"], [LIFI_ROUTER])
             }
         ];
 
@@ -81,8 +84,9 @@ describe("Comet Multiplier Adapter / 1inch / Euler", function () {
 
         const whale = await ethers.getImpersonatedSigner(WETH_WHALE);
         await ethers.provider.send("hardhat_setBalance", [whale.address, "0xffffffffffffffffffffff"]);
-        await weth.connect(whale).transfer(user.address, ethers.parseEther("10"), opts);
-        await weth.connect(whale).transfer(user2.address, ethers.parseEther("10"), opts);
+        await weth.connect(whale).transfer(user.address, ethers.parseEther("20"), opts);
+        await weth.connect(whale).transfer(user2.address, ethers.parseEther("20"), opts);
+        await weth.connect(whale).transfer(user3.address, ethers.parseEther("20"), opts);
 
         const allowAbi = ["function allow(address, bool)"];
         const cometAsUser = new ethers.Contract(COMET_USDC_MARKET, allowAbi, user);
@@ -93,12 +97,12 @@ describe("Comet Multiplier Adapter / 1inch / Euler", function () {
         initialSnapshot = await ethers.provider.send("evm_snapshot");
     });
 
-    beforeEach(async function () {
-        await ethers.provider.send("evm_revert", [initialSnapshot]);
-        initialSnapshot = await ethers.provider.send("evm_snapshot");
-    });
-
     describe("Execute Multiplier", function () {
+        beforeEach(async function () {
+            await ethers.provider.send("evm_revert", [initialSnapshot]);
+            initialSnapshot = await ethers.provider.send("evm_snapshot");
+        });
+
         it("should execute with 1.1x leverage", async function () {
             const initialAmount = ethers.parseEther("1");
             const leverage = 11_000;
@@ -131,7 +135,7 @@ describe("Comet Multiplier Adapter / 1inch / Euler", function () {
             const finalCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
             const finalDebt = await comet.borrowBalanceOf(user.address);
 
-            expect(finalCol).to.be.closeTo(expectedCollateral, (expectedCollateral * 2n) / 100n);
+            expect(finalCol).to.be.closeTo(expectedCollateral, expectedCollateral / 100n);
             expect(finalDebt).to.be.closeTo(expectedDebt, expectedDebt / 20n);
             expect(finalCol).to.be.gt(initialCol + initialAmount);
             expect(finalDebt).to.be.gt(initialDebt);
@@ -146,12 +150,12 @@ describe("Comet Multiplier Adapter / 1inch / Euler", function () {
 
             await executeMultiplier(weth, await getMarketOptions(), comet, adapter, user2, initialAmount, leverage);
 
-            const collateralBalance = await comet.collateralBalanceOf(user2.address, WETH_ADDRESS);
+            const finalCol = await comet.collateralBalanceOf(user2.address, WETH_ADDRESS);
             const borrowBalance = await comet.borrowBalanceOf(user2.address);
 
-            expect(collateralBalance).to.be.closeTo(expectedCollateral, (expectedCollateral * 2n) / 100n);
+            expect(finalCol).to.be.closeTo(expectedCollateral, expectedCollateral / 100n);
             expect(borrowBalance).to.be.closeTo(expectedDebt, expectedDebt / 20n);
-            expect(collateralBalance).to.be.gt(initialAmount);
+            expect(finalCol).to.be.gt(initialAmount);
             expect(borrowBalance).to.be.gt(0);
         });
 
@@ -164,12 +168,12 @@ describe("Comet Multiplier Adapter / 1inch / Euler", function () {
 
             await executeMultiplier(weth, await getMarketOptions(), comet, adapter, user, initialAmount, leverage);
 
-            const collateralBalance = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
+            const finalCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
             const borrowBalance = await comet.borrowBalanceOf(user.address);
 
-            expect(collateralBalance).to.be.closeTo(expectedCollateral, (expectedCollateral * 2n) / 100n);
+            expect(finalCol).to.be.closeTo(expectedCollateral, expectedCollateral / 100n);
             expect(borrowBalance).to.be.closeTo(expectedDebt, expectedDebt / 20n);
-            expect(collateralBalance).to.be.gt(initialAmount);
+            expect(finalCol).to.be.gt(initialAmount);
             expect(borrowBalance).to.be.gt(0);
         });
 
@@ -189,7 +193,7 @@ describe("Comet Multiplier Adapter / 1inch / Euler", function () {
         });
 
         it("should handle large collateral amounts", async function () {
-            const initialAmount = ethers.parseEther("1.0");
+            const initialAmount = ethers.parseEther("20");
             const leverage = 15_000;
 
             const expectedDebt = await calculateLeveragedAmount(comet, initialAmount, leverage);
@@ -245,10 +249,144 @@ describe("Comet Multiplier Adapter / 1inch / Euler", function () {
                 adapter.connect(user).executeMultiplier(market, WETH_ADDRESS, initialAmount, leverage, "0x", 1n)
             ).to.be.reverted;
         });
+
+        it("should execute with msg.value (native ETH) and 1.5x leverage", async function () {
+            const initialAmount = ethers.parseEther("0.1");
+            const leverage = 15_000;
+
+            const initialCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
+            const initialDebt = await comet.borrowBalanceOf(user.address);
+            const initialEthBalance = await ethers.provider.getBalance(user.address);
+            const expectedDebt = await calculateLeveragedAmount(comet, initialAmount, leverage);
+            const expectedCollateral = await calculateExpectedCollateral(initialAmount, leverage);
+
+            const market = await getMarketOptions();
+            const leveraged = await calculateLeveragedAmount(comet, initialAmount, leverage);
+            const quote = await executeWithRetry(async () => {
+                return await getQuote(
+                    "1",
+                    "1",
+                    USDC_ADDRESS,
+                    WETH_ADDRESS,
+                    leveraged.toString(),
+                    await adapter.getAddress()
+                );
+            });
+            const minAmountOut = (BigInt(quote.toAmountMin) * 90n) / 100n;
+
+            const tx = await adapter
+                .connect(user)
+                .executeMultiplier(market, WETH_ADDRESS, 0, leverage, quote.swapCalldata, minAmountOut, {
+                    ...opts,
+                    value: initialAmount
+                });
+
+            const receipt = await tx.wait();
+            const gasUsed = receipt!.gasUsed * receipt!.gasPrice;
+
+            const finalCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
+            const finalDebt = await comet.borrowBalanceOf(user.address);
+            const finalEthBalance = await ethers.provider.getBalance(user.address);
+
+            expect(finalCol).to.be.closeTo(expectedCollateral, expectedCollateral / 100n);
+            expect(finalDebt).to.be.closeTo(expectedDebt, expectedDebt / 20n);
+            expect(finalCol).to.be.gt(initialCol + initialAmount);
+            expect(finalDebt).to.be.gt(initialDebt);
+            expect(initialEthBalance - finalEthBalance).to.be.closeTo(
+                initialAmount + gasUsed,
+                ethers.parseEther("0.001")
+            );
+        });
+
+        it("should execute with msg.value (native ETH) and 2x leverage", async function () {
+            const initialAmount = ethers.parseEther("0.15");
+            const leverage = 20_000;
+
+            const expectedDebt = await calculateLeveragedAmount(comet, initialAmount, leverage);
+            const expectedCollateral = await calculateExpectedCollateral(initialAmount, leverage);
+
+            const market = await getMarketOptions();
+            const leveraged = await calculateLeveragedAmount(comet, initialAmount, leverage);
+            const quote = await executeWithRetry(async () => {
+                return await getQuote(
+                    "1",
+                    "1",
+                    USDC_ADDRESS,
+                    WETH_ADDRESS,
+                    leveraged.toString(),
+                    await adapter.getAddress()
+                );
+            });
+            const minAmountOut = (BigInt(quote.toAmountMin) * 90n) / 100n;
+
+            await adapter
+                .connect(user2)
+                .executeMultiplier(market, WETH_ADDRESS, 0, leverage, quote.swapCalldata, minAmountOut, {
+                    ...opts,
+                    value: initialAmount
+                });
+
+            const finalCol = await comet.collateralBalanceOf(user2.address, WETH_ADDRESS);
+            const borrowBalance = await comet.borrowBalanceOf(user2.address);
+
+            expect(finalCol).to.be.closeTo(expectedCollateral, expectedCollateral / 100n);
+            expect(borrowBalance).to.be.closeTo(expectedDebt, expectedDebt / 20n);
+            expect(finalCol).to.be.gt(initialAmount);
+            expect(borrowBalance).to.be.gt(0);
+        });
+
+        it("should execute with msg.value (native ETH) and maximum leverage", async function () {
+            const initialAmount = ethers.parseEther("0.05");
+            const maxLeverage = await calculateMaxLeverage(comet);
+            const expectedDebt = await calculateLeveragedAmount(comet, initialAmount, maxLeverage);
+            const expectedCollateral = await calculateExpectedCollateral(initialAmount, maxLeverage);
+
+            const market = await getMarketOptions();
+            const leveraged = await calculateLeveragedAmount(comet, initialAmount, maxLeverage);
+            const quote = await executeWithRetry(async () => {
+                return await getQuote(
+                    "1",
+                    "1",
+                    USDC_ADDRESS,
+                    WETH_ADDRESS,
+                    leveraged.toString(),
+                    await adapter.getAddress()
+                );
+            });
+            const minAmountOut = (BigInt(quote.toAmountMin) * 90n) / 100n;
+
+            await adapter
+                .connect(user)
+                .executeMultiplier(market, WETH_ADDRESS, 0, maxLeverage, quote.swapCalldata, minAmountOut, {
+                    ...opts,
+                    value: initialAmount
+                });
+
+            const collateralBalance = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
+            const borrowBalance = await comet.borrowBalanceOf(user.address);
+
+            expect(collateralBalance).to.be.closeTo(expectedCollateral, (expectedCollateral * 3n) / 100n);
+            expect(borrowBalance).to.be.closeTo(expectedDebt, expectedDebt / 10n);
+        });
+
+        it("should revert with msg.value for non-WETH collateral", async function () {
+            const initialAmount = ethers.parseEther("0.1");
+            const leverage = 20_000;
+            const market = await getMarketOptions();
+            const fakeToken = "0x0000000000000000000000000000000000000001";
+
+            await expect(
+                adapter
+                    .connect(user)
+                    .executeMultiplier(market, fakeToken, 0, leverage, "0x", 1n, { ...opts, value: initialAmount })
+            ).to.be.revertedWithCustomError(adapter, "InvalidAsset");
+        });
     });
 
     describe("Position Health", function () {
         beforeEach(async function () {
+            await ethers.provider.send("evm_revert", [initialSnapshot]);
+            initialSnapshot = await ethers.provider.send("evm_snapshot");
             const initialAmount = ethers.parseEther("0.2");
             const leverage = 25_000;
             await executeMultiplier(weth, await getMarketOptions(), comet, adapter, user, initialAmount, leverage);
@@ -324,6 +462,8 @@ describe("Comet Multiplier Adapter / 1inch / Euler", function () {
 
     describe("Withdraw Multiplier", function () {
         beforeEach(async function () {
+            await ethers.provider.send("evm_revert", [initialSnapshot]);
+            initialSnapshot = await ethers.provider.send("evm_snapshot");
             const initialAmount = ethers.parseEther("0.2");
             const leverage = 25_000;
             await executeMultiplier(weth, await getMarketOptions(), comet, adapter, user, initialAmount, leverage);
@@ -477,8 +617,15 @@ describe("Comet Multiplier Adapter / 1inch / Euler", function () {
                 user,
                 smallAmount,
                 await executeWithRetry(async () => {
-                    const q = await get1inchQuote(WETH_ADDRESS, USDC_ADDRESS, take.toString());
-                    return (BigInt(q) * 85n) / 100n;
+                    const q = await getQuote(
+                        "1",
+                        "1",
+                        WETH_ADDRESS,
+                        USDC_ADDRESS,
+                        take.toString(),
+                        await adapter.getAddress()
+                    );
+                    return (BigInt(q.toAmountMin) * 85n) / 100n;
                 })
             );
 
@@ -490,9 +637,35 @@ describe("Comet Multiplier Adapter / 1inch / Euler", function () {
             expect(finalUsdc).to.be.gt(initialUsdc);
             expect(healthFactor).to.be.gt(await comet.borrowBalanceOf(user.address));
         });
+
+        it("should revert when user has no debt to deleverage", async function () {
+            const collateralToWithdraw = ethers.parseEther("0.1");
+            const market = await getMarketOptions();
+
+            await expect(
+                adapter.connect(user3).withdrawMultiplier(market, WETH_ADDRESS, collateralToWithdraw, "0x", 1n, opts)
+            ).to.be.revertedWithCustomError(adapter, "NothingToDeleverage");
+        });
+
+        it("should revert when calculated loan debt is zero", async function () {
+            const tinyAmount = 1n;
+            const market = await getMarketOptions();
+
+            const initialAmount = ethers.parseEther("0.1");
+            const leverage = 20_000;
+            await executeMultiplier(weth, market, comet, adapter, user2, initialAmount, leverage);
+            await expect(
+                adapter.connect(user2).withdrawMultiplier(market, WETH_ADDRESS, tinyAmount, "0x", 0n, opts)
+            ).to.be.revertedWithCustomError(adapter, "InvalidLeverage");
+        });
     });
 
     describe("Multiple Operations", function () {
+        beforeEach(async function () {
+            await ethers.provider.send("evm_revert", [initialSnapshot]);
+            initialSnapshot = await ethers.provider.send("evm_snapshot");
+        });
+
         it("should handle multiple sequential collateral withdrawals", async function () {
             const initialAmount = ethers.parseEther("0.3");
             const leverage = 20_000;
@@ -540,75 +713,161 @@ describe("Comet Multiplier Adapter / 1inch / Euler", function () {
         });
     });
 
-    describe("Event Emission", function () {
-        it("should emit events on successful deposit", async function () {
-            const initialAmount = ethers.parseEther("0.1");
-            const leverage = 15_000;
+    describe("Execute and Withdraw with AllowBySig", function () {
+        it("should execute leveraged position with allowBySig (no prior authorization)", async function () {
+            const adapterAddress = await adapter.getAddress();
+            const initialAmount = ethers.parseEther("0.2");
+            const leverage = 20_000;
 
-            const tx = await executeMultiplier(
-                weth,
-                await getMarketOptions(),
-                comet,
-                adapter,
-                user2,
-                initialAmount,
-                leverage
+            let cometExt = await ethers.getContractAt("ICometExt", COMET_USDC_MARKET);
+            expect(await cometExt.isAllowed(user3.address, adapterAddress)).to.be.false;
+
+            const nonce = await getUserNonce(cometExt, user3.address);
+            const expiry = getFutureExpiry();
+            const chainId = Number((await ethers.provider.getNetwork()).chainId);
+
+            const { v, r, s } = await signAllowBySig(
+                user3,
+                await comet.getAddress(),
+                adapterAddress,
+                true,
+                nonce,
+                expiry,
+                chainId
             );
 
-            const receipt = await tx.wait();
+            const allowParams = {
+                owner: user3.address,
+                manager: adapterAddress,
+                isAllowed: true,
+                nonce: nonce,
+                expiry: expiry,
+                v: v,
+                r: r,
+                s: s
+            };
 
-            const executedEvents = receipt.logs.filter((log: any) => {
-                try {
-                    const parsed = adapter.interface.parseLog(log);
-                    return parsed && parsed.name === "Executed";
-                } catch {
-                    return false;
-                }
+            const market = await getMarketOptions();
+
+            await weth.connect(user3).approve(adapterAddress, initialAmount, opts);
+            const leveraged = await calculateLeveragedAmount(comet, initialAmount, leverage);
+            const quote = await executeWithRetry(async () => {
+                return await getQuote(
+                    "1",
+                    "1",
+                    USDC_ADDRESS,
+                    WETH_ADDRESS,
+                    leveraged.toString(),
+                    await adapter.getAddress()
+                );
             });
+            const swapData = quote.swapCalldata;
+            const minAmountOut = (BigInt(quote.toAmountMin) * 90n) / 100n;
 
-            expect(executedEvents.length).to.be.gt(0);
+            await adapter
+                .connect(user3)
+                .executeMultiplierBySig(
+                    market,
+                    WETH_ADDRESS,
+                    initialAmount,
+                    leverage,
+                    swapData,
+                    minAmountOut,
+                    allowParams,
+                    opts
+                );
 
-            if (executedEvents.length > 0) {
-                const parsedEvent = adapter.interface.parseLog(executedEvents[0]);
-                expect(parsedEvent!.args.user).to.equal(user2.address);
-                expect(parsedEvent!.args.market).to.equal(COMET_USDC_MARKET);
-                expect(parsedEvent!.args.collateral).to.equal(WETH_ADDRESS);
-                expect(parsedEvent!.args.totalAmount).to.be.gt(initialAmount);
-                expect(parsedEvent!.args.debtAmount).to.be.gt(0);
-            }
+            const finalCol = await comet.collateralBalanceOf(user3.address, WETH_ADDRESS);
+            const finalDebt = await comet.borrowBalanceOf(user3.address);
+            const expectedCollateral = await calculateExpectedCollateral(initialAmount, leverage);
+            const expectedDebt = await calculateLeveragedAmount(comet, initialAmount, leverage);
+
+            expect(finalCol).to.be.closeTo(expectedCollateral, expectedCollateral / 100n);
+            expect(finalDebt).to.be.closeTo(expectedDebt, expectedDebt / 20n);
+
+            expect(await cometExt.isAllowed(user3.address, adapterAddress)).to.be.true;
         });
 
-        it("should emit events on successful withdrawal", async function () {
-            const initialAmount = ethers.parseEther("0.2");
-            const leverage = 25_000;
+        it("should withdraw leveraged position with allowBySig (revoked then re-authorized)", async function () {
+            const adapterAddress = await adapter.getAddress();
+            let cometExt = await ethers.getContractAt("ICometExt", COMET_USDC_MARKET);
+            await cometExt.connect(user3).allow(adapterAddress, false, opts);
+            expect(await cometExt.isAllowed(user3.address, adapterAddress)).to.be.false;
 
-            await executeMultiplier(weth, await getMarketOptions(), comet, adapter, user, initialAmount, leverage);
+            const collateralToWithdraw = ethers.parseEther("0.1");
 
-            const collateralBalance = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
-            const withdrawAmount = collateralBalance / 10n;
+            const nonce = await getUserNonce(cometExt, user3.address);
+            const expiry = getFutureExpiry();
+            const chainId = Number((await ethers.provider.getNetwork()).chainId);
 
-            const tx = await withdrawMultiplier(await getMarketOptions(), comet, adapter, user, withdrawAmount);
-            const receipt = await tx.wait();
+            const { v, r, s } = await signAllowBySig(
+                user3,
+                await comet.getAddress(),
+                adapterAddress,
+                true,
+                nonce,
+                expiry,
+                chainId
+            );
 
-            const withdrawnEvents = receipt.logs.filter((log: any) => {
-                try {
-                    const parsed = adapter.interface.parseLog(log);
-                    return parsed && parsed.name === "Withdrawn";
-                } catch {
-                    return false;
-                }
+            const allowParams = {
+                owner: user3.address,
+                manager: adapterAddress,
+                isAllowed: true,
+                nonce: nonce,
+                expiry: expiry,
+                v: v,
+                r: r,
+                s: s
+            };
+
+            const initialCol = await comet.collateralBalanceOf(user3.address, WETH_ADDRESS);
+            const initialDebt = await comet.borrowBalanceOf(user3.address);
+            const initialUsdc = await usdc.balanceOf(user3.address);
+
+            const market = await getMarketOptions();
+
+            const blockTag = await ethers.provider.getBlockNumber();
+
+            const quote = await executeWithRetry(async () => {
+                const q = await getQuote(
+                    "1",
+                    "1",
+                    WETH_ADDRESS,
+                    USDC_ADDRESS,
+                    collateralToWithdraw.toString(),
+                    await adapter.getAddress()
+                );
+                return q;
             });
+            const swapData = quote.swapCalldata;
+            const minAmountOut = (BigInt(quote.toAmountMin) * 95n) / 100n;
 
-            expect(withdrawnEvents.length).to.be.gt(0);
+            const col = await comet.collateralBalanceOf(user3.address, WETH_ADDRESS);
+            const debt = await comet.borrowBalanceOf(user3.address);
 
-            if (withdrawnEvents.length > 0) {
-                const parsedEvent = adapter.interface.parseLog(withdrawnEvents[0]);
-                expect(parsedEvent!.args.user).to.equal(user.address);
-                expect(parsedEvent!.args.market).to.equal(COMET_USDC_MARKET);
-                expect(parsedEvent!.args.collateral).to.equal(WETH_ADDRESS);
-                expect(parsedEvent!.args.withdrawnAmount).to.be.gt(0);
-                expect(parsedEvent!.args.baseReturned).to.be.gte(0);
-            }
+            await adapter
+                .connect(user3)
+                .withdrawMultiplierBySig(
+                    market,
+                    WETH_ADDRESS,
+                    collateralToWithdraw,
+                    swapData,
+                    minAmountOut,
+                    allowParams,
+                    opts
+                );
+            const finalCol = await comet.collateralBalanceOf(user3.address, WETH_ADDRESS);
+            const finalDebt = await comet.borrowBalanceOf(user3.address);
+            const finalUsdc = await usdc.balanceOf(user3.address);
+            const healthFactor = await calculateHealthFactor(comet, user3.address, WETH_ADDRESS);
+
+            expect(finalCol).to.be.closeTo(initialCol - collateralToWithdraw, ethers.parseEther("0.01"));
+            expect(finalDebt).to.be.lt(initialDebt);
+            expect(finalUsdc).to.be.gt(initialUsdc);
+            expect(healthFactor).to.be.gt(finalDebt);
+
+            expect(await cometExt.isAllowed(user3.address, adapterAddress)).to.be.true;
         });
     });
 });

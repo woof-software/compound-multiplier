@@ -4,13 +4,13 @@ pragma solidity ^0.8.30;
 import { AllowBySig } from "../base/AllowBySig.sol";
 
 /**
- * @title ICompoundV3CollateralSwap
+ * @title ICometCollateralSwap
  * @author Woof Software
  * @notice Interface for CompoundV3 collateral swap contract
  * @dev This contract enables users to swap one collateral asset for another within their Compound V3 position
  *      using flash loans. The swap maintains the user's debt position while changing their collateral composition.
  */
-interface ICompoundV3CollateralSwap {
+interface ICometCollateralSwap {
     /*//////////////////////////////////////////////////////////////
                                 STRUCTS
     //////////////////////////////////////////////////////////////*/

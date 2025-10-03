@@ -14,7 +14,7 @@
                         "type": "address"
                     }
                 ],
-                "internalType": "struct ICompoundV3CollateralSwap.Plugin[]",
+                "internalType": "struct ICometCollateralSwap.Plugin[]",
                 "name": "plugins_",
                 "type": "tuple[]"
             },
@@ -234,7 +234,7 @@
                         "type": "uint256"
                     }
                 ],
-                "internalType": "struct ICompoundV3CollateralSwap.SwapParams",
+                "internalType": "struct ICometCollateralSwap.SwapParams",
                 "name": "swapParams",
                 "type": "tuple"
             }
@@ -315,7 +315,7 @@
                         "type": "uint256"
                     }
                 ],
-                "internalType": "struct ICompoundV3CollateralSwap.SwapParams",
+                "internalType": "struct ICometCollateralSwap.SwapParams",
                 "name": "swapParams",
                 "type": "tuple"
             },

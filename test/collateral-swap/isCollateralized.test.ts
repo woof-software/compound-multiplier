@@ -12,13 +12,13 @@ import {
     tokensInstances
 } from "../helpers/helpers";
 import { expect } from "chai";
-import { $CompoundV3CollateralSwap } from "../../typechain-types/contracts-exposed/CompoundV3CollateralSwap.sol/$CompoundV3CollateralSwap";
+import { $CometCollateralSwap } from "../../typechain-types/contracts-exposed/CometCollateralSwap.sol/$CometCollateralSwap";
 
-describe("CompoundV3CollateralSwap", function () {
+describe("CometCollateralSwap", function () {
     let snapshot: SnapshotRestorer;
 
     // Contracts
-    let collateralSwap: $CompoundV3CollateralSwap;
+    let collateralSwap: $CometCollateralSwap;
     let comet: IComet;
 
     // Tokens

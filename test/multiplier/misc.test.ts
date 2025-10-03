@@ -1,7 +1,13 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
-import { CometMultiplierAdapter, OneInchV6SwapPlugin, IComet, IERC20, FakeFlashLoanPlugin } from "../typechain-types";
-import { get1inchSwapData, calculateLeveragedAmount } from "./helpers/helpers";
+import {
+    CometMultiplierAdapter,
+    OneInchV6SwapPlugin,
+    IComet,
+    IERC20,
+    FakeFlashLoanPlugin
+} from "../../typechain-types";
+import { get1inchSwapData, calculateLeveragedAmount } from "../helpers/helpers";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 
 const WETH_ADDRESS = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
@@ -74,8 +80,8 @@ describe("Comet Multiplier Adapter / Misc", function () {
         whale2 = await ethers.getImpersonatedSigner(USDC_WHALE);
         await ethers.provider.send("hardhat_setBalance", [whale.address, "0xffffffffffffffffffffff"]);
         await ethers.provider.send("hardhat_setBalance", [whale2.address, "0xffffffffffffffffffffff"]);
-        await weth.connect(whale).transfer(user.address, ethers.parseEther("10"), opts);
-        await weth.connect(whale).transfer(user2.address, ethers.parseEther("10"), opts);
+        await weth.connect(whale).transfer(user.address, ethers.parseEther("20"), opts);
+        await weth.connect(whale).transfer(user2.address, ethers.parseEther("20"), opts);
         await usdc.connect(whale2).transfer(user.address, ethers.parseEther("0.0000001"), opts);
 
         const allowAbi = ["function allow(address, bool)"];
@@ -126,7 +132,7 @@ describe("Comet Multiplier Adapter / Misc", function () {
         it("Should revert if amount out is less the debt amount returned by loan plugin", async function () {
             const market = await getMarketOptions();
 
-            await weth.connect(user2).approve(await adapter.getAddress(), ethers.parseEther("10"));
+            await weth.connect(user2).approve(await adapter.getAddress(), ethers.parseEther("20"));
 
             await expect(
                 adapter.connect(user2).executeMultiplier(market, WETH_ADDRESS, ethers.parseEther("1"), 20000, "0x", 1n)
@@ -166,7 +172,7 @@ describe("Comet Multiplier Adapter / Misc", function () {
             const Adapter = await ethers.getContractFactory("CometMultiplierAdapter", owner);
             const adapter2 = await Adapter.deploy(plugins, await weth.getAddress(), opts);
 
-            await weth.connect(user2).approve(await adapter2.getAddress(), ethers.parseEther("10"));
+            await weth.connect(user2).approve(await adapter2.getAddress(), ethers.parseEther("20"));
 
             const allowAbi = ["function allow(address, bool)"];
             const cometAsUser2 = new ethers.Contract(COMET_USDC_MARKET, allowAbi, user2);

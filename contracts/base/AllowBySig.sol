@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import { ICometExt } from "../external/ICometExt.sol";
+import { ICometExt } from "../external/compound/ICometExt.sol";
 import { IAllowBySig } from "../interfaces/IAllowBySig.sol";
 
 /**

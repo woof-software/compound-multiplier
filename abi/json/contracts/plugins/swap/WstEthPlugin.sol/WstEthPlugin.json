@@ -69,6 +69,32 @@
         "type": "function"
     },
     {
+        "inputs": [],
+        "name": "STETH_ADDRESS",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "WSTETH_ADDRESS",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
         "inputs": [
             {
                 "internalType": "address",
@@ -92,12 +118,12 @@
             },
             {
                 "internalType": "bytes",
-                "name": "config",
+                "name": "",
                 "type": "bytes"
             },
             {
                 "internalType": "bytes",
-                "name": "swapData",
+                "name": "",
                 "type": "bytes"
             }
         ],
@@ -111,9 +137,5 @@
         ],
         "stateMutability": "nonpayable",
         "type": "function"
-    },
-    {
-        "stateMutability": "payable",
-        "type": "receive"
     }
 ]

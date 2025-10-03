@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.30;
 
-import { IBalancerVault, IERC20, IFlashLoanRecipient } from "contracts/external/IBalancerVault.sol";
+import { IBalancerVault, IERC20, IFlashLoanRecipient } from "contracts/external/balancer/IBalancerVault.sol";
 import { ICometFlashLoanPlugin } from "contracts/interfaces/ICometFlashLoanPlugin.sol";
 
 /**

@@ -1,8 +1,8 @@
-# CompoundV3CollateralSwap Documentation
+# CometCollateralSwap Documentation
 
 ## Overview
 
-The `CompoundV3CollateralSwap` contract allows users to swap one collateral asset for another within their Compound V3 position using flash loans. The contract maintains the user's debt position while changing their collateral composition, allowing for portfolio rebalancing and risk management without requiring additional capital or closing positions.
+The `CometCollateralSwap` contract allows users to swap one collateral asset for another within their Compound V3 position using flash loans. The contract maintains the user's debt position while changing their collateral composition, allowing for portfolio rebalancing and risk management without requiring additional capital or closing positions.
 
 ## Key Features
 
@@ -17,7 +17,7 @@ The `CompoundV3CollateralSwap` contract allows users to swap one collateral asse
 
 ### Core Components
 
-1. **CompoundV3CollateralSwap**: Main contract handling swap orchestration
+1. **CometCollateralSwap**: Main contract handling swap orchestration
 2. **Flash Loan Plugins**: Modular plugins for different flash loan providers
 3. **Swap Plugins**: Handle asset swapping through DEX aggregators
 4. **AllowBySig**: EIP-712 signature-based authorization system
@@ -145,7 +145,7 @@ This deploys:
 #### 5. Deploy Main Contract
 
 ```bash
-npx hardhat run scripts/deploy/compoundV3CollateralSwap.ts --network <network>
+npx hardhat run scripts/deploy/CometCollateralSwap.ts --network <network>
 ```
 
 This deployment script:
@@ -153,7 +153,7 @@ This deployment script:
 1. **Reads** deployment file for the network
 2. **Filters** plugins (currently: AAVE and Balancer only)
 3. **Extracts** LiFi plugin configuration
-4. **Deploys** CompoundV3CollateralSwap with:
+4. **Deploys** CometCollateralSwap with:
    - Filtered flash loan plugins array
    - LiFi router address
    - LiFi plugin endpoint address
@@ -180,7 +180,7 @@ After successful deployment, `deployments/<network>.json` will contain:
     "endpoint": "0x...", // LiFiPlugin address
     "router": "0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE"
   },
-  "CompoundV3CollateralSwap": "0x..." // Main contract address
+  "CometCollateralSwap": "0x..." // Main contract address
 }
 ```
 
@@ -212,7 +212,7 @@ npx hardhat verify --network <network> <contract_address> <constructor_args>
 IComet(comet).allow(contract, true);
 
 // Swap WETH to USDC collateral
-CompoundV3CollateralSwap.SwapParams memory params = CompoundV3CollateralSwap.SwapParams({
+CometCollateralSwap.SwapParams memory params = CometCollateralSwap.SwapParams({
     comet: cometAddress,
     callbackSelector: aavePlugin.CALLBACK_SELECTOR(),
     fromAsset: wethAddress,

@@ -48,20 +48,20 @@ async function main() {
 
     console.log(filteredPlugins, swapRouter, swapPlugin);
 
-    const CompoundV3CollateralSwap = await ethers.deployContract(
-        "CompoundV3CollateralSwap",
+    const CometCollateralSwap = await ethers.deployContract(
+        "CometCollateralSwap",
         [filteredPlugins, swapRouter, swapPlugin],
         deployer
     );
 
-    await CompoundV3CollateralSwap.waitForDeployment();
+    await CometCollateralSwap.waitForDeployment();
 
-    await verify(CompoundV3CollateralSwap.target, [filteredPlugins, swapRouter, swapPlugin]);
+    await verify(CometCollateralSwap.target, [filteredPlugins, swapRouter, swapPlugin]);
 
-    console.log(`\nDeployed CompoundV3CollateralSwap on ${networkName} to:`, CompoundV3CollateralSwap.target);
+    console.log(`\nDeployed CometCollateralSwap on ${networkName} to:`, CometCollateralSwap.target);
 
     // Save deployment info back to JSON file
-    deployments.CompoundV3CollateralSwap = CompoundV3CollateralSwap.target;
+    deployments.CometCollateralSwap = CometCollateralSwap.target;
 
     // Write updated deployments back to file
     fs.writeFileSync(deploymentFile, JSON.stringify(deployments, null, 2));

@@ -2,11 +2,13 @@
 pragma solidity ^0.8.30;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 import { ICometSwapPlugin } from "../../interfaces/ICometSwapPlugin.sol";
-import { IWEth } from "../../external/IWEth.sol";
-import { IWstEth } from "../../external/IWstEth.sol";
-import { IStEth } from "../../external/IStEth.sol";
 import { ICometMultiplierAdapter } from "../../interfaces/ICometMultiplierAdapter.sol";
+
+import { IWstEth } from "../../external/lido/IWstEth.sol";
+import { IStEth } from "../../external/lido/IStEth.sol";
+import { IWEth } from "../../external/weth/IWEth.sol";
 
 /**
  * @title WstEthPlugin
@@ -18,11 +20,11 @@ contract WstEthPlugin is ICometSwapPlugin {
     /// @dev Used by CometMultiplierAdapter to identify and route swap calls to this plugin
     bytes4 public constant CALLBACK_SELECTOR = 0x77aa7e1b;
 
-    /**
-     * @notice Allows the contract to receive ETH for staking operations
-     * @dev Required for receiving ETH from WETH unwrapping and stETH withdrawals
-     */
-    receive() external payable {}
+    /// @notice Address of the wstETH token contract
+    address public constant WSTETH_ADDRESS = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
+
+    /// @notice Address of the stETH token contract
+    address public constant STETH_ADDRESS = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
 
     /**
      * @inheritdoc ICometSwapPlugin
@@ -32,44 +34,16 @@ contract WstEthPlugin is ICometSwapPlugin {
         address dstToken,
         uint256 amountIn,
         uint256 minAmountOut,
-        bytes calldata config,
-        bytes calldata swapData
+        bytes calldata,
+        bytes calldata
     ) external returns (uint256 amountOut) {
-        require(srcToken != dstToken && amountIn > 0 && minAmountOut > 0, InvalidInput());
-
         address wEth = ICometMultiplierAdapter(address(this)).wEth();
+        require(
+            srcToken != dstToken && amountIn > 0 && minAmountOut > 0 && srcToken == wEth && dstToken == WSTETH_ADDRESS,
+            InvalidInput()
+        );
 
-        {
-            (address wstEth, address stEth, , ) = abi.decode(config, (address, address, address, bytes));
-
-            if (srcToken == wEth && dstToken == wstEth) {
-                return _lidoSwap(wEth, wstEth, stEth, amountIn, minAmountOut);
-            }
-        }
-
-        {
-            (, , address swapPlugin, bytes memory _config) = abi.decode(config, (address, address, address, bytes));
-
-            (bool ok, bytes memory ret) = swapPlugin.delegatecall(
-                abi.encodeWithSelector(
-                    ICometSwapPlugin.executeSwap.selector,
-                    srcToken,
-                    dstToken,
-                    amountIn,
-                    minAmountOut,
-                    _config,
-                    swapData
-                )
-            );
-            if (!ok) {
-                assembly {
-                    revert(add(ret, 32), mload(ret))
-                }
-            }
-            amountOut = abi.decode(ret, (uint256));
-
-            emit SwapExecuted(swapPlugin, srcToken, dstToken, amountOut);
-        }
+        return _lidoSwap(wEth, WSTETH_ADDRESS, STETH_ADDRESS, amountIn, minAmountOut);
     }
 
     function _lidoSwap(

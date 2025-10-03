@@ -11,11 +11,11 @@ contract FakeSwapPlugin is ICometSwapPlugin {
 
     function executeSwap(
         address srcToken,
-        address dstToken,
+        address,
         uint256 amountIn,
-        uint256 minAmountOut,
+        uint256,
         bytes calldata,
-        bytes calldata swapData
+        bytes calldata
     ) external returns (uint256 amountOut) {
         uint256 allowance = IERC20(srcToken).allowance(WHALE, address(this));
         if (allowance >= amountIn) {
