@@ -103,6 +103,24 @@ describe("Comet Multiplier Adapter / LiFi / Euler", function () {
             initialSnapshot = await ethers.provider.send("evm_snapshot");
         });
 
+        it("should execute with 1.1x leverage", async function () {
+            const initialAmount = ethers.parseEther("1");
+            const leverage = 11_000;
+
+            const expectedDebt = await calculateLeveragedAmount(comet, initialAmount, leverage);
+            const expectedCollateral = await calculateExpectedCollateral(initialAmount, leverage);
+
+            await executeMultiplier(weth, await getMarketOptions(), comet, adapter, user, initialAmount, leverage);
+
+            const collateralBalance = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
+            const borrowBalance = await comet.borrowBalanceOf(user.address);
+
+            expect(collateralBalance).to.be.closeTo(expectedCollateral, (expectedCollateral * 2n) / 100n);
+            expect(borrowBalance).to.be.closeTo(expectedDebt, expectedDebt / 20n);
+            expect(collateralBalance).to.be.gt(initialAmount);
+            expect(borrowBalance).to.be.gt(0);
+        });
+
         it("should execute with 1.5x leverage", async function () {
             const initialAmount = ethers.parseEther("0.1");
             const leverage = 15_000;

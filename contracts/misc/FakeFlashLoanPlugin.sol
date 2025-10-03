@@ -3,12 +3,12 @@ pragma solidity ^0.8.30;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import { ICometFlashLoanPlugin } from "../interfaces/ICometFlashLoanPlugin.sol";
+import { IEulerDToken } from "../external/euler/IEulerDToken.sol";
+import { IEulerMarkets } from "../external/euler/IEulerMarkets.sol";
+import { IEVault } from "../external/euler/IEVault.sol";
 
-import { IEulerDToken } from "../external/IEulerDToken.sol";
-import { IEulerMarkets } from "../external/IEulerMarkets.sol";
-import { IComet } from "../external/IComet.sol";
-import { IEVault } from "../external/IEVault.sol";
+import { IComet } from "../external/compound/IComet.sol";
+import { ICometFlashLoanPlugin } from "../interfaces/ICometFlashLoanPlugin.sol";
 
 contract FakeFlashLoanPlugin is ICometFlashLoanPlugin {
     // keccak256("onEulerFlashLoan(bytes)") = 0xc4850ea8

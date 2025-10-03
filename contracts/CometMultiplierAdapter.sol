@@ -6,7 +6,7 @@ import { ICometSwapPlugin } from "./interfaces/ICometSwapPlugin.sol";
 import { ICometFlashLoanPlugin } from "./interfaces/ICometFlashLoanPlugin.sol";
 
 import { IWEth } from "./external/IWEth.sol";
-import { IComet } from "./external/IComet.sol";
+import { IComet } from "./external/compound/IComet.sol";
 import { AllowBySig } from "./base/AllowBySig.sol";
 
 import { AggregatorV3Interface } from "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";

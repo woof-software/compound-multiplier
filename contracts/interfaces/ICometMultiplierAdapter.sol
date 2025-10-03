@@ -2,7 +2,7 @@
 pragma solidity ^0.8.30;
 
 import { IAllowBySig } from "./IAllowBySig.sol";
-import { IComet } from "../external/IComet.sol";
+import { IComet } from "../external/compound/IComet.sol";
 
 interface ICometMultiplierAdapter {
     error UnsupportedPriceFeed();

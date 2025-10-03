@@ -2,11 +2,13 @@
 pragma solidity ^0.8.30;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 import { ICometSwapPlugin } from "../../interfaces/ICometSwapPlugin.sol";
-import { IWEth } from "../../external/IWEth.sol";
-import { IWstEth } from "../../external/IWstEth.sol";
-import { IStEth } from "../../external/IStEth.sol";
 import { ICometMultiplierAdapter } from "../../interfaces/ICometMultiplierAdapter.sol";
+
+import { IWstEth } from "../../external/lido/IWstEth.sol";
+import { IStEth } from "../../external/lido/IStEth.sol";
+import { IWEth } from "../../external/IWEth.sol";
 
 /**
  * @title WstEthPlugin
