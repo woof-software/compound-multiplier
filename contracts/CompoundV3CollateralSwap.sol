@@ -79,7 +79,7 @@ contract CompoundV3CollateralSwap is AllowBySig, ICompoundV3CollateralSwap {
 
     /**
      * @notice Constructor
-     * @param plugins_ Array of plugin structs
+     * @param plugins_ Array of flash loan plugins structs
      * @param swapRouter_ Address of the swap router
      * @param swapPlugin_ Address of the swap plugin
      * @dev Emits PluginRegistered event for each registered plugin
