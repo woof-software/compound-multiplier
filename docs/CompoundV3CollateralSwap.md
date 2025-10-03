@@ -114,7 +114,7 @@ _Emits PluginRegistered event for each registered plugin_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| plugins_ | struct ICompoundV3CollateralSwap.Plugin[] | Array of plugin structs |
+| plugins_ | struct ICompoundV3CollateralSwap.Plugin[] | Array of flash loan plugins structs |
 | swapRouter_ | address | Address of the swap router |
 | swapPlugin_ | address | Address of the swap plugin |
 
