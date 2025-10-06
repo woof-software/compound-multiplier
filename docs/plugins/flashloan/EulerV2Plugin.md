@@ -25,7 +25,7 @@ Storage slot for transient flash loan ID validation
 ### takeFlashLoan
 
 ```solidity
-function takeFlashLoan(struct ICometFlashLoanPlugin.CallbackData data, bytes) public payable
+function takeFlashLoan(struct ICometFlashLoanPlugin.CallbackData data, bytes) external payable
 ```
 
 Initiates a flash loan

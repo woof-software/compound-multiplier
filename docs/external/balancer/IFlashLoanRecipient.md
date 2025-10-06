@@ -14,5 +14,5 @@ At the time of the call, the Vault will have transferred `amounts` for `tokens` 
 call returns, the recipient must have transferred `amounts` plus `feeAmounts` for each token back to the
 Vault, or else the entire flash loan will revert.
 
-`userData` is the same value passed in the `IVault.flashLoan` call._
+`userData` is the same value passed in the `IEVault.flashLoan` call._
 
