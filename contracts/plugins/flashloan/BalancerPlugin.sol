@@ -3,6 +3,7 @@ pragma solidity 0.8.30;
 
 import { IBalancerVault, IERC20, IFlashLoanRecipient } from "contracts/external/balancer/IBalancerVault.sol";
 import { ICometFlashLoanPlugin } from "contracts/interfaces/ICometFlashLoanPlugin.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
  * @title Balancer Flash Loan Plugin
@@ -13,6 +14,7 @@ import { ICometFlashLoanPlugin } from "contracts/interfaces/ICometFlashLoanPlugi
  * processed. It is designed to be used as part of a larger system that supports composable flash loan plugins.
  */
 contract BalancerPlugin is IFlashLoanRecipient, ICometFlashLoanPlugin {
+    using SafeERC20 for IERC20;
     /// @inheritdoc ICometFlashLoanPlugin
     bytes4 public constant CALLBACK_SELECTOR = BalancerPlugin.receiveFlashLoan.selector;
     /// @inheritdoc ICometFlashLoanPlugin
@@ -68,6 +70,6 @@ contract BalancerPlugin is IFlashLoanRecipient, ICometFlashLoanPlugin {
 
     /// @inheritdoc ICometFlashLoanPlugin
     function repayFlashLoan(address flp, address asset, uint256 amount) external {
-        IERC20(asset).transfer(flp, amount);
+        IERC20(asset).safeTransfer(flp, amount);
     }
 }

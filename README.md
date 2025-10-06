@@ -1,10 +1,14 @@
 # Comet Multiplier Adapter
 
-A modular smart contract system for creating leveraged positions on Compound v3 (Comet) markets using flash loans and DEX aggregators.
+A modular smart contract system for creating leveraged positions and swapping collateral on Compound v3 (Comet) markets using flash loans and DEX aggregators.
 
 ## Overview
 
-The Comet Multiplier Adapter enables users to create leveraged collateral positions in a single transaction by:
+The system provides two core functionalities:
+
+### 1. Leveraged Position Management (CometMultiplierAdapter)
+
+Create and manage leveraged collateral positions in a single transaction by:
 
 1. Taking a flash loan from lending protocols (Morpho, Euler, UniswapV3)
 2. Swapping borrowed base assets to collateral via DEX aggregators (LiFi, 1inch)
@@ -12,6 +16,10 @@ The Comet Multiplier Adapter enables users to create leveraged collateral positi
 4. Repaying the flash loan
 
 This creates a leveraged position without requiring multiple manual transactions.
+
+### 2. Collateral Swapping (CometCollateralSwap)
+
+Swap one collateral asset for another within existing Compound V3 positions using flash loans. The contract maintains the user's debt position while changing collateral composition, enabling portfolio rebalancing without closing positions.
 
 ## Architecture
 
@@ -30,6 +38,51 @@ CometMultiplierAdapter & CometCollateralSwap
     ├── LiFiPlugin - LiFi cross-chain swaps
     ├── OneInchV6SwapPlugin - 1inch v6 aggregator
     └── WstEthPlugin - wstETH wrapping/unwrapping
+```
+
+## How It Works
+
+### Leverage Creation Flow
+
+The `CometMultiplierAdapter` contract creates leveraged positions using flash loans:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                  LEVERAGE CREATION FLOW (2x WETH Position)                  │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+1. USER INITIATES LEVERAGE
+   User ──► CometMultiplierAdapter.executeMultiplier(1 WETH, 2x leverage)
+   ✅ User deposits: 1 WETH
+
+2. FLASH LOAN REQUEST
+   CometMultiplierAdapter ──► FlashLoanPlugin.takeFlashLoan(2500 USDC)
+   FlashLoanPlugin ──► Morpho/Euler/Uniswap.flashLoan(2500 USDC)
+
+3. FLASH LOAN CALLBACK
+   Morpho/Euler/Uniswap ──► CometMultiplierAdapter.fallback()
+   ✅ Contract Balance: 1 WETH + 2500 USDC
+
+4. SWAP BORROWED ASSET
+   CometMultiplierAdapter ──► SwapPlugin.executeSwap(2500 USDC → WETH)
+   SwapPlugin ──► 1inch/LiFi.swap(2500 USDC → 1 WETH)
+   ✅ Contract Balance: 2 WETH total
+
+5. SUPPLY COLLATERAL TO USER
+   CometMultiplierAdapter ──► Comet.supplyTo(user, 2 WETH)
+   ✅ User's WETH collateral: 2 WETH
+
+6. BORROW AGAINST COLLATERAL
+   CometMultiplierAdapter ──► Comet.withdrawFrom(user, 2500 USDC)
+   ✅ User's debt: 2500 USDC
+   ✅ Contract Balance: 2500 USDC
+
+7. REPAY FLASH LOAN
+   CometMultiplierAdapter ──► FlashLoanPlugin.repayFlashLoan(2505 USDC)
+   FlashLoanPlugin ──► Morpho/Euler/Uniswap.repay(2500 + 5 fee)
+   ✅ Contract Balance: 0
+
+RESULT: User has 2x leveraged WETH position (2 WETH collateral, 2500 USDC debt)
 ```
 
 ### Collateral Swap Flow
@@ -80,7 +133,20 @@ The `CometCollateralSwap` contract enables users to swap collateral in their Com
 RESULT: User's collateral successfully swapped from WETH to USDC in Comet
 ```
 
-### Token Flow Breakdown
+### Leverage Token Flow Breakdown
+
+| Stage                 | Contract Balance      | User Position                        | Action                           | External Call                    |
+| --------------------- | --------------------- | ------------------------------------ | -------------------------------- | -------------------------------- |
+| **Initial**           | 1 WETH                | 0 collateral<br/>0 debt              | User calls `executeMultiplier()` | User transfers 1 WETH            |
+| **Flash Loan**        | 1 WETH<br/>+2500 USDC | 0 collateral<br/>0 debt              | Flash loan received              | `FlashProvider.flashLoan()`      |
+| **Swap**              | ~2 WETH               | 0 collateral<br/>0 debt              | Swap borrowed USDC to WETH       | `DEX.swap(USDC → WETH)`          |
+| **Supply Collateral** | 0                     | 2 WETH collateral<br/>0 debt         | Supply total collateral          | `Comet.supplyTo(user, 2 WETH)`   |
+| **Borrow**            | +2500 USDC            | 2 WETH collateral<br/>2500 USDC debt | Borrow against collateral        | `Comet.withdrawFrom(user, USDC)` |
+| **Repay**             | 0                     | 2 WETH collateral<br/>2500 USDC debt | Repay flash loan + fee           | `FlashProvider.repay(2505 USDC)` |
+
+**Result**: User invested 1 WETH, now has 2 WETH collateral (2x leverage). Profit amplifies 2x on WETH price increases.
+
+### Collateral Swap Token Flow Breakdown
 
 | Stage           | Contract Balance         | Action                        | External Call                    |
 | --------------- | ------------------------ | ----------------------------- | -------------------------------- |
@@ -92,22 +158,34 @@ RESULT: User's collateral successfully swapped from WETH to USDC in Comet
 | **Supply Dust** | ~1005 USDC               | Supply excess back to user    | `Comet.supplyTo(user, dust)`     |
 | **Repay**       | 0                        | Repay flash loan + fee        | `FlashProvider.repay(1005 USDC)` |
 
-### Key Features
+## Key Features
 
+- **Leveraged Position Creation**: Open leveraged positions in a single atomic transaction
+- **Atomic Collateral Swaps**: Swap collateral assets in a single transaction
 - **Health Factor Protection**: Validates position remains safe before execution
 - **Multi-Protocol Support**: Works with AAVE, Balancer, Uniswap V3, Morpho, Euler
 - **Optimal Routing**: Uses 1inch and LiFi for best swap execution
+- **Signature-Based Authorization**: Support for gasless approvals via EIP-712
+- **Plugin Architecture**: Modular design for extensibility and upgradability
+- **Native ETH Support**: Direct ETH deposits with automatic WETH wrapping
 - **Gas Efficiency**: Delegate calls and transient storage minimize gas costs
 - **Dust Management**: Automatically supplies leftover tokens back to user's position
 
 ## Modules
 
-### Core Contract
+### Core Contracts
 
-**CometMultiplierAdapter** - Main contract that orchestrates flash loans, swaps, and Comet interactions
+**CometMultiplierAdapter** - Main contract that orchestrates flash loans, swaps, and Comet interactions for leveraged positions
 
 - `executeMultiplier()` - Create leveraged position
+- `executeMultiplierBySig()` - Create leveraged position with signature
 - `withdrawMultiplier()` - Reduce or close leveraged position
+- `withdrawMultiplierBySig()` - Reduce leveraged position with signature
+
+**CometCollateralSwap** - Contract for swapping collateral within existing positions
+
+- `swap()` - Execute collateral swap
+- `swapWithApprove()` - Execute swap with signature-based authorization
 
 ### Loan Plugins
 
@@ -122,6 +200,18 @@ RESULT: User's collateral successfully swapped from WETH to USDC in Comet
 - Vault-specific liquidity
 - Competitive fees
 - Per-vault flash loan support
+
+**AAVEPlugin** - Flash loans from AAVE V3
+
+- Wide asset support
+- High liquidity
+- Competitive fees
+
+**BalancerPlugin** - Flash loans from Balancer Vault
+
+- No fees on flash loans
+- High liquidity for major tokens
+- Single transaction execution
 
 **UniswapV3Plugin** - Flash swaps from Uniswap V3 pools
 
@@ -151,7 +241,7 @@ RESULT: User's collateral successfully swapped from WETH to USDC in Comet
 
 ## Supported Networks
 
-- **Mainnet** - Full plugin support (Morpho, Euler, UniV3, LiFi, 1inch, wstETH)
+- **Mainnet** - Full plugin support (Morpho, Euler, UniV3, AAVE, Balancer, LiFi, 1inch, wstETH)
 
 ## Installation
 
@@ -173,6 +263,8 @@ export const deployConfig: Record<string, DeployConfig> = {
       loanPlugins: {
         morpho: "0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb",
         euler: "0x797DD80692c3b2dAdabCe8e30C07fDE5307D48a9",
+        aave: "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2",
+        balancer: "0xBA12222222228d8Ba445958a75a0704d566BF2C8",
         uniswapV3: "0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640",
       },
       swapPlugins: {
@@ -181,35 +273,11 @@ export const deployConfig: Record<string, DeployConfig> = {
         wsteth: "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0",
       },
     },
-    markets: [
-      {
-        comet: "0xc3d688B66703497DAA19211EEdff47f25384cdc3",
-        baseToken: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
-        baseSymbol: "USDC",
-        collaterals: [
-          {
-            address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
-            symbol: "WETH",
-          },
-          // ...
-        ],
-      },
-    ],
   },
 };
 ```
 
-## Documentation
-
-This project includes detailed documentation for its core components:
-
-- **[CometCollateralSwap](./documentation/CometCollateralSwap.md)** - Comprehensive documentation for the main collateral swap contract, including architecture, usage patterns, and integration examples.
-
-- **[Flash Loan Plugins](./documentation/plugins/FlashPlugins.md)** - Complete guide to the modular flash loan plugin system, covering the unified interface, validation mechanisms, and available protocol integrations (AAVE, Balancer, Uniswap V3, Euler V2, Morpho, etc.).
-
-- **[Swap Plugins](./documentation/plugins/SwapPlugins.md)** - Detailed documentation for the modular swap plugin system, including the unified interface, validation logic, and integrations with DEX protocols and aggregators (1inch V6, LiFi, cross-chain swaps).
-
-## Some unsorted notes
+## Deployment
 
 Deploy to any configured network:
 
@@ -218,6 +286,147 @@ npx hardhat run scripts/deploy/deploy.main.ts --network mainnet
 ```
 
 Deployment addresses are saved to `deployments/{network}.json`
+
+### Deployment Structure
+
+After successful deployment, `deployments/{network}.json` contains addresses for all contracts:
+
+```json
+{
+  "loanPlugins": {
+    "morpho": { "endpoint": "0x...", "flp": "0x..." },
+    "euler": { "endpoint": "0x...", "flp": "0x..." },
+    "aave": { "endpoint": "0x...", "flp": "0x..." },
+    "balancer": { "endpoint": "0x...", "flp": "0x..." },
+    "uniswapV3": { "endpoint": "0x...", "flp": "0x..." }
+  },
+  "swapPlugins": {
+    "lifi": { "endpoint": "0x...", "router": "0x..." },
+    "oneInch": { "endpoint": "0x...", "router": "0x..." },
+    "wsteth": { "endpoint": "0x...", "router": "0x..." }
+  },
+  "CometMultiplierAdapter": "0x...",
+  "CometCollateralSwap": "0x..."
+}
+```
+
+## Usage Examples
+
+### Create 2x Leveraged Position with ETH
+
+```solidity
+// Authorize contract
+IComet(cometUSDC).allow(adapterAddress, true);
+
+// Prepare options
+CometMultiplierAdapter.Options memory opts = CometMultiplierAdapter.Options({
+    market: cometUSDC,
+    loanSelector: morphoPlugin.CALLBACK_SELECTOR(),
+    swapSelector: lifiPlugin.CALLBACK_SELECTOR(),
+    flp: morphoBlueAddress
+});
+
+// Execute with native ETH (automatically wraps to WETH)
+adapter.executeMultiplier{value: 1 ether}(
+    opts,
+    wethAddress,
+    0,              // Ignored when sending ETH
+    20000,          // 2x leverage
+    lifiSwapData,
+    1.95 ether      // Min output from swap
+);
+```
+
+### Create 3x Leveraged Position with Signature
+
+```solidity
+// Create EIP-712 signature off-chain
+AllowBySig.AllowParams memory allowParams = AllowBySig.AllowParams({
+    owner: userAddress,
+    manager: adapterAddress,
+    isAllowed: true,
+    nonce: IComet(cometUSDC).userNonce(userAddress),
+    expiry: block.timestamp + 3600,
+    v: signature.v,
+    r: signature.r,
+    s: signature.s
+});
+
+// Execute without prior approval transaction
+adapter.executeMultiplierBySig(
+    opts,
+    wethAddress,
+    2 ether,
+    30000,          // 3x leverage
+    lifiSwapData,
+    5.85 ether,
+    allowParams
+);
+```
+
+### Reduce Leveraged Position
+
+```solidity
+// Reduce or close position
+adapter.withdrawMultiplier(
+    opts,
+    wethAddress,
+    type(uint256).max,  // Withdraw all collateral
+    lifiSwapData,
+    minAmountOut
+);
+```
+
+### Swap Collateral in Existing Position
+
+```solidity
+// Authorize contract
+IComet(comet).allow(swapContractAddress, true);
+
+// Swap WETH to USDC collateral
+CometCollateralSwap.SwapParams memory params = CometCollateralSwap.SwapParams({
+    comet: cometAddress,
+    callbackSelector: aavePlugin.CALLBACK_SELECTOR(),
+    fromAsset: wethAddress,
+    fromAmount: 1 ether,
+    toAsset: usdcAddress,
+    swapCalldata: lifiSwapData,
+    minAmountOut: 2500 * 1e6,           // 2500 USDC minimum
+    maxHealthFactorDropBps: 500         // 5% max health factor drop
+});
+
+swapContract.swap(params);
+```
+
+### Swap Collateral with Signature
+
+```solidity
+// Create EIP-712 signature for authorization
+AllowBySig.AllowParams memory allowParams = AllowBySig.AllowParams({
+    owner: msg.sender,
+    manager: address(swapContract),
+    isAllowed: true,
+    nonce: comet.userNonce(msg.sender),
+    expiry: block.timestamp + 3600, // 1 hour
+    v: signature.v,
+    r: signature.r,
+    s: signature.s
+});
+
+swapContract.swapWithApprove(params, allowParams);
+```
+
+## Documentation
+
+This project includes detailed documentation for its core components:
+
+- **[CometMultiplierAdapter](./documentation/CometMultiplierAdapter.md)** - Comprehensive documentation for leveraged position management, including architecture, usage patterns, and integration examples.
+
+- **[CometCollateralSwap](./documentation/CometCollateralSwap.md)** - Complete guide to the collateral swap contract, covering swap mechanics, health factor validation, and safety mechanisms.
+
+- **[Flash Loan Plugins](./documentation/plugins/Flash.md)** - Complete guide to the modular flash loan plugin system, covering the unified interface, validation mechanisms, and available protocol integrations (AAVE, Balancer, Uniswap V3, Euler V2, Morpho, etc.).
+
+- **[Swap Plugins](./documentation/plugins/Swap.md)** - Detailed documentation for the modular swap plugin system, including the unified interface, validation logic, and integrations with DEX protocols and aggregators (1inch V6, LiFi, cross-chain swaps).
 
 ## Testing
 

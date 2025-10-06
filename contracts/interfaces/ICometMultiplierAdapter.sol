@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.30;
+pragma solidity =0.8.30;
 
 import { IAllowBySig } from "./IAllowBySig.sol";
 import { IComet } from "../external/compound/IComet.sol";

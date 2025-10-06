@@ -12,6 +12,8 @@
         "coverageh": "pnpm coverage h",
         "coveragef": "pnpm coverage f",
         "coveragef:sum": "pnpm coverage f sum",
+        "deploy:adapter": "hardhat run scripts/deploy/deploy.adapter.ts --network mainnet",
+        "deploy:cswap": "hardhat run scripts/deploy/deploy.cswap.ts --network mainnet",
         "slither": "pnpm clean:build && slither .",
         "test": "pnpm testh && pnpm testf",
         "lint": "pnpm lint:ts && pnpm lint:sol",
@@ -46,8 +48,7 @@
         "preinstall": "node ./scripts/project-config/setup/preinstall.js",
         "postinstall": "node ./scripts/project-config/setup/postinstall.js",
         "prepare": "husky",
-        "aderyn": "npx aderyn --src contracts/ -o ADERYN_REPORT.md",
-        "deploy:mainnet": "hardhat run scripts/deploy/deploy.main.ts --network mainnet"
+        "aderyn": "aderyn --src contracts/ -o ADERYN_REPORT.md"
     },
     "files": [
         "/contracts/**/*.sol",

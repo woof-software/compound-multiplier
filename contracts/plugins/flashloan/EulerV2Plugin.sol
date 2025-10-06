@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.30;
+pragma solidity =0.8.30;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IEVault } from "../../external/euler/IEVault.sol";
 import { ICometFlashLoanPlugin } from "../../interfaces/ICometFlashLoanPlugin.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
  * @title EulerV2Plugin
@@ -12,6 +13,7 @@ import { ICometFlashLoanPlugin } from "../../interfaces/ICometFlashLoanPlugin.so
  * @dev Implements ICometFlashLoanPlugin interface to provide standardized flash loan functionality
  */
 contract EulerV2Plugin is ICometFlashLoanPlugin {
+    using SafeERC20 for IERC20;
     /// @notice Callback function selector for Euler V2 flash loans
     bytes4 public constant CALLBACK_SELECTOR = 0xc4850ea8;
 
@@ -21,7 +23,7 @@ contract EulerV2Plugin is ICometFlashLoanPlugin {
     /**
      * @inheritdoc ICometFlashLoanPlugin
      */
-    function takeFlashLoan(CallbackData memory data, bytes memory) public payable {
+    function takeFlashLoan(CallbackData memory data, bytes memory) external payable {
         bytes memory _data = abi.encode(data);
         bytes32 flid = keccak256(_data);
         bytes32 slot = SLOT_PLUGIN;
@@ -35,7 +37,7 @@ contract EulerV2Plugin is ICometFlashLoanPlugin {
      * @inheritdoc ICometFlashLoanPlugin
      */
     function repayFlashLoan(address flp, address baseAsset, uint256 amount) external {
-        IERC20(baseAsset).transfer(flp, amount);
+        IERC20(baseAsset).safeTransfer(flp, amount);
     }
 
     /**

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.30;
+pragma solidity =0.8.30;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -57,7 +57,7 @@ contract WstEthPlugin is ICometSwapPlugin {
         IWEth(wEth).withdraw(amountIn);
         uint256 stAmount = IStEth(stEth).submit{ value: amountIn }(address(this));
         IERC20(stEth).approve(wstEth, stAmount);
-        IWstEth(wstEth).wrap(stAmount);
+        require(IWstEth(wstEth).wrap(stAmount) > 0, InvalidAmountOut());
         amountOut = IERC20(wstEth).balanceOf(address(this)) - initial;
         require(amountOut >= minAmountOut, InvalidAmountOut());
         emit SwapExecuted(wstEth, wEth, wstEth, amountOut);

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.30;
+pragma solidity =0.8.30;
 
 import { AggregatorV3Interface } from "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -91,6 +91,11 @@ contract CometMultiplierAdapter is ReentrancyGuard, AllowBySig, ICometMultiplier
             _withdraw(data, endpoint);
         } else {
             revert InvalidMode();
+        }
+
+        assembly {
+            mstore(0x00, 1)
+            return(0x00, 0x20)
         }
     }
 
@@ -299,13 +304,11 @@ contract CometMultiplierAdapter is ReentrancyGuard, AllowBySig, ICometMultiplier
         market.withdrawFrom(data.user, address(this), collateral, take);
         uint256 repaymentAmount = data.debt + data.fee;
 
-        _swap(collateral, data.asset, take, minAmountOut, swapSelector, data.swapData);
+        require(_swap(collateral, data.asset, take, minAmountOut, swapSelector, data.swapData) > 0, InvalidAmountOut());
 
         uint256 baseLeft = IERC20(data.asset).balanceOf(address(this));
 
-        if (baseLeft < repaymentAmount) {
-            revert InvalidAmountOut();
-        }
+        require(baseLeft >= repaymentAmount, InvalidAmountOut());
 
         (bool done, ) = endpoint.delegatecall(
             abi.encodeWithSelector(ICometFlashLoanPlugin.repayFlashLoan.selector, data.flp, data.asset, repaymentAmount)

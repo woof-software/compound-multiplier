@@ -1,20 +1,10 @@
-export interface CollateralConfig {
-    address: string;
-    symbol: string;
-}
-
-export interface MarketConfig {
-    comet: string;
-    baseToken: string;
-    baseSymbol: string;
-    collaterals: CollateralConfig[];
-}
-
 export interface PluginConfig {
     loanPlugins: {
         morpho?: string;
         euler?: string;
         uniswapV3?: string;
+        aave?: string;
+        balancer?: string;
     };
     swapPlugins: {
         lifi: string;
@@ -35,7 +25,9 @@ export const deployConfig: Record<string, DeployConfig> = {
             loanPlugins: {
                 morpho: "0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb",
                 euler: "0x797DD80692c3b2dAdabCe8e30C07fDE5307D48a9",
-                uniswapV3: "0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640"
+                uniswapV3: "0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640",
+                aave: "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2",
+                balancer: "0xBA12222222228d8Ba445958a75a0704d566BF2C8"
             },
             swapPlugins: {
                 lifi: "0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE",
