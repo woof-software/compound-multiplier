@@ -298,7 +298,7 @@ contract CometMultiplierAdapter is ReentrancyGuard, ICometMultiplierAdapter, IAl
 
         _catch(done);
 
-        emit Executed(data.user, market, collateral, totalAmount, data.debt);
+        emit Executed(data.user, address(market), collateral, totalAmount, data.debt);
     }
 
     /**
@@ -340,7 +340,7 @@ contract CometMultiplierAdapter is ReentrancyGuard, ICometMultiplierAdapter, IAl
         uint256 collateralLeft = IERC20(collateral).balanceOf(address(this));
         if (collateralLeft > 0) IERC20(collateral).safeTransfer(data.user, collateralLeft);
 
-        emit Withdrawn(data.user, market, collateral, take, baseLeft);
+        emit Withdrawn(data.user, address(market), collateral, take, baseLeft);
     }
 
     /**

@@ -2,7 +2,6 @@
 pragma solidity =0.8.30;
 
 import { IAllowBySig } from "./IAllowBySig.sol";
-import { IComet } from "../external/compound/IComet.sol";
 
 interface ICometMultiplierAdapter {
     error UnsupportedPriceFeed();
@@ -40,14 +39,14 @@ interface ICometMultiplierAdapter {
     event PluginAdded(address indexed plugin, bytes4 pluginSelector);
     event Executed(
         address indexed user,
-        IComet indexed market,
+        address indexed market,
         address indexed collateral,
         uint256 totalAmount,
         uint256 debtAmount
     );
     event Withdrawn(
         address indexed user,
-        IComet indexed market,
+        address indexed market,
         address indexed collateral,
         uint256 withdrawnAmount,
         uint256 baseReturned

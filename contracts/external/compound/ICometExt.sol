@@ -25,4 +25,6 @@ interface ICometExt {
     function version() external view returns (string memory);
 
     function name() external view returns (string memory);
+
+    function userNonce(address user) external view returns (uint256);
 }
