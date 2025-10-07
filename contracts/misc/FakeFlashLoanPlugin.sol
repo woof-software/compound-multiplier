@@ -3,10 +3,6 @@ pragma solidity =0.8.30;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import { IEulerDToken } from "../external/euler/IEulerDToken.sol";
-import { IEulerMarkets } from "../external/euler/IEulerMarkets.sol";
-import { IEVault } from "../external/euler/IEVault.sol";
-
 import { IComet } from "../external/compound/IComet.sol";
 import { ICometFlashLoanPlugin } from "../interfaces/ICometFlashLoanPlugin.sol";
 

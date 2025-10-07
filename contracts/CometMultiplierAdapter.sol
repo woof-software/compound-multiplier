@@ -10,7 +10,6 @@ import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.s
 import { IWEth } from "./external/weth/IWEth.sol";
 
 import { IComet } from "./external/compound/IComet.sol";
-import { ICometExt } from "./external/compound/ICometExt.sol";
 import { ICometMultiplierAdapter } from "./interfaces/ICometMultiplierAdapter.sol";
 import { ICometSwapPlugin } from "./interfaces/ICometSwapPlugin.sol";
 import { ICometFlashLoanPlugin } from "./interfaces/ICometFlashLoanPlugin.sol";
@@ -132,7 +131,7 @@ contract CometMultiplierAdapter is ReentrancyGuard, ICometMultiplierAdapter, IAl
         uint256 minAmountOut,
         AllowParams calldata allowParams
     ) external payable nonReentrant {
-        ICometExt(opts.market).allowBySig(
+        IComet(opts.market).allowBySig(
             msg.sender,
             address(this),
             true,
@@ -169,7 +168,7 @@ contract CometMultiplierAdapter is ReentrancyGuard, ICometMultiplierAdapter, IAl
         uint256 minAmountOut,
         AllowParams calldata allowParams
     ) external nonReentrant {
-        ICometExt(opts.market).allowBySig(
+        IComet(opts.market).allowBySig(
             msg.sender,
             address(this),
             true,

@@ -3,7 +3,7 @@ pragma solidity =0.8.30;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import { IMorphoBase } from "../../external/morpho/IMorpho.sol";
+import { IMorpho } from "../../external/morpho/IMorpho.sol";
 import { ICometFlashLoanPlugin } from "../../interfaces/ICometFlashLoanPlugin.sol";
 
 /**
@@ -31,7 +31,7 @@ contract MorphoPlugin is ICometFlashLoanPlugin {
         assembly {
             tstore(slot, flid)
         }
-        IMorphoBase(data.flp).flashLoan(data.asset, data.debt, _data);
+        IMorpho(data.flp).flashLoan(data.asset, data.debt, _data);
     }
 
     /**

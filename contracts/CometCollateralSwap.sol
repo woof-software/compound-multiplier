@@ -6,7 +6,6 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import { IComet } from "./external/compound/IComet.sol";
-import { ICometExt } from "./external/compound/ICometExt.sol";
 import { ICometFlashLoanPlugin } from "./interfaces/ICometFlashLoanPlugin.sol";
 import { ICometCollateralSwap } from "./interfaces/ICometCollateralSwap.sol";
 import { ICometSwapPlugin } from "./interfaces/ICometSwapPlugin.sol";
@@ -196,7 +195,7 @@ contract CometCollateralSwap is ICometCollateralSwap, IAllowBySig {
 
     /// @inheritdoc ICometCollateralSwap
     function swapWithPermit(SwapParams calldata swapParams, AllowParams calldata allowParams) external {
-        ICometExt(swapParams.comet).allowBySig(
+        IComet(swapParams.comet).allowBySig(
             msg.sender,
             address(this),
             true,
