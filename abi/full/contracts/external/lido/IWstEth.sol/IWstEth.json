@@ -1,5 +1,0 @@
-[
-    "function stEthPerToken() view returns (uint256)",
-    "function unwrap(uint256 _wstEthAmount) returns (uint256)",
-    "function wrap(uint256 _stEthAmount) returns (uint256)"
-]

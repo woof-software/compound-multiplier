@@ -1,4 +1,0 @@
-[
-    "function checkLiquidation(address,address,address) view returns (uint256, uint256)",
-    "function liquidate(address,address,uint256,uint256)"
-]

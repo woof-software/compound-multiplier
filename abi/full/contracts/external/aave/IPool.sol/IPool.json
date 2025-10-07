@@ -1,3 +1,0 @@
-[
-    "function flashLoanSimple(address receiverAddress, address asset, uint256 amount, bytes params, uint16 referralCode)"
-]

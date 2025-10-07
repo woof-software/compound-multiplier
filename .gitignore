@@ -46,3 +46,17 @@ contracts-exposed/
 
 # The project settings for IntelliJ IDE.
 /.idea/
+
+# Abi
+/abi/full/@openzeppelin/
+/abi/full/contracts/base/
+/abi/full/contracts/external/
+/abi/full/contracts/misc/
+/abi/json/@openzeppelin/
+/abi/json/contracts/base/
+/abi/json/contracts/external/
+/abi/json/contracts/misc/
+/abi/minimal/@openzeppelin/
+/abi/minimal/contracts/base/
+/abi/minimal/contracts/external/
+/abi/minimal/contracts/misc/
