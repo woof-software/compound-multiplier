@@ -65,24 +65,70 @@ The `CometMultiplierAdapter` contract creates leveraged positions using flash lo
 
 4. SWAP BORROWED ASSET
    CometMultiplierAdapter ──► SwapPlugin.executeSwap(2500 USDC → WETH)
-   SwapPlugin ──► 1inch/LiFi.swap(2500 USDC → 1 WETH)
-   ✅ Contract Balance: 2 WETH total
+   SwapPlugin ──► 1inch/LiFi.swap(2500 USDC → 0.996 WETH)
+   ✅ Contract Balance: 1.996 WETH total
 
 5. SUPPLY COLLATERAL TO USER
-   CometMultiplierAdapter ──► Comet.supplyTo(user, 2 WETH)
-   ✅ User's WETH collateral: 2 WETH
+   CometMultiplierAdapter ──► Comet.supplyTo(user, 1.996 WETH)
+   ✅ User's WETH collateral: 1.996 WETH
 
 6. BORROW AGAINST COLLATERAL
-   CometMultiplierAdapter ──► Comet.withdrawFrom(user, 2500 USDC)
-   ✅ User's debt: 2500 USDC
-   ✅ Contract Balance: 2500 USDC
+   CometMultiplierAdapter ──► Comet.withdrawFrom(user, 2507.5 USDC)
+   ✅ User's debt: 2507.5 USDC (includes flash loan fee)
+   ✅ Contract Balance: 2507.5 USDC
 
 7. REPAY FLASH LOAN
-   CometMultiplierAdapter ──► FlashLoanPlugin.repayFlashLoan(2505 USDC)
-   FlashLoanPlugin ──► Morpho/Euler/Uniswap.repay(2500 + 5 fee)
+   CometMultiplierAdapter ──► FlashLoanPlugin.repayFlashLoan(2507.5 USDC)
+   FlashLoanPlugin ──► Morpho/Euler/Uniswap.repay(2500 + 7.5 fee)
    ✅ Contract Balance: 0
 
-RESULT: User has 2x leveraged WETH position (2 WETH collateral, 2500 USDC debt)
+RESULT: User has 2x leveraged WETH position (1.996 WETH collateral, 2507.5 USDC debt)
+```
+
+### Leverage Reduction Flow
+
+The `CometMultiplierAdapter` contract can also reduce or close leveraged positions:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│              LEVERAGE REDUCTION FLOW (2x → 1x WETH Position)                │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+1. USER INITIATES DELEVERAGE
+   User ──► CometMultiplierAdapter.withdrawMultiplier(1 WETH withdraw)
+   Current position: 2 WETH collateral, 2500 USDC debt
+
+2. FLASH LOAN REQUEST
+   CometMultiplierAdapter ──► FlashLoanPlugin.takeFlashLoan(2507.5 USDC)
+   FlashLoanPlugin ──► Morpho/Euler/Uniswap.flashLoan(2507.5 USDC)
+
+3. FLASH LOAN CALLBACK
+   Morpho/Euler/Uniswap ──► CometMultiplierAdapter.fallback()
+   ✅ Contract Balance: 2507.5 USDC
+
+4. REPAY USER'S DEBT
+   CometMultiplierAdapter ──► Comet.supplyTo(user, 2507.5 USDC)
+   ✅ User's debt: 0 USDC (paid off)
+
+5. WITHDRAW COLLATERAL
+   CometMultiplierAdapter ──► Comet.withdrawFrom(user, 1 WETH)
+   ✅ Contract Balance: 1 WETH
+
+6. SWAP COLLATERAL TO BASE
+   CometMultiplierAdapter ──► SwapPlugin.executeSwap(1 WETH → USDC)
+   SwapPlugin ──► 1inch/LiFi.swap(1 WETH → 2490 USDC)
+   ✅ Contract Balance: 2490 USDC
+
+7. REPAY FLASH LOAN
+   CometMultiplierAdapter ──► FlashLoanPlugin.repayFlashLoan(2515 USDC)
+   FlashLoanPlugin ──► Morpho/Euler/Uniswap.repay(2507.5 + 7.5 fee)
+   ✅ Contract Balance: -25 USDC (covered by remaining collateral value)
+
+8. RETURN REMAINDER TO USER
+   CometMultiplierAdapter ──► Transfer remaining tokens to user
+   ✅ User receives any excess USDC from position closure
+
+RESULT: User deleveraged from 2x to 1x. Remaining 0.996 WETH collateral + no debt
 ```
 
 ### Collateral Swap Flow
@@ -145,6 +191,20 @@ RESULT: User's collateral successfully swapped from WETH to USDC in Comet
 | **Repay**             | 0                     | 2 WETH collateral<br/>2500 USDC debt | Repay flash loan + fee           | `FlashProvider.repay(2505 USDC)` |
 
 **Result**: User invested 1 WETH, now has 2 WETH collateral (2x leverage). Profit amplifies 2x on WETH price increases.
+
+### Leverage Reduction Token Flow Breakdown
+
+| Stage           | Contract Balance | User Position                        | Action                            | External Call                    |
+| --------------- | ---------------- | ------------------------------------ | --------------------------------- | -------------------------------- |
+| **Initial**     | 0                | 2 WETH collateral<br/>2500 USDC debt | User calls `withdrawMultiplier()` | -                                |
+| **Flash Loan**  | +2500 USDC       | 2 WETH collateral<br/>2500 USDC debt | Flash loan received               | `FlashProvider.flashLoan()`      |
+| **Repay Debt**  | 0                | 2 WETH collateral<br/>0 debt         | Repay user's debt                 | `Comet.supplyTo(user, USDC)`     |
+| **Withdraw**    | +1 WETH          | 1 WETH collateral<br/>0 debt         | Withdraw collateral               | `Comet.withdrawFrom(user, WETH)` |
+| **Swap**        | ~2500 USDC       | 1 WETH collateral<br/>0 debt         | Swap WETH to USDC                 | `DEX.swap(WETH → USDC)`          |
+| **Repay Flash** | ~0               | 1 WETH collateral<br/>0 debt         | Repay flash loan + fee            | `FlashProvider.repay(2505 USDC)` |
+| **Return Dust** | 0                | 1 WETH collateral<br/>0 debt         | Return remainder to user          | Transfer remaining to user       |
+
+**Result**: User deleveraged from 2x to 1x. Started with 2 WETH collateral + debt, ended with 1 WETH collateral + no debt.
 
 ### Collateral Swap Token Flow Breakdown
 
@@ -367,13 +427,59 @@ adapter.executeMultiplierBySig(
 ### Reduce Leveraged Position
 
 ```solidity
-// Reduce or close position
+// Authorize contract if not already done
+IComet(cometUSDC).allow(adapterAddress, true);
+
+// Prepare options
+CometMultiplierAdapter.Options memory opts = CometMultiplierAdapter.Options({
+    market: cometUSDC,
+    loanSelector: morphoPlugin.CALLBACK_SELECTOR(),
+    swapSelector: lifiPlugin.CALLBACK_SELECTOR(),
+    flp: morphoBlueAddress
+});
+
+// Reduce position by 1 WETH (partial deleverage)
+adapter.withdrawMultiplier(
+    opts,
+    wethAddress,
+    1 ether,            // Amount to withdraw
+    lifiSwapData,
+    2450 * 1e6          // Min USDC from swap
+);
+
+// Or close entire position
 adapter.withdrawMultiplier(
     opts,
     wethAddress,
     type(uint256).max,  // Withdraw all collateral
     lifiSwapData,
-    minAmountOut
+    4900 * 1e6          // Min USDC from swap (full position)
+);
+```
+
+### Reduce Leveraged Position with Signature
+
+```solidity
+// Create EIP-712 signature off-chain
+AllowBySig.AllowParams memory allowParams = AllowBySig.AllowParams({
+    owner: userAddress,
+    manager: adapterAddress,
+    isAllowed: true,
+    nonce: IComet(cometUSDC).userNonce(userAddress),
+    expiry: block.timestamp + 3600,
+    v: signature.v,
+    r: signature.r,
+    s: signature.s
+});
+
+// Execute deleverage without prior approval
+adapter.withdrawMultiplierBySig(
+    opts,
+    wethAddress,
+    1 ether,            // Amount to withdraw
+    lifiSwapData,
+    2450 * 1e6,
+    allowParams
 );
 ```
 

@@ -57,7 +57,7 @@ export async function executeWithRetry(operation: Function, maxRetries = 10) {
             return await operation();
         } catch (error) {
             if (i === maxRetries - 1) throw error;
-            await new Promise((resolve) => setTimeout(resolve, 200));
+            await new Promise((resolve) => setTimeout(resolve, 500));
         }
     }
 }

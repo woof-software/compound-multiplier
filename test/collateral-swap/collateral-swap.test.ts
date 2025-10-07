@@ -57,7 +57,8 @@ describe("CometCollateralSwap", function () {
     const BORROW_AMOUNT = exp(0.5, 18);
 
     before(async () => {
-        [alice] = await ethers.getSigners();
+        const signers = await ethers.getSigners();
+        alice = signers[5];
         const { balancerPlugin, aavePlugin } = await getPlugins();
 
         balancerFLP = balancerPlugin.flp;
