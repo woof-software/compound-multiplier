@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity =0.8.30;
 
-import { AllowBySig } from "../base/AllowBySig.sol";
+import { IAllowBySig } from "./IAllowBySig.sol";
 
 /**
  * @title ICometCollateralSwap
@@ -198,5 +198,5 @@ interface ICometCollateralSwap {
      * @custom:security Prevents replay attacks using nonce validation
      * @custom:security Ensures only the signer can use their own signature
      */
-    function swapWithPermit(SwapParams calldata swapParams, AllowBySig.AllowParams calldata allowParams) external;
+    function swapWithPermit(SwapParams calldata swapParams, IAllowBySig.AllowParams calldata allowParams) external;
 }

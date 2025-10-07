@@ -7,14 +7,14 @@ import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.s
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-import { AllowBySig } from "./base/AllowBySig.sol";
-
 import { IWEth } from "./external/weth/IWEth.sol";
 
 import { IComet } from "./external/compound/IComet.sol";
+import { ICometExt } from "./external/compound/ICometExt.sol";
 import { ICometMultiplierAdapter } from "./interfaces/ICometMultiplierAdapter.sol";
 import { ICometSwapPlugin } from "./interfaces/ICometSwapPlugin.sol";
 import { ICometFlashLoanPlugin } from "./interfaces/ICometFlashLoanPlugin.sol";
+import { IAllowBySig } from "./interfaces/IAllowBySig.sol";
 
 /**
  * @title CometMultiplierAdapter
@@ -25,7 +25,7 @@ import { ICometFlashLoanPlugin } from "./interfaces/ICometFlashLoanPlugin.sol";
  * @dev This contract uses a plugin architecture to support different flash loan providers and DEX aggregators.
  *      It leverages transient storage (EIP-1153) for gas-efficient temporary data storage during operations.
  */
-contract CometMultiplierAdapter is ReentrancyGuard, AllowBySig, ICometMultiplierAdapter {
+contract CometMultiplierAdapter is ReentrancyGuard, ICometMultiplierAdapter, IAllowBySig {
     using SafeERC20 for IERC20;
 
     /// @notice Precision constant for leverage calculations (represents 1x leverage)
@@ -132,7 +132,16 @@ contract CometMultiplierAdapter is ReentrancyGuard, AllowBySig, ICometMultiplier
         uint256 minAmountOut,
         AllowParams calldata allowParams
     ) external payable nonReentrant {
-        _allowBySig(allowParams, opts.market);
+        ICometExt(opts.market).allowBySig(
+            msg.sender,
+            address(this),
+            true,
+            allowParams.nonce,
+            allowParams.expiry,
+            allowParams.v,
+            allowParams.r,
+            allowParams.s
+        );
         _executeMultiplier(opts, collateral, collateralAmount, leverage, swapData, minAmountOut);
     }
 
@@ -160,7 +169,16 @@ contract CometMultiplierAdapter is ReentrancyGuard, AllowBySig, ICometMultiplier
         uint256 minAmountOut,
         AllowParams calldata allowParams
     ) external nonReentrant {
-        _allowBySig(allowParams, opts.market);
+        ICometExt(opts.market).allowBySig(
+            msg.sender,
+            address(this),
+            true,
+            allowParams.nonce,
+            allowParams.expiry,
+            allowParams.v,
+            allowParams.r,
+            allowParams.s
+        );
         _withdrawMultiplier(opts, collateral, collateralAmount, swapData, minAmountOut);
     }
 

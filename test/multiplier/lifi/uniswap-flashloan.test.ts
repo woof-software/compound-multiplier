@@ -775,9 +775,6 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
             );
 
             const allowParams = {
-                owner: user3.address,
-                manager: adapterAddress,
-                isAllowed: true,
                 nonce: nonce,
                 expiry: expiry,
                 v: v,
@@ -847,9 +844,6 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
             );
 
             const allowParams = {
-                owner: user3.address,
-                manager: adapterAddress,
-                isAllowed: true,
                 nonce: nonce,
                 expiry: expiry,
                 v: v,

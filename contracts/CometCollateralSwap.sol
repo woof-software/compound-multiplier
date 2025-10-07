@@ -4,12 +4,12 @@ pragma solidity =0.8.30;
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import { AllowBySig } from "./base/AllowBySig.sol";
-
 import { IComet } from "./external/compound/IComet.sol";
+import { ICometExt } from "./external/compound/ICometExt.sol";
 import { ICometFlashLoanPlugin } from "./interfaces/ICometFlashLoanPlugin.sol";
 import { ICometCollateralSwap } from "./interfaces/ICometCollateralSwap.sol";
 import { ICometSwapPlugin } from "./interfaces/ICometSwapPlugin.sol";
+import { IAllowBySig } from "./interfaces/IAllowBySig.sol";
 
 /**
  * @title CometCollateralSwap
@@ -42,7 +42,7 @@ import { ICometSwapPlugin } from "./interfaces/ICometSwapPlugin.sol";
  * @dev Architecture:
  *      - Uses fallback() function as a universal callback handler for flash loan providers
  *      - Employs plugin pattern for extensibility and protocol abstraction
- *      - Integrates with AllowBySig for meta-transaction support
+ *      - Integrates with allowBySig for meta-transaction support
  *      - Optimized for gas efficiency through minimal storage usage
  * @custom:security-considerations
  *      - Users must have sufficient collateral to maintain healthy positions after swaps
@@ -52,7 +52,7 @@ import { ICometSwapPlugin } from "./interfaces/ICometSwapPlugin.sol";
  *      - Plugins are configured exclusively during contract deployment. To add or modify plugins,
  *        redeployment of the contract is required.
  */
-contract CometCollateralSwap is AllowBySig, ICometCollateralSwap {
+contract CometCollateralSwap is ICometCollateralSwap, IAllowBySig {
     /// @dev Offset for the comet contract address
     uint256 private constant COMET_OFFSET = 0x20;
 
@@ -194,7 +194,16 @@ contract CometCollateralSwap is AllowBySig, ICometCollateralSwap {
 
     /// @inheritdoc ICometCollateralSwap
     function swapWithPermit(SwapParams calldata swapParams, AllowParams calldata allowParams) external {
-        _allowBySig(allowParams, swapParams.comet);
+        ICometExt(swapParams.comet).allowBySig(
+            msg.sender,
+            address(this),
+            true,
+            allowParams.nonce,
+            allowParams.expiry,
+            allowParams.v,
+            allowParams.r,
+            allowParams.s
+        );
         _swap(swapParams);
     }
 

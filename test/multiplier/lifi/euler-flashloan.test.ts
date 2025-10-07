@@ -737,9 +737,6 @@ describe("Comet Multiplier Adapter / LiFi / Euler", function () {
             );
 
             const allowParams = {
-                owner: user3.address,
-                manager: adapterAddress,
-                isAllowed: true,
                 nonce: nonce,
                 expiry: expiry,
                 v: v,
@@ -811,9 +808,6 @@ describe("Comet Multiplier Adapter / LiFi / Euler", function () {
             );
 
             const allowParams = {
-                owner: user3.address,
-                manager: adapterAddress,
-                isAllowed: true,
                 nonce: nonce,
                 expiry: expiry,
                 v: v,
@@ -826,8 +820,6 @@ describe("Comet Multiplier Adapter / LiFi / Euler", function () {
             const initialUsdc = await usdc.balanceOf(user3.address);
 
             const market = await getMarketOptions();
-
-            const blockTag = await ethers.provider.getBlockNumber();
 
             const quote = await executeWithRetry(async () => {
                 const q = await getQuote(
@@ -842,9 +834,6 @@ describe("Comet Multiplier Adapter / LiFi / Euler", function () {
             });
             const swapData = quote.swapCalldata;
             const minAmountOut = (BigInt(quote.toAmountMin) * 95n) / 100n;
-
-            const col = await comet.collateralBalanceOf(user3.address, WETH_ADDRESS);
-            const debt = await comet.borrowBalanceOf(user3.address);
 
             await adapter
                 .connect(user3)

@@ -14,7 +14,7 @@ import { ICometFlashLoanPlugin } from "../../interfaces/ICometFlashLoanPlugin.so
  */
 contract MorphoPlugin is ICometFlashLoanPlugin {
     /// @notice Callback function selector for Morpho flash loans
-    bytes4 public constant CALLBACK_SELECTOR = 0x31f57072;
+    bytes4 public constant CALLBACK_SELECTOR = MorphoPlugin.onMorphoFlashLoan.selector;
 
     /// @notice Storage slot for transient flash loan ID validation
     bytes32 public constant SLOT_PLUGIN = bytes32(uint256(keccak256("MorphoPlugin.plugin")) - 1);

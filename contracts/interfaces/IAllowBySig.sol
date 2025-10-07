@@ -25,20 +25,6 @@ interface IAllowBySig {
         uint256 expiry;
         bytes32 r;
         bytes32 s;
-        address owner;
-        bool isAllowed;
-        address manager;
         uint8 v;
     }
-
-    /*//////////////////////////////////////////////////////////////
-                                 ERRORS
-    //////////////////////////////////////////////////////////////*/
-
-    /// @dev Thrown when the manager is invalid
-    error InvalidManager();
-    /// @dev Thrown when the owner is invalid
-    error InvalidOwner();
-    /// @dev Thrown when the allowed type is invalid
-    error InvalidAllowedType();
 }

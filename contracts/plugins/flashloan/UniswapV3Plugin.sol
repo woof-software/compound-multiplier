@@ -16,7 +16,7 @@ import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.s
 contract UniswapV3Plugin is ICometFlashLoanPlugin {
     using SafeERC20 for IERC20;
     /// @notice Callback function selector for Uniswap V3 flash loans
-    bytes4 public constant CALLBACK_SELECTOR = 0xe9cbafb0;
+    bytes4 public constant CALLBACK_SELECTOR = UniswapV3Plugin.uniswapV3FlashCallback.selector;
 
     /// @notice Storage slot for transient flash loan ID validation
     bytes32 public constant SLOT_PLUGIN = bytes32(uint256(keccak256("UniswapV3Plugin.plugin")) - 1);

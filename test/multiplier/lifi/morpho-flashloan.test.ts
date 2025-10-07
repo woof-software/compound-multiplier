@@ -836,9 +836,6 @@ describe("Comet Multiplier Adapter / LiFi / Morpho", function () {
             );
 
             const allowParams = {
-                owner: user3.address,
-                manager: adapterAddress,
-                isAllowed: true,
                 nonce: nonce,
                 expiry: expiry,
                 v: v,
@@ -908,9 +905,6 @@ describe("Comet Multiplier Adapter / LiFi / Morpho", function () {
             );
 
             const allowParams = {
-                owner: user3.address,
-                manager: adapterAddress,
-                isAllowed: true,
                 nonce: nonce,
                 expiry: expiry,
                 v: v,
