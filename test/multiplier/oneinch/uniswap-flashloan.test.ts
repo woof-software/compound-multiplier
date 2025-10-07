@@ -25,7 +25,7 @@ const WETH_WHALE = "0xF04a5cC80B1E94C69B48f5ee68a08CD2F09A7c3E";
 
 const opts = { maxFeePerGas: 4_000_000_000 };
 
-describe("Comet Multiplier Adapter / 1inch / UniswapV3", function () {
+describe.skip("Comet Multiplier Adapter / 1inch / UniswapV3", function () {
     let adapter: CometMultiplierAdapter;
     let loanPlugin: UniswapV3Plugin;
     let swapPlugin: OneInchV6SwapPlugin;

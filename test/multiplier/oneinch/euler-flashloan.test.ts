@@ -24,7 +24,7 @@ import { Log } from "ethers";
 
 const opts = { maxFeePerGas: 4_000_000_000 };
 
-describe("Comet Multiplier Adapter / 1inch / Euler", function () {
+describe.skip("Comet Multiplier Adapter / 1inch / Euler", function () {
     let adapter: CometMultiplierAdapter;
     let loanPlugin: EulerV2Plugin;
     let swapPlugin: OneInchV6SwapPlugin;

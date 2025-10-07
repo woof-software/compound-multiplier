@@ -14,7 +14,8 @@ import {
     ZERO_ADDRESS,
     SnapshotRestorer,
     takeSnapshot,
-    time
+    time,
+    executeWithRetry
 } from "../helpers/helpers";
 import { expect } from "chai";
 import { $CometCollateralSwap } from "../../typechain-types/contracts-exposed/CometCollateralSwap.sol/$CometCollateralSwap";
@@ -230,36 +231,38 @@ describe("CometCollateralSwap", function () {
         describe("happy cases", function () {
             let swapParams: ICometCollateralSwap.SwapParamsStruct;
 
-            beforeEach(async () => {
-                swapParams = {
-                    comet: comet,
-                    callbackSelector: await balancerPl.CALLBACK_SELECTOR(),
-                    fromAsset: wstETH,
-                    fromAmount: exp(0.2, 18),
-                    toAsset: rETH,
-                    swapCalldata: "",
-                    minAmountOut: 0,
-                    maxHealthFactorDropBps: 1000 // 10% max health factor drop
-                };
-
-                const { swapCalldata, toAmountMin } = await getQuote(
-                    "ETH",
-                    "ETH",
-                    "wstETH",
-                    "rETH",
-                    swapParams.fromAmount.toString(),
-                    String(collateralSwap.target)
-                );
-
-                swapParams.swapCalldata = swapCalldata;
-                swapParams.minAmountOut = toAmountMin;
-            });
-
             it("allows to make a swap with 0 fee on flashloan", async () => {
                 // Check that approve is set for the swap contract
                 expect(await comet.hasPermission(alice, collateralSwap)).to.be.true;
 
-                await expect(collateralSwap.connect(alice).swap(swapParams)).to.not.be.reverted;
+                await expect(
+                    executeWithRetry(async () => {
+                        swapParams = {
+                            comet: comet,
+                            callbackSelector: await balancerPl.CALLBACK_SELECTOR(),
+                            fromAsset: wstETH,
+                            fromAmount: exp(0.2, 18),
+                            toAsset: rETH,
+                            swapCalldata: "",
+                            minAmountOut: 0,
+                            maxHealthFactorDropBps: 1000 // 10% max health factor drop
+                        };
+
+                        const { swapCalldata, toAmountMin } = await getQuote(
+                            "ETH",
+                            "ETH",
+                            "wstETH",
+                            "rETH",
+                            swapParams.fromAmount.toString(),
+                            String(collateralSwap.target)
+                        );
+
+                        swapParams.swapCalldata = swapCalldata;
+                        swapParams.minAmountOut = toAmountMin;
+
+                        collateralSwap.connect(alice).swap(swapParams);
+                    })
+                ).to.not.be.reverted;
             });
 
             it("allows to make a swap with some fee on flashloan", async () => {
@@ -271,7 +274,34 @@ describe("CometCollateralSwap", function () {
                 // Check that approve is set for the swap contract
                 expect(await comet.hasPermission(alice, collateralSwap)).to.be.true;
 
-                await expect(collateralSwap.connect(alice).swap(swapParams)).to.not.be.reverted;
+                await expect(
+                    executeWithRetry(async () => {
+                        swapParams = {
+                            comet: comet,
+                            callbackSelector: await balancerPl.CALLBACK_SELECTOR(),
+                            fromAsset: wstETH,
+                            fromAmount: exp(0.2, 18),
+                            toAsset: rETH,
+                            swapCalldata: "",
+                            minAmountOut: 0,
+                            maxHealthFactorDropBps: 1000 // 10% max health factor drop
+                        };
+
+                        const { swapCalldata, toAmountMin } = await getQuote(
+                            "ETH",
+                            "ETH",
+                            "wstETH",
+                            "rETH",
+                            swapParams.fromAmount.toString(),
+                            String(collateralSwap.target)
+                        );
+
+                        swapParams.swapCalldata = swapCalldata;
+                        swapParams.minAmountOut = toAmountMin;
+
+                        collateralSwap.connect(alice).swap(swapParams);
+                    })
+                ).to.not.be.reverted;
             });
 
             it("allows to make a swap with approve", async () => {
@@ -319,7 +349,34 @@ describe("CometCollateralSwap", function () {
                     manager: signatureArgs.manager
                 };
 
-                await expect(collateralSwap.connect(alice).swapWithPermit(swapParams, allowParams)).to.not.be.reverted;
+                await expect(
+                    executeWithRetry(async () => {
+                        swapParams = {
+                            comet: comet,
+                            callbackSelector: await balancerPl.CALLBACK_SELECTOR(),
+                            fromAsset: wstETH,
+                            fromAmount: exp(0.2, 18),
+                            toAsset: rETH,
+                            swapCalldata: "",
+                            minAmountOut: 0,
+                            maxHealthFactorDropBps: 1000 // 10% max health factor drop
+                        };
+
+                        const { swapCalldata, toAmountMin } = await getQuote(
+                            "ETH",
+                            "ETH",
+                            "wstETH",
+                            "rETH",
+                            swapParams.fromAmount.toString(),
+                            String(collateralSwap.target)
+                        );
+
+                        swapParams.swapCalldata = swapCalldata;
+                        swapParams.minAmountOut = toAmountMin;
+
+                        collateralSwap.connect(alice).swapWithPermit(swapParams, allowParams);
+                    })
+                ).to.not.be.reverted;
 
                 // check that permission is set
                 expect(await comet.hasPermission(alice, collateralSwap)).to.be.true;

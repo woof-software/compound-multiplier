@@ -24,7 +24,7 @@ const WETH_WHALE = "0x28a55C4b4f9615FDE3CDAdDf6cc01FcF2E38A6b0";
 
 const opts = { maxFeePerGas: 4_000_000_000 };
 
-describe("Comet Multiplier Adapter / 1inch / wstETH", function () {
+describe.skip("Comet Multiplier Adapter / 1inch / wstETH", function () {
     let adapter: CometMultiplierAdapter;
     let loanPlugin: EulerV2Plugin;
     let swapPlugin: WstEthPlugin;

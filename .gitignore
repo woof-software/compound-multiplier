@@ -1,5 +1,6 @@
 node_modules/
 .env
+.nyc_output/
 
 # Any logging files.
 *.log*

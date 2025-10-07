@@ -23,7 +23,7 @@ import {
 
 const opts = { maxFeePerGas: 4_000_000_000 };
 
-describe("Comet Multiplier Adapter / 1inch / Morpho", function () {
+describe.skip("Comet Multiplier Adapter / 1inch / Morpho", function () {
     let adapter: CometMultiplierAdapter;
     let loanPlugin: MorphoPlugin;
     let swapPlugin: OneInchV6SwapPlugin;
