@@ -1,0 +1,23 @@
+[
+    "constructor(tuple(address endpoint, address flp)[] plugins_, address swapRouter_, address swapPlugin_)",
+    "error FlashLoanFailed()",
+    "error InsufficientAmountOut()",
+    "error InvalidAmountOut()",
+    "error InvalidSwapParameters()",
+    "error NotSufficientLiquidity()",
+    "error SafeERC20FailedOperation(address token)",
+    "error UnauthorizedCallback()",
+    "error UnknownCallbackSelector()",
+    "error UnknownPlugin()",
+    "error ZeroAddress()",
+    "error ZeroLength()",
+    "event PluginRegistered(bytes4 indexed callbackSelector, address indexed pluginEndpoint, address indexed flp)",
+    "function BPS_DROP_DENOMINATOR() view returns (uint16)",
+    "function FACTOR_SCALE() view returns (uint64)",
+    "function SLOT_ADAPTER() view returns (bytes32)",
+    "function plugins(bytes4) view returns (address endpoint, address flp)",
+    "function swap(tuple(address comet, bytes4 callbackSelector, address fromAsset, uint256 fromAmount, address toAsset, bytes swapCalldata, uint256 minAmountOut, uint256 maxHealthFactorDropBps) swapParams)",
+    "function swapPlugin() view returns (address)",
+    "function swapRouter() view returns (address)",
+    "function swapWithPermit(tuple(address comet, bytes4 callbackSelector, address fromAsset, uint256 fromAmount, address toAsset, bytes swapCalldata, uint256 minAmountOut, uint256 maxHealthFactorDropBps) swapParams, tuple(uint256 nonce, uint256 expiry, bytes32 r, bytes32 s, uint8 v) allowParams)"
+]

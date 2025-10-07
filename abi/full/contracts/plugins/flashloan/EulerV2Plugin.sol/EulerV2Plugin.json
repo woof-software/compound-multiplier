@@ -1,0 +1,11 @@
+[
+    "error InvalidFlashLoanData()",
+    "error InvalidFlashLoanId()",
+    "error SafeERC20FailedOperation(address token)",
+    "error UnauthorizedCallback()",
+    "function CALLBACK_SELECTOR() view returns (bytes4)",
+    "function SLOT_PLUGIN() view returns (bytes32)",
+    "function onFlashLoan(bytes data) returns (tuple(uint256 debt, uint256 fee, uint256 snapshot, address user, address flp, address asset, bytes swapData) _data)",
+    "function repayFlashLoan(address flp, address baseAsset, uint256 amount)",
+    "function takeFlashLoan(tuple(uint256 debt, uint256 fee, uint256 snapshot, address user, address flp, address asset, bytes swapData) data, bytes) payable"
+]
