@@ -2,6 +2,7 @@
 pragma solidity =0.8.30;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { ICometSwapPlugin } from "../../interfaces/ICometSwapPlugin.sol";
 
 /**
@@ -13,6 +14,7 @@ import { ICometSwapPlugin } from "../../interfaces/ICometSwapPlugin.sol";
  *      using the 1inch V6 aggregation router for optimal swap execution
  */
 contract OneInchV6SwapPlugin is ICometSwapPlugin {
+    using SafeERC20 for IERC20;
     /// @notice Callback function selector for this swap plugin
     /// @dev Used by CometMultiplierAdapter to identify and route swap calls to this plugin
     bytes4 public constant CALLBACK_SELECTOR = 0x7a8c0f2b;
@@ -34,7 +36,7 @@ contract OneInchV6SwapPlugin is ICometSwapPlugin {
         require(srcToken != address(0) && dstToken != address(0), ZeroAddress());
 
         address router = abi.decode(config, (address));
-        IERC20(srcToken).approve(router, amountIn);
+        IERC20(srcToken).safeIncreaseAllowance(router, amountIn);
 
         (bool ok, bytes memory ret) = router.call(swapData);
         if (!ok) {

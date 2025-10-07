@@ -3,6 +3,7 @@ pragma solidity =0.8.30;
 
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import { IComet } from "./external/compound/IComet.sol";
 import { ICometExt } from "./external/compound/ICometExt.sol";
@@ -53,6 +54,7 @@ import { IAllowBySig } from "./interfaces/IAllowBySig.sol";
  *        redeployment of the contract is required.
  */
 contract CometCollateralSwap is ICometCollateralSwap, IAllowBySig {
+    using SafeERC20 for IERC20;
     /// @dev Offset for the comet contract address
     uint256 private constant COMET_OFFSET = 0x20;
 
@@ -148,7 +150,7 @@ contract CometCollateralSwap is ICometCollateralSwap, IAllowBySig {
         (address cometAddr, address fromAsset, uint256 fromAmount) = _tload();
         IComet comet = IComet(cometAddr);
 
-        asset.approve(address(comet), debt);
+        asset.safeIncreaseAllowance(address(comet), debt);
         comet.supplyTo(user, address(asset), debt);
         comet.withdrawFrom(user, address(this), fromAsset, fromAmount);
 
@@ -352,7 +354,7 @@ contract CometCollateralSwap is ICometCollateralSwap, IAllowBySig {
     function _supplyDust(address user, IERC20 asset, IComet comet, uint256 repayAmount) internal {
         uint256 balance = asset.balanceOf(address(this)) - repayAmount;
         if (balance != 0) {
-            asset.approve(address(comet), balance);
+            asset.safeIncreaseAllowance(address(comet), balance);
             comet.supplyTo(user, address(asset), balance);
         }
     }

@@ -3,6 +3,7 @@ pragma solidity =0.8.30;
 
 import { ICometSwapPlugin } from "../../interfaces/ICometSwapPlugin.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
  * @title LiFiPlugin
@@ -13,6 +14,7 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  *      using the LiFi aggregation router for optimal swap execution
  */
 contract LiFiPlugin is ICometSwapPlugin {
+    using SafeERC20 for IERC20;
     /// @notice Callback function selector for this swap plugin
     /// @dev Used by CometMultiplierAdapter to identify and route swap calls to this plugin
     bytes4 public constant CALLBACK_SELECTOR = 0x8b9d1a3c;
@@ -35,7 +37,7 @@ contract LiFiPlugin is ICometSwapPlugin {
 
         address router = abi.decode(config, (address));
 
-        IERC20(srcToken).approve(router, amountIn);
+        IERC20(srcToken).safeIncreaseAllowance(router, amountIn);
 
         uint256 balBefore = IERC20(dstToken).balanceOf(address(this));
 

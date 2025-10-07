@@ -13,4 +13,4 @@ root = "."
 # - It can be a partial match like "/interfaces/", which will exclude all files with "/interfaces/" in the file path.
 #   Or it can be a full match like "src/counters/Counter.sol", which will exclude only the file with the exact path.
 # - If not specified, no contract files will be excluded.
-exclude = ["contracts/test/", "contracts/mocks/"]
+exclude = ["contracts/test/", "contracts/mocks/", "contracts/interfaces/", "contracts/external/", "contracts/misc/"]

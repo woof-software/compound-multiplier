@@ -284,7 +284,7 @@ contract CometMultiplierAdapter is ReentrancyGuard, ICometMultiplierAdapter, IAl
         uint256 totalAmount = _swap(data.asset, collateral, data.debt, minAmountOut, swapSelector, data.swapData) +
             amount;
 
-        IERC20(collateral).approve(address(market), totalAmount);
+        IERC20(collateral).safeIncreaseAllowance(address(market), totalAmount);
         market.supplyTo(data.user, collateral, totalAmount);
         market.withdrawFrom(data.user, address(this), data.asset, data.debt + data.fee);
 
@@ -315,7 +315,7 @@ contract CometMultiplierAdapter is ReentrancyGuard, ICometMultiplierAdapter, IAl
     function _withdraw(ICometFlashLoanPlugin.CallbackData memory data, address endpoint) private {
         (uint256 amount, IComet market, address collateral, uint256 minAmountOut, bytes4 swapSelector) = _tload();
 
-        IERC20(data.asset).approve(address(market), data.debt);
+        IERC20(data.asset).safeIncreaseAllowance(address(market), data.debt);
         market.supplyTo(data.user, data.asset, data.debt);
         uint128 take = uint128(
             amount == type(uint256).max ? market.collateralBalanceOf(data.user, collateral) : amount

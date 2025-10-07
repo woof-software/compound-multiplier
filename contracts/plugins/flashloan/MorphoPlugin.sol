@@ -2,6 +2,7 @@
 pragma solidity =0.8.30;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IMorphoBase } from "../../external/morpho/IMorpho.sol";
 import { ICometFlashLoanPlugin } from "../../interfaces/ICometFlashLoanPlugin.sol";
 
@@ -13,6 +14,7 @@ import { ICometFlashLoanPlugin } from "../../interfaces/ICometFlashLoanPlugin.so
  * @dev Implements ICometFlashLoanPlugin interface to provide standardized flash loan functionality
  */
 contract MorphoPlugin is ICometFlashLoanPlugin {
+    using SafeERC20 for IERC20;
     /// @notice Callback function selector for Morpho flash loans
     bytes4 public constant CALLBACK_SELECTOR = MorphoPlugin.onMorphoFlashLoan.selector;
 
@@ -36,7 +38,7 @@ contract MorphoPlugin is ICometFlashLoanPlugin {
      * @inheritdoc ICometFlashLoanPlugin
      */
     function repayFlashLoan(address flp, address baseAsset, uint256 amount) external {
-        IERC20(baseAsset).approve(flp, amount);
+        IERC20(baseAsset).safeIncreaseAllowance(flp, amount);
     }
 
     /**

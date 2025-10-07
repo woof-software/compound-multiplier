@@ -3,6 +3,7 @@ pragma solidity 0.8.30;
 
 import { IPool } from "contracts/external/aave/IPool.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { ICometFlashLoanPlugin } from "contracts/interfaces/ICometFlashLoanPlugin.sol";
 
 /**
@@ -15,6 +16,8 @@ import { ICometFlashLoanPlugin } from "contracts/interfaces/ICometFlashLoanPlugi
  * processed. It is designed to be used as part of a larger system that supports composable flash loan plugins.
  */
 contract AAVEPlugin is ICometFlashLoanPlugin {
+    using SafeERC20 for IERC20;
+
     /// @inheritdoc ICometFlashLoanPlugin
     bytes4 public constant CALLBACK_SELECTOR = AAVEPlugin.executeOperation.selector;
     /// @inheritdoc ICometFlashLoanPlugin
@@ -68,6 +71,6 @@ contract AAVEPlugin is ICometFlashLoanPlugin {
 
     /// @inheritdoc ICometFlashLoanPlugin
     function repayFlashLoan(address flp, address asset, uint256 amount) external {
-        IERC20(asset).approve(flp, amount);
+        IERC20(asset).safeIncreaseAllowance(flp, amount);
     }
 }

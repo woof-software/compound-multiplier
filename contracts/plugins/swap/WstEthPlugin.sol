@@ -2,6 +2,7 @@
 pragma solidity =0.8.30;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import { ICometSwapPlugin } from "../../interfaces/ICometSwapPlugin.sol";
 import { ICometMultiplierAdapter } from "../../interfaces/ICometMultiplierAdapter.sol";
@@ -18,6 +19,7 @@ import { IWEth } from "../../external/weth/IWEth.sol";
  * @dev Implements ICometSwapPlugin interface to provide specialized WETH / wstETH conversion
  */
 contract WstEthPlugin is ICometSwapPlugin {
+    using SafeERC20 for IERC20;
     /// @notice Callback function selector for this swap plugin
     /// @dev Used by CometMultiplierAdapter to identify and route swap calls to this plugin
     bytes4 public constant CALLBACK_SELECTOR = 0x77aa7e1b;
@@ -58,7 +60,7 @@ contract WstEthPlugin is ICometSwapPlugin {
         uint256 initial = IERC20(wstEth).balanceOf(address(this));
         IWEth(wEth).withdraw(amountIn);
         uint256 stAmount = IStEth(stEth).submit{ value: amountIn }(address(this));
-        IERC20(stEth).approve(wstEth, stAmount);
+        IERC20(stEth).safeIncreaseAllowance(wstEth, stAmount);
         require(IWstEth(wstEth).wrap(stAmount) > 0, InvalidAmountOut());
         amountOut = IERC20(wstEth).balanceOf(address(this)) - initial;
         require(amountOut >= minAmountOut, InvalidAmountOut());
