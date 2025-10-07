@@ -25,6 +25,8 @@ interface IComet is ICometExt {
         uint128 _reserved;
     }
 
+    error Unauthorized();
+
     function supply(address asset, uint amount) external;
 
     function supplyTo(address dst, address asset, uint amount) external;

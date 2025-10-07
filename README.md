@@ -5,7 +5,6 @@
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 [![Solidity](https://img.shields.io/badge/solidity-0.8.30+-lightgrey.svg)](https://soliditylang.org/)
 [![Hardhat](https://img.shields.io/badge/Built%20with-Hardhat-yellow.svg)](https://hardhat.org/)
-[![Foundry](https://img.shields.io/badge/Tested%20with-Foundry-orange.svg)](https://book.getfoundry.sh/)
 
 A modular smart contract system for creating leveraged positions and swapping collateral on Compound v3 (Comet) markets using flash loans and DEX aggregators.
 

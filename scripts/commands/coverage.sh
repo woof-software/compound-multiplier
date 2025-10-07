@@ -49,5 +49,6 @@ else
     exit 1
 fi
 
+pnpm badge
 echo "Coverage generated."
 echo

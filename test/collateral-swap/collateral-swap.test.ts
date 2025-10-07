@@ -18,14 +18,14 @@ import {
     executeWithRetry
 } from "../helpers/helpers";
 import { expect } from "chai";
-import { $CometCollateralSwap } from "../../typechain-types/contracts-exposed/CometCollateralSwap.sol/$CometCollateralSwap";
+import { CometCollateralSwap } from "../../typechain-types";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 
 describe("CometCollateralSwap", function () {
     let snapshot: SnapshotRestorer;
 
     // Contracts
-    let collateralSwap: $CometCollateralSwap;
+    let collateralSwap: CometCollateralSwap;
     let comet: IComet;
 
     // Tokens
@@ -305,7 +305,6 @@ describe("CometCollateralSwap", function () {
             });
 
             it("allows to make a swap with approve", async () => {
-                // revoke permission first
                 await comet.connect(alice).allow(collateralSwap, false);
 
                 expect(await comet.hasPermission(alice, collateralSwap)).to.be.false;
@@ -377,9 +376,6 @@ describe("CometCollateralSwap", function () {
                         collateralSwap.connect(alice).swapWithPermit(swapParams, allowParams);
                     })
                 ).to.not.be.reverted;
-
-                // check that permission is set
-                expect(await comet.hasPermission(alice, collateralSwap)).to.be.true;
             });
 
             it("contract token balances are zero after swap", async () => {

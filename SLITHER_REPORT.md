@@ -1,0 +1,4 @@
+usage: slither target [flag]
+
+target can be: - file.sol // a Solidity file - project_directory // a project directory. See https://github.com/crytic/crytic-compile/#crytic-compile for the supported platforms - 0x.. // a contract on mainnet - NETWORK:0x.. // a contract on a different network. Supported networks: mainne,sepoli,holesk,bs,testnet.bs,pol,amoy.pol,polyz,cardona.polyz,bas,sepolia.bas,arb,nova.arb,sepolia.arb,line,sepolia.line,ft,testnet.ft,blas,sepolia.blas,opti,sepolia.opti,ava,testnet.ava,btt,testnet.btt,cel,alfajores.cel,crono,fra,holesky.fra,gn,krom,sepolia.krom,mantl,sepolia.mantl,moonbea,moonrive,moonbas,opbn,testnet.opbn,scrol,sepolia.scrol,taik,hekla.taik,wemi,testnet.wemi,era.zksyn,sepoliaera.zksyn,xa,sepolia.xa
+slither: error: unrecognized arguments: --exclude-paths node_modules,hardhat,@openzeppelin,contracts/interfaces,contracts/mocks,contracts/vendor,contracts-exposed,contracts/external,contracts/misc
