@@ -18,7 +18,8 @@ import { ICometFlashLoanPlugin } from "./interfaces/ICometFlashLoanPlugin.sol";
 
 /**
  * @title CometMultiplierAdapter
- * @author WOOF!
+ * @author WOOF! Software
+ * @custom:security-contact dmitriy@woof.software
  * @notice A leveraged position manager for Compound V3 (Comet) markets that enables users to
  *         create and unwind leveraged positions using flash loans and token swaps
  * @dev This contract uses a plugin architecture to support different flash loan providers and DEX aggregators.

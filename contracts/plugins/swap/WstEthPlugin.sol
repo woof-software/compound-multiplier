@@ -12,6 +12,8 @@ import { IWEth } from "../../external/weth/IWEth.sol";
 
 /**
  * @title WstEthPlugin
+ * @author WOOF! Software
+ * @custom:security-contact dmitriy@woof.software
  * @notice Swap plugin for converting between WETH and wstETH via Lido staking
  * @dev Implements ICometSwapPlugin interface to provide specialized WETH / wstETH conversion
  */

@@ -8,7 +8,8 @@ import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.s
 
 /**
  * @title UniswapV3Plugin
- * @author WOOF!
+ * @author WOOF! Software
+ * @custom:security-contact dmitriy@woof.software
  * @notice Flash loan plugin for integrating Uniswap V3 pools with CometMultiplierAdapter
  * @dev Implements ICometFlashLoanPlugin interface to provide standardized flash loan functionality
  */

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
 import { IPool } from "contracts/external/aave/IPool.sol";
@@ -7,7 +7,8 @@ import { ICometFlashLoanPlugin } from "contracts/interfaces/ICometFlashLoanPlugi
 
 /**
  * @title AAVE Flash Loan Plugin
- * @author Woof Software
+ * @author WOOF! Software
+ * @custom:security-contact dmitriy@woof.software
  * @notice This contract implements a plugin for interacting with the AAVE protocol's flash loan feature. It allows a caller to request
  * a flash loan, handles the callback from AAVE when the loan is issued, and provides a method to approve repayment of the borrowed funds.
  * The contract uses a unique identifier to securely track each flash loan operation and ensures that only authorized callbacks are

@@ -6,7 +6,8 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
  * @title LiFiPlugin
- * @author WOOF!
+ * @author WOOF! Software
+ * @custom:security-contact dmitriy@woof.software
  * @notice Swap plugin for integrating LiFi aggregator with CometMultiplierAdapter
  * @dev Implements ICometSwapPlugin interface to provide standardized token swap functionality
  *      using the LiFi aggregation router for optimal swap execution

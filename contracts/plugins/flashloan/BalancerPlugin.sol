@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
 import { IBalancerVault, IERC20, IFlashLoanRecipient } from "contracts/external/balancer/IBalancerVault.sol";
@@ -7,7 +7,8 @@ import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.s
 
 /**
  * @title Balancer Flash Loan Plugin
- * @author Woof Software
+ * @author WOOF! Software
+ * @custom:security-contact dmitriy@woof.software
  * @notice This contract implements a plugin for interacting with the Balancer protocol's flash loan feature. It allows a caller to request
  * a flash loan, handles the callback from Balancer when the loan is issued, and provides a method to transfer of the borrowed funds.
  * The contract uses a unique identifier to securely track each flash loan operation and ensures that only authorized callbacks are

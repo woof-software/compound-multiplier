@@ -8,7 +8,8 @@ import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.s
 
 /**
  * @title EulerV2Plugin
- * @author WOOF!
+ * @author WOOF! Software
+ * @custom:security-contact dmitriy@woof.software
  * @notice Flash loan plugin for integrating Euler V2 vaults with CometMultiplierAdapter
  * @dev Implements ICometFlashLoanPlugin interface to provide standardized flash loan functionality
  */

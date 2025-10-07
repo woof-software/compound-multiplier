@@ -6,7 +6,8 @@ import { ICometSwapPlugin } from "../../interfaces/ICometSwapPlugin.sol";
 
 /**
  * @title OneInchV6SwapPlugin
- * @author WOOF!
+ * @author WOOF! Software
+ * @custom:security-contact dmitriy@woof.software
  * @notice Swap plugin for integrating 1inch V6 aggregator with CometMultiplierAdapter
  * @dev Implements ICometSwapPlugin interface to provide standardized token swap functionality
  *      using the 1inch V6 aggregation router for optimal swap execution

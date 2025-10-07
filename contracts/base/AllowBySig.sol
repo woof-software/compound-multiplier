@@ -6,7 +6,8 @@ import { IAllowBySig } from "../interfaces/IAllowBySig.sol";
 
 /**
  * @title AllowBySig
- * @author Woof Software
+ * @author WOOF! Software
+ * @custom:security-contact dmitriy@woof.software
  * @notice This contract provides a mechanism for allowing actions by signature.
  *  It enables a user to authorize a manager to perform actions on their behalf.
  *  This contract allows to avoid multiple transactions.

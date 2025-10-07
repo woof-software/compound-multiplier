@@ -7,6 +7,8 @@ import { ICometFlashLoanPlugin } from "../../interfaces/ICometFlashLoanPlugin.so
 
 /**
  * @title MorphoPlugin
+ * @author WOOF! Software
+ * @custom:security-contact dmitriy@woof.software
  * @notice Flash loan plugin for integrating Morpho protocol with CometMultiplierAdapter
  * @dev Implements ICometFlashLoanPlugin interface to provide standardized flash loan functionality
  */
