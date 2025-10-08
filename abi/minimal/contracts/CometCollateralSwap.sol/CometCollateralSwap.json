@@ -1,5 +1,5 @@
 [
-    "constructor(tuple(address,address)[],address,address)",
+    "constructor(tuple(address,bytes)[],address,address)",
     "error FlashLoanFailed()",
     "error InsufficientAmountOut()",
     "error InvalidAmountOut()",
@@ -11,13 +11,13 @@
     "error UnknownPlugin()",
     "error ZeroAddress()",
     "error ZeroLength()",
-    "event PluginRegistered(bytes4 indexed,address indexed,address indexed)",
+    "event PluginRegistered(bytes4 indexed,address indexed,bytes)",
     "function BPS_DROP_DENOMINATOR() view returns (uint16)",
     "function FACTOR_SCALE() view returns (uint64)",
     "function SLOT_ADAPTER() view returns (bytes32)",
-    "function plugins(bytes4) view returns (address, address)",
-    "function swap(tuple(address,bytes4,address,uint256,address,bytes,uint256,uint256))",
+    "function plugins(bytes4) view returns (address, bytes)",
+    "function swap(tuple(address,address,address,address,uint256,uint256,uint256,bytes4,bytes))",
     "function swapPlugin() view returns (address)",
     "function swapRouter() view returns (address)",
-    "function swapWithPermit(tuple(address,bytes4,address,uint256,address,bytes,uint256,uint256),tuple(uint256,uint256,bytes32,bytes32,uint8))"
+    "function swapWithPermit(tuple(address,address,address,address,uint256,uint256,uint256,bytes4,bytes),tuple(uint256,uint256,bytes32,bytes32,uint8))"
 ]

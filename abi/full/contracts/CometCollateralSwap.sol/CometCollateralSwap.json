@@ -1,5 +1,5 @@
 [
-    "constructor(tuple(address endpoint, address flp)[] plugins_, address swapRouter_, address swapPlugin_)",
+    "constructor(tuple(address endpoint, bytes config)[] plugins_, address swapRouter_, address swapPlugin_)",
     "error FlashLoanFailed()",
     "error InsufficientAmountOut()",
     "error InvalidAmountOut()",
@@ -11,13 +11,13 @@
     "error UnknownPlugin()",
     "error ZeroAddress()",
     "error ZeroLength()",
-    "event PluginRegistered(bytes4 indexed callbackSelector, address indexed pluginEndpoint, address indexed flp)",
+    "event PluginRegistered(bytes4 indexed callbackSelector, address indexed pluginEndpoint, bytes config)",
     "function BPS_DROP_DENOMINATOR() view returns (uint16)",
     "function FACTOR_SCALE() view returns (uint64)",
     "function SLOT_ADAPTER() view returns (bytes32)",
-    "function plugins(bytes4) view returns (address endpoint, address flp)",
-    "function swap(tuple(address comet, bytes4 callbackSelector, address fromAsset, uint256 fromAmount, address toAsset, bytes swapCalldata, uint256 minAmountOut, uint256 maxHealthFactorDropBps) swapParams)",
+    "function plugins(bytes4) view returns (address endpoint, bytes config)",
+    "function swap(tuple(address comet, address flp, address fromAsset, address toAsset, uint256 fromAmount, uint256 minAmountOut, uint256 maxHealthFactorDropBps, bytes4 callbackSelector, bytes swapCalldata) swapParams)",
     "function swapPlugin() view returns (address)",
     "function swapRouter() view returns (address)",
-    "function swapWithPermit(tuple(address comet, bytes4 callbackSelector, address fromAsset, uint256 fromAmount, address toAsset, bytes swapCalldata, uint256 minAmountOut, uint256 maxHealthFactorDropBps) swapParams, tuple(uint256 nonce, uint256 expiry, bytes32 r, bytes32 s, uint8 v) allowParams)"
+    "function swapWithPermit(tuple(address comet, address flp, address fromAsset, address toAsset, uint256 fromAmount, uint256 minAmountOut, uint256 maxHealthFactorDropBps, bytes4 callbackSelector, bytes swapCalldata) swapParams, tuple(uint256 nonce, uint256 expiry, bytes32 r, bytes32 s, uint8 v) allowParams)"
 ]

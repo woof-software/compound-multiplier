@@ -9,12 +9,12 @@
                         "type": "address"
                     },
                     {
-                        "internalType": "address",
-                        "name": "flp",
-                        "type": "address"
+                        "internalType": "bytes",
+                        "name": "config",
+                        "type": "bytes"
                     }
                 ],
-                "internalType": "struct ICometCollateralSwap.Plugin[]",
+                "internalType": "struct ICometPlugin.Plugin[]",
                 "name": "plugins_",
                 "type": "tuple[]"
             },
@@ -109,10 +109,10 @@
                 "type": "address"
             },
             {
-                "indexed": true,
-                "internalType": "address",
-                "name": "flp",
-                "type": "address"
+                "indexed": false,
+                "internalType": "bytes",
+                "name": "config",
+                "type": "bytes"
             }
         ],
         "name": "PluginRegistered",
@@ -177,9 +177,9 @@
                 "type": "address"
             },
             {
-                "internalType": "address",
-                "name": "flp",
-                "type": "address"
+                "internalType": "bytes",
+                "name": "config",
+                "type": "bytes"
             }
         ],
         "stateMutability": "view",
@@ -195,9 +195,9 @@
                         "type": "address"
                     },
                     {
-                        "internalType": "bytes4",
-                        "name": "callbackSelector",
-                        "type": "bytes4"
+                        "internalType": "address",
+                        "name": "flp",
+                        "type": "address"
                     },
                     {
                         "internalType": "address",
@@ -205,19 +205,14 @@
                         "type": "address"
                     },
                     {
-                        "internalType": "uint256",
-                        "name": "fromAmount",
-                        "type": "uint256"
-                    },
-                    {
                         "internalType": "address",
                         "name": "toAsset",
                         "type": "address"
                     },
                     {
-                        "internalType": "bytes",
-                        "name": "swapCalldata",
-                        "type": "bytes"
+                        "internalType": "uint256",
+                        "name": "fromAmount",
+                        "type": "uint256"
                     },
                     {
                         "internalType": "uint256",
@@ -228,6 +223,16 @@
                         "internalType": "uint256",
                         "name": "maxHealthFactorDropBps",
                         "type": "uint256"
+                    },
+                    {
+                        "internalType": "bytes4",
+                        "name": "callbackSelector",
+                        "type": "bytes4"
+                    },
+                    {
+                        "internalType": "bytes",
+                        "name": "swapCalldata",
+                        "type": "bytes"
                     }
                 ],
                 "internalType": "struct ICometCollateralSwap.SwapParams",
@@ -276,9 +281,9 @@
                         "type": "address"
                     },
                     {
-                        "internalType": "bytes4",
-                        "name": "callbackSelector",
-                        "type": "bytes4"
+                        "internalType": "address",
+                        "name": "flp",
+                        "type": "address"
                     },
                     {
                         "internalType": "address",
@@ -286,19 +291,14 @@
                         "type": "address"
                     },
                     {
-                        "internalType": "uint256",
-                        "name": "fromAmount",
-                        "type": "uint256"
-                    },
-                    {
                         "internalType": "address",
                         "name": "toAsset",
                         "type": "address"
                     },
                     {
-                        "internalType": "bytes",
-                        "name": "swapCalldata",
-                        "type": "bytes"
+                        "internalType": "uint256",
+                        "name": "fromAmount",
+                        "type": "uint256"
                     },
                     {
                         "internalType": "uint256",
@@ -309,6 +309,16 @@
                         "internalType": "uint256",
                         "name": "maxHealthFactorDropBps",
                         "type": "uint256"
+                    },
+                    {
+                        "internalType": "bytes4",
+                        "name": "callbackSelector",
+                        "type": "bytes4"
+                    },
+                    {
+                        "internalType": "bytes",
+                        "name": "swapCalldata",
+                        "type": "bytes"
                     }
                 ],
                 "internalType": "struct ICometCollateralSwap.SwapParams",
