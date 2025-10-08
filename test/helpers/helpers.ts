@@ -10,7 +10,7 @@ export { SnapshotRestorer, takeSnapshot, time } from "@nomicfoundation/hardhat-n
 
 export interface Plugin {
     endpoint: string;
-    flp: string;
+    config: string;
 }
 
 export { ethers };
@@ -92,8 +92,8 @@ export async function tokensInstances() {
 
 export async function getPlugins() {
     return {
-        aavePlugin: { endpoint: await ethers.deployContract("AAVEPlugin", []), flp: AAVE_POOL },
-        balancerPlugin: { endpoint: await ethers.deployContract("BalancerPlugin", []), flp: BALANCER_VAULT }
+        aavePlugin: { endpoint: await ethers.deployContract("AAVEPlugin", []), config: "0x" },
+        balancerPlugin: { endpoint: await ethers.deployContract("BalancerPlugin", []), config: "0x" }
     };
 }
 

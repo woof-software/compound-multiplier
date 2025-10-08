@@ -13,39 +13,29 @@ interface ICometCollateralSwap {
     /*//////////////////////////////////////////////////////////////
                                 STRUCTS
     //////////////////////////////////////////////////////////////*/
-
-    /**
-     * @notice Configuration for flash loan plugin endpoints
-     * @dev Each plugin provides flash loan functionality from different providers (Uniswap V3, AAVE, Morpho, etc.)
-     * @param endpoint The address of the plugin contract that handles flash loan logic
-     * @param flp The address of the flash loan provider (pool, vault, etc.) used by this plugin
-     */
-    struct Plugin {
-        address endpoint;
-        address flp;
-    }
-
     /**
      * @notice Parameters required to execute a collateral swap
      * @dev Contains all necessary information for the swap including assets, amounts, slippage protection, and swap routing
      * @param comet The address of the Compound V3 Comet contract for this market
-     * @param callbackSelector The bytes4 selector identifying which flash loan plugin to use
+     * @param flp The address of the flash loan provider contract to use for borrowing the target asset
      * @param fromAsset The address of the collateral asset to swap from (must be a valid Comet collateral)
-     * @param fromAmount The amount of fromAsset to swap (must be <= user's collateral balance)
      * @param toAsset The address of the collateral asset to swap to (must be a valid Comet collateral)
-     * @param swapCalldata The encoded calldata for the swap router to execute the asset exchange
+     * @param fromAmount The amount of fromAsset to swap (must be <= user's collateral balance)
      * @param minAmountOut The minimum amount of toAsset expected from the swap (slippage protection)
      * @param maxHealthFactorDropBps Maximum allowed drop in health factor in basis points (10000 = 100%)
+     * @param callbackSelector The bytes4 selector identifying which flash loan plugin to use
+     * @param swapCalldata The encoded calldata for the swap router to execute the asset exchange
      */
     struct SwapParams {
         address comet;
-        bytes4 callbackSelector;
+        address flp;
         address fromAsset;
-        uint256 fromAmount;
         address toAsset;
-        bytes swapCalldata;
+        uint256 fromAmount;
         uint256 minAmountOut;
         uint256 maxHealthFactorDropBps;
+        bytes4 callbackSelector;
+        bytes swapCalldata;
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -57,9 +47,9 @@ interface ICometCollateralSwap {
      * @dev This event is fired during contract construction for each plugin
      * @param callbackSelector The unique bytes4 selector for this plugin's callback function
      * @param pluginEndpoint The address of the plugin contract
-     * @param flp The address of the flash loan provider this plugin interfaces with
+     * @param config Pluigin configuration data
      */
-    event PluginRegistered(bytes4 indexed callbackSelector, address indexed pluginEndpoint, address indexed flp);
+    event PluginRegistered(bytes4 indexed callbackSelector, address indexed pluginEndpoint, bytes config);
 
     /*//////////////////////////////////////////////////////////////
                                 ERRORS

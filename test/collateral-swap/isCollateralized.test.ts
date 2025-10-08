@@ -32,11 +32,11 @@ describe("CometCollateralSwap", function () {
 
         const balancerPluginA: Plugin = {
             endpoint: await balancerPlugin.endpoint.getAddress(),
-            flp: balancerPlugin.flp
+            config: balancerPlugin.config
         };
         const aavePluginA: Plugin = {
             endpoint: await aavePlugin.endpoint.getAddress(),
-            flp: aavePlugin.flp
+            config: aavePlugin.config
         };
 
         const { lifiPlugin } = await getSwapPlugins();

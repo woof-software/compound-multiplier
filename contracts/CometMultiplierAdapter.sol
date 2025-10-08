@@ -14,6 +14,7 @@ import { ICometMultiplierAdapter } from "./interfaces/ICometMultiplierAdapter.so
 import { ICometSwapPlugin } from "./interfaces/ICometSwapPlugin.sol";
 import { ICometFlashLoanPlugin } from "./interfaces/ICometFlashLoanPlugin.sol";
 import { IAllowBySig } from "./interfaces/IAllowBySig.sol";
+import { ICometPlugin } from "./interfaces/ICometPlugin.sol";
 
 /**
  * @title CometMultiplierAdapter
@@ -24,7 +25,7 @@ import { IAllowBySig } from "./interfaces/IAllowBySig.sol";
  * @dev This contract uses a plugin architecture to support different flash loan providers and DEX aggregators.
  *      It leverages transient storage (EIP-1153) for gas-efficient temporary data storage during operations.
  */
-contract CometMultiplierAdapter is ReentrancyGuard, ICometMultiplierAdapter, IAllowBySig {
+contract CometMultiplierAdapter is ReentrancyGuard, ICometMultiplierAdapter, IAllowBySig, ICometPlugin {
     using SafeERC20 for IERC20;
 
     /// @notice Precision constant for leverage calculations (represents 1x leverage)

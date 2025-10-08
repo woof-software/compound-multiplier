@@ -1,6 +1,6 @@
 # Comet Multiplier Adapter
 
-[![Coverage](./coverage/badges.svg)](./coverage)
+[![Coverage](./badges.svg)](./coverage)
 [![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](./test)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 [![Solidity](https://img.shields.io/badge/solidity-0.8.30+-lightgrey.svg)](https://soliditylang.org/)

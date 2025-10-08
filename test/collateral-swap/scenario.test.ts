@@ -14,7 +14,9 @@ import {
     SnapshotRestorer,
     takeSnapshot,
     getLiquidity,
-    executeWithRetry
+    executeWithRetry,
+    AAVE_POOL,
+    BALANCER_VAULT
 } from "../helpers/helpers";
 import { expect } from "chai";
 import { $CometCollateralSwap } from "../../typechain-types/contracts-exposed/CometCollateralSwap.sol/$CometCollateralSwap";
@@ -37,8 +39,8 @@ describe("Collateral Swap Scenarios", function () {
     let balancerPl: BalancerPlugin;
     let aavePl: AAVEPlugin;
 
-    let aaveFLP;
-    let balancerFLP;
+    let aaveFLP: string;
+    let balancerFLP: string;
 
     let lifiPlugin: any;
 
@@ -62,18 +64,18 @@ describe("Collateral Swap Scenarios", function () {
         alice = signers[6];
         const { balancerPlugin, aavePlugin } = await getPlugins();
 
-        balancerFLP = balancerPlugin.flp;
-        aaveFLP = aavePlugin.flp;
+        balancerFLP = BALANCER_VAULT;
+        aaveFLP = AAVE_POOL;
         balancerPl = balancerPlugin.endpoint;
         aavePl = aavePlugin.endpoint;
 
         balancerPluginA = {
             endpoint: await balancerPlugin.endpoint.getAddress(),
-            flp: balancerPlugin.flp
+            config: balancerPlugin.config
         };
         aavePluginA = {
             endpoint: await aavePlugin.endpoint.getAddress(),
-            flp: aavePlugin.flp
+            config: aavePlugin.config
         };
 
         ({ lifiPlugin } = await getSwapPlugins());
@@ -113,6 +115,7 @@ describe("Collateral Swap Scenarios", function () {
             callbackSelector: await aavePl.CALLBACK_SELECTOR(),
             fromAsset: collateralA,
             fromAmount: fromAmount,
+            flp: aaveFLP,
             toAsset: collateralB,
             swapCalldata: "",
             minAmountOut: 0,
@@ -191,6 +194,7 @@ describe("Collateral Swap Scenarios", function () {
             fromAsset: collateralB,
             fromAmount: fromAmount,
             toAsset: collateralC,
+            flp: aaveFLP,
             swapCalldata: "",
             minAmountOut: 0,
             maxHealthFactorDropBps: 1500n // 15% of health factor
@@ -279,6 +283,7 @@ describe("Collateral Swap Scenarios", function () {
             callbackSelector: await aavePl.CALLBACK_SELECTOR(),
             fromAsset: collateralB,
             fromAmount: fromAmount,
+            flp: aaveFLP,
             toAsset: collateralC,
             swapCalldata: "",
             minAmountOut: 0,
@@ -371,6 +376,7 @@ describe("Collateral Swap Scenarios", function () {
             callbackSelector: await aavePl.CALLBACK_SELECTOR(),
             fromAsset: collateralB,
             fromAmount: fromAmount,
+            flp: aaveFLP,
             toAsset: collateralC,
             swapCalldata: "",
             minAmountOut: 0,
@@ -499,6 +505,7 @@ describe("Collateral Swap Scenarios", function () {
                 fromAsset: collateralA,
                 fromAmount: fromAmountA,
                 toAsset: collateralB,
+                flp: aaveFLP,
                 swapCalldata: swapCalldataA,
                 minAmountOut: toAmountMinA,
                 maxHealthFactorDropBps: 1500n // 15% of health factor
@@ -532,6 +539,7 @@ describe("Collateral Swap Scenarios", function () {
                 fromAsset: collateralB, // wstETH
                 fromAmount: fromAmountB,
                 toAsset: collateralA, // WBTC
+                flp: balancerFLP,
                 swapCalldata: swapCalldataB,
                 minAmountOut: toAmountMinB,
                 maxHealthFactorDropBps: 1500n // 15% of health factor
@@ -602,6 +610,7 @@ describe("Collateral Swap Scenarios", function () {
             fromAsset: collateralA,
             fromAmount: fromAmount,
             toAsset: collateralB,
+            flp: aaveFLP,
             swapCalldata: swapCalldataB,
             minAmountOut: toAmountMinB,
             maxHealthFactorDropBps: 1500n // 15% of health factor
@@ -622,6 +631,7 @@ describe("Collateral Swap Scenarios", function () {
             callbackSelector: await aavePl.CALLBACK_SELECTOR(),
             fromAsset: collateralA,
             fromAmount: fromAmount,
+            flp: aaveFLP,
             toAsset: collateralC,
             swapCalldata: swapCalldataC,
             minAmountOut: toAmountMinC,
@@ -715,6 +725,7 @@ describe("Collateral Swap Scenarios", function () {
             fromAsset: collateralA,
             fromAmount: fromAmount,
             toAsset: collateralB,
+            flp: balancerFLP,
             swapCalldata: "",
             minAmountOut: 0,
             maxHealthFactorDropBps: 1500n // 15% of health factor

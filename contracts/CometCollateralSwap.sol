@@ -9,6 +9,7 @@ import { IComet } from "./external/compound/IComet.sol";
 import { ICometFlashLoanPlugin } from "./interfaces/ICometFlashLoanPlugin.sol";
 import { ICometCollateralSwap } from "./interfaces/ICometCollateralSwap.sol";
 import { ICometSwapPlugin } from "./interfaces/ICometSwapPlugin.sol";
+import { ICometPlugin } from "./interfaces/ICometPlugin.sol";
 import { IAllowBySig } from "./interfaces/IAllowBySig.sol";
 
 /**
@@ -52,7 +53,7 @@ import { IAllowBySig } from "./interfaces/IAllowBySig.sol";
  *      - Plugins are configured exclusively during contract deployment. To add or modify plugins,
  *        redeployment of the contract is required.
  */
-contract CometCollateralSwap is ICometCollateralSwap, IAllowBySig {
+contract CometCollateralSwap is ICometCollateralSwap, IAllowBySig, ICometPlugin {
     using SafeERC20 for IERC20;
     /// @dev Offset for the comet contract address
     uint256 private constant COMET_OFFSET = 0x20;
@@ -96,7 +97,7 @@ contract CometCollateralSwap is ICometCollateralSwap, IAllowBySig {
             bytes4 pluginSelector = ICometFlashLoanPlugin(plugins_[i].endpoint).CALLBACK_SELECTOR();
             plugins[pluginSelector] = plugins_[i];
 
-            emit PluginRegistered(pluginSelector, plugins_[i].endpoint, plugins_[i].flp);
+            emit PluginRegistered(pluginSelector, plugins_[i].endpoint, plugins_[i].config);
         }
     }
 
@@ -244,11 +245,11 @@ contract CometCollateralSwap is ICometCollateralSwap, IAllowBySig {
                     snapshot: IERC20(toAsset).balanceOf(address(this)),
                     fee: 0,
                     user: msg.sender,
-                    flp: plugin.flp,
+                    flp: swapParams.flp,
                     asset: toAsset,
                     swapData: swapParams.swapCalldata
                 }),
-                ""
+                plugin.config
             )
         );
         _catch(ok);

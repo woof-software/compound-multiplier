@@ -23,11 +23,6 @@ interface ICometMultiplierAdapter {
         WITHDRAW
     }
 
-    struct Plugin {
-        address endpoint;
-        bytes config;
-    }
-
     struct Options {
         address market;
         address flp;

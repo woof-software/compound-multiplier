@@ -15,11 +15,14 @@ import {
     SnapshotRestorer,
     takeSnapshot,
     time,
-    executeWithRetry
+    executeWithRetry,
+    AAVE_POOL,
+    BALANCER_VAULT
 } from "../helpers/helpers";
 import { expect } from "chai";
 import { CometCollateralSwap } from "../../typechain-types";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
+import { config } from "dotenv";
 
 describe("CometCollateralSwap", function () {
     let snapshot: SnapshotRestorer;
@@ -38,8 +41,8 @@ describe("CometCollateralSwap", function () {
     let balancerPl: BalancerPlugin;
     let aavePl: AAVEPlugin;
 
-    let aaveFLP;
-    let balancerFLP;
+    let aaveFLP: string;
+    let balancerFLP: string;
 
     let lifiPlugin: any;
 
@@ -62,18 +65,27 @@ describe("CometCollateralSwap", function () {
         alice = signers[5];
         const { balancerPlugin, aavePlugin } = await getPlugins();
 
-        balancerFLP = balancerPlugin.flp;
-        aaveFLP = aavePlugin.flp;
+        balancerFLP = BALANCER_VAULT;
+        aaveFLP = AAVE_POOL;
         balancerPl = balancerPlugin.endpoint;
         aavePl = aavePlugin.endpoint;
 
+        // balancerPluginA = {
+        //     endpoint: await balancerPlugin.endpoint.getAddress(),
+        //     flp: balancerPlugin.flp
+        // };
+        // aavePluginA = {
+        //     endpoint: await aavePlugin.endpoint.getAddress(),
+        //     flp: aavePlugin.flp
+        // };
+
         balancerPluginA = {
             endpoint: await balancerPlugin.endpoint.getAddress(),
-            flp: balancerPlugin.flp
+            config: "0x"
         };
         aavePluginA = {
             endpoint: await aavePlugin.endpoint.getAddress(),
-            flp: aavePlugin.flp
+            config: "0x"
         };
 
         ({ lifiPlugin } = await getSwapPlugins());
@@ -114,11 +126,11 @@ describe("CometCollateralSwap", function () {
 
             const balancerPluginInfo = await collateralSwap.plugins(balancerSelector);
             expect(balancerPluginInfo.endpoint).to.equal(balancerPluginA.endpoint);
-            expect(balancerPluginInfo.flp).to.equal(balancerPluginA.flp);
+            expect(balancerPluginInfo.config).to.equal(balancerPluginA.config);
 
             const aavePluginInfo = await collateralSwap.plugins(aaveSelector);
             expect(aavePluginInfo.endpoint).to.equal(aavePluginA.endpoint);
-            expect(aavePluginInfo.flp).to.equal(aavePluginA.flp);
+            expect(aavePluginInfo.config).to.equal(aavePluginA.config);
 
             // Check swap router
             expect(await collateralSwap.swapRouter()).to.equal(SWAP_ROUTER);
@@ -138,9 +150,9 @@ describe("CometCollateralSwap", function () {
                 ])
             )
                 .to.emit(collateralSwap, "PluginRegistered")
-                .withArgs(balancerSelector, balancerPluginA.endpoint, balancerPluginA.flp)
+                .withArgs(balancerSelector, balancerPluginA.endpoint, balancerPluginA.config)
                 .to.emit(collateralSwap, "PluginRegistered")
-                .withArgs(aaveSelector, aavePluginA.endpoint, aavePluginA.flp);
+                .withArgs(aaveSelector, aavePluginA.endpoint, aavePluginA.config);
         });
 
         it("reverts when swapRouter is zero address", async () => {
@@ -179,6 +191,7 @@ describe("CometCollateralSwap", function () {
                 fromAsset: wstETH,
                 fromAmount: exp(1, 18),
                 toAsset: rETH,
+                flp: balancerFLP,
                 swapCalldata: "0x1234",
                 minAmountOut: exp(1, 18),
                 maxHealthFactorDropBps: 500
@@ -242,6 +255,7 @@ describe("CometCollateralSwap", function () {
                             callbackSelector: await balancerPl.CALLBACK_SELECTOR(),
                             fromAsset: wstETH,
                             fromAmount: exp(0.2, 18),
+                            flp: balancerFLP,
                             toAsset: rETH,
                             swapCalldata: "",
                             minAmountOut: 0,
@@ -281,6 +295,7 @@ describe("CometCollateralSwap", function () {
                             callbackSelector: await balancerPl.CALLBACK_SELECTOR(),
                             fromAsset: wstETH,
                             fromAmount: exp(0.2, 18),
+                            flp: balancerFLP,
                             toAsset: rETH,
                             swapCalldata: "",
                             minAmountOut: 0,
@@ -356,6 +371,7 @@ describe("CometCollateralSwap", function () {
                             fromAsset: wstETH,
                             fromAmount: exp(0.2, 18),
                             toAsset: rETH,
+                            flp: balancerFLP,
                             swapCalldata: "",
                             minAmountOut: 0,
                             maxHealthFactorDropBps: 1000 // 10% max health factor drop
@@ -410,6 +426,7 @@ describe("CometCollateralSwap", function () {
                     comet: comet,
                     callbackSelector: "0x12345678", // Unregistered selector
                     fromAsset: wstETH,
+                    flp: balancerFLP,
                     fromAmount: exp(1, 18),
                     toAsset: rETH,
                     swapCalldata: "0x1234",
@@ -417,10 +434,7 @@ describe("CometCollateralSwap", function () {
                     maxHealthFactorDropBps: 500
                 };
 
-                expect(await collateralSwap.plugins(swapParams.callbackSelector)).to.deep.equal([
-                    ZERO_ADDRESS,
-                    ZERO_ADDRESS
-                ]);
+                expect(await collateralSwap.plugins(swapParams.callbackSelector)).to.deep.equal([ZERO_ADDRESS, "0x"]);
 
                 await expect(collateralSwap.connect(alice).swap(swapParams)).to.be.revertedWithCustomError(
                     collateralSwap,
@@ -438,7 +452,7 @@ describe("CometCollateralSwap", function () {
 
                 const plugin = {
                     endpoint: attackContract,
-                    flp: alice
+                    config: "0x"
                 };
 
                 const collateralSwap = await ethers.deployContract("CometCollateralSwap", [
@@ -468,6 +482,7 @@ describe("CometCollateralSwap", function () {
                     fromAsset: wstETH,
                     fromAmount: exp(0.2, 18),
                     toAsset: rETH,
+                    flp: aaveFLP,
                     swapCalldata: "",
                     minAmountOut: exp(1, 18),
                     maxHealthFactorDropBps: 6000 // 60% max health factor drop
@@ -500,6 +515,7 @@ describe("CometCollateralSwap", function () {
                     fromAsset: wstETH,
                     fromAmount: exp(0.2, 18),
                     toAsset: rETH,
+                    flp: balancerFLP,
                     swapCalldata: "",
                     minAmountOut: 0n,
                     maxHealthFactorDropBps: 1000 // 10% max health factor drop
