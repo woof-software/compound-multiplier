@@ -498,6 +498,7 @@ IComet(comet).allow(swapContractAddress, true);
 // Swap WETH to USDC collateral
 CometCollateralSwap.SwapParams memory params = CometCollateralSwap.SwapParams({
     comet: cometAddress,
+    flp: flpAddress,
     callbackSelector: aavePlugin.CALLBACK_SELECTOR(),
     fromAsset: wethAddress,
     fromAmount: 1 ether,

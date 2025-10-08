@@ -53,6 +53,7 @@ Executes a collateral swap using flash loans.
 **Parameters:**
 
 - `swapParams.comet`: Compound V3 Comet contract address
+- `swapParams.flp` : Flash Loan Provider address
 - `swapParams.callbackSelector`: Flash loan plugin selector to use
 - `swapParams.fromAsset`: Asset to swap from (must be valid collateral)
 - `swapParams.fromAmount`: Amount to swap
@@ -214,6 +215,7 @@ IComet(comet).allow(contract, true);
 // Swap WETH to USDC collateral
 CometCollateralSwap.SwapParams memory params = CometCollateralSwap.SwapParams({
     comet: cometAddress,
+    flp: flpAddress,
     callbackSelector: aavePlugin.CALLBACK_SELECTOR(),
     fromAsset: wethAddress,
     fromAmount: 1 ether,
