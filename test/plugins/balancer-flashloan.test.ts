@@ -30,14 +30,14 @@ describe("Balancer Flash Loan Plugin", function () {
 
         const { balancerPlugin } = await getPlugins();
         plugin = balancerPlugin.endpoint;
-        flp = balancerPlugin.flp;
+        flp = BALANCER_VAULT;
 
         ({ usdc } = await tokensInstances());
 
         const { usdcWhale } = await getWhales();
         await usdc.connect(usdcWhale).transfer(alice, exp(10000, 6));
 
-        flash = await ethers.deployContract("FlashloanPluginTest", [balancerPlugin.flp, balancerPlugin.endpoint]);
+        flash = await ethers.deployContract("FlashloanPluginTest", [BALANCER_VAULT, balancerPlugin.endpoint]);
 
         snapshot = await takeSnapshot();
     });

@@ -73,4 +73,8 @@ contract BalancerPlugin is IFlashLoanRecipient, ICometFlashLoanPlugin {
     function repayFlashLoan(address flp, address asset, uint256 amount) external {
         IERC20(asset).safeTransfer(flp, amount);
     }
+
+    function supportsInterface(bytes4 interfaceId) external pure returns (bool) {
+        return interfaceId == type(ICometFlashLoanPlugin).interfaceId;
+    }
 }

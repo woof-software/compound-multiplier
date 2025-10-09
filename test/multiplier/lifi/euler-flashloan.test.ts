@@ -42,8 +42,8 @@ describe("Comet Multiplier Adapter / LiFi / Euler", function () {
     async function getMarketOptions() {
         return {
             market: COMET_USDC_MARKET,
-            loanSelector: await loanPlugin.CALLBACK_SELECTOR(),
-            swapSelector: await swapPlugin.CALLBACK_SELECTOR(),
+            loanPlugin: await loanPlugin.getAddress(),
+            swapPlugin: await swapPlugin.getAddress(),
             flp: USDC_EVAULT
         };
     }
@@ -109,7 +109,6 @@ describe("Comet Multiplier Adapter / LiFi / Euler", function () {
 
             const expectedDebt = await calculateLeveragedAmount(comet, initialAmount, leverage);
             const expectedCollateral = await calculateExpectedCollateral(initialAmount, leverage);
-
             await executeMultiplier(weth, await getMarketOptions(), comet, adapter, user, initialAmount, leverage);
 
             const collateralBalance = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);

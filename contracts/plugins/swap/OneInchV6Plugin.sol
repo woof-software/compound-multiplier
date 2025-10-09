@@ -15,9 +15,6 @@ import { ICometSwapPlugin } from "../../interfaces/ICometSwapPlugin.sol";
  */
 contract OneInchV6SwapPlugin is ICometSwapPlugin {
     using SafeERC20 for IERC20;
-    /// @notice Callback function selector for this swap plugin
-    /// @dev Used by CometMultiplierAdapter to identify and route swap calls to this plugin
-    bytes4 public constant CALLBACK_SELECTOR = 0x7a8c0f2b;
 
     /**
      * @inheritdoc ICometSwapPlugin
@@ -48,5 +45,9 @@ contract OneInchV6SwapPlugin is ICometSwapPlugin {
         (amountOut, ) = abi.decode(ret, (uint256, uint256));
 
         emit SwapExecuted(router, srcToken, dstToken, amountOut);
+    }
+
+    function supportsInterface(bytes4 interfaceId) external pure returns (bool) {
+        return interfaceId == type(ICometSwapPlugin).interfaceId;
     }
 }

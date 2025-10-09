@@ -59,4 +59,8 @@ contract MorphoPlugin is ICometFlashLoanPlugin {
         _data = abi.decode(data, (CallbackData));
         require(_data.flp == msg.sender, UnauthorizedCallback());
     }
+
+    function supportsInterface(bytes4 interfaceId) external pure returns (bool) {
+        return interfaceId == type(ICometFlashLoanPlugin).interfaceId;
+    }
 }

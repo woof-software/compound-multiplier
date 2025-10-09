@@ -43,4 +43,8 @@ contract FakeFlashLoanPlugin is ICometFlashLoanPlugin {
             IERC20(_data.asset).transferFrom(WHALE, address(this), _data.debt);
         }
     }
+
+    function supportsInterface(bytes4 interfaceId) external pure returns (bool) {
+        return interfaceId == type(ICometFlashLoanPlugin).interfaceId;
+    }
 }

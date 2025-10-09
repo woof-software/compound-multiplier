@@ -20,6 +20,7 @@ import {
     calculateHealthFactor,
     calculateMaxSafeWithdrawal
 } from "../../helpers/helpers";
+import { swap } from "../../../typechain-types/contracts/plugins";
 
 const opts = { maxFeePerGas: 4_000_000_000 };
 
@@ -38,8 +39,8 @@ describe.skip("Comet Multiplier Adapter / 1inch / Morpho", function () {
     async function getMarketOptions() {
         return {
             market: COMET_USDC_MARKET,
-            loanSelector: await loanPlugin.CALLBACK_SELECTOR(),
-            swapSelector: await swapPlugin.CALLBACK_SELECTOR(),
+            loanPlugin: await loanPlugin.getAddress(),
+            swapPlugin: await swapPlugin.getAddress(),
             flp: MORPHO
         };
     }

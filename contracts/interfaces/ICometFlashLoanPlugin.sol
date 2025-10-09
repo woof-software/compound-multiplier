@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity =0.8.30;
 
-interface ICometFlashLoanPlugin {
+import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+
+interface ICometFlashLoanPlugin is IERC165 {
     error UnauthorizedCallback();
     error InvalidFlashLoanId();
     error InvalidFlashLoanData();
@@ -36,4 +38,6 @@ interface ICometFlashLoanPlugin {
      * @param amount Total repayment amount (principal + fee)
      */
     function repayFlashLoan(address flp, address baseAsset, uint256 amount) external;
+
+    function supportsInterface(bytes4 interfaceId) external view returns (bool);
 }

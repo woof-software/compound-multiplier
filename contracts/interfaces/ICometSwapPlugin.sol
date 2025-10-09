@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity =0.8.30;
 
-import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
-interface ICometSwapPlugin {
+interface ICometSwapPlugin is IERC165 {
     event SwapExecuted(
         address indexed router,
         address indexed srcToken,
@@ -16,8 +16,6 @@ interface ICometSwapPlugin {
     error ZeroAddress();
     error InvalidSwapParameters();
     error SwapFailed();
-
-    function CALLBACK_SELECTOR() external view returns (bytes4);
 
     /**
      * @notice Executes a token swap between two assets

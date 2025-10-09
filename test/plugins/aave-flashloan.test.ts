@@ -4,7 +4,7 @@ import { takeSnapshot } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import type { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { AAVEPlugin, FlashloanPluginTest, ICometFlashLoanPlugin, IERC20 } from "../../typechain-types";
-import { exp, getPlugins, getWhales, tokensInstances, ethers } from "../helpers/helpers";
+import { exp, getPlugins, getWhales, tokensInstances, ethers, AAVE_POOL } from "../helpers/helpers";
 
 describe("AAVE Flash Loan Plugin", function () {
     let snapshot: SnapshotRestorer;
@@ -29,14 +29,14 @@ describe("AAVE Flash Loan Plugin", function () {
 
         const { aavePlugin } = await getPlugins();
         plugin = aavePlugin.endpoint;
-        flp = aavePlugin.flp;
 
         ({ usdc } = await tokensInstances());
 
         const { usdcWhale } = await getWhales();
         await usdc.connect(usdcWhale).transfer(alice, exp(10000, 6));
 
-        flash = await ethers.deployContract("FlashloanPluginTest", [aavePlugin.flp, aavePlugin.endpoint]);
+        flp = AAVE_POOL;
+        flash = await ethers.deployContract("FlashloanPluginTest", [flp, aavePlugin.endpoint]);
 
         await usdc.connect(alice).transfer(flash, premium);
 
@@ -107,7 +107,7 @@ describe("AAVE Flash Loan Plugin", function () {
         });
 
         it("reverts when callback caller is not authorized", async () => {
-            data.flp = flp;
+            data.flp = AAVE_POOL;
             expect(data.flp).to.not.be.eq(alice);
 
             await expect(

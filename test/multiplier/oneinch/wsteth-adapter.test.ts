@@ -41,8 +41,8 @@ describe.skip("Comet Multiplier Adapter / 1inch / wstETH", function () {
     async function getMarketOptions(isIn: boolean) {
         return {
             market: COMET_WETH_MARKET,
-            loanSelector: await loanPlugin.CALLBACK_SELECTOR(),
-            swapSelector: isIn ? await swapPlugin.CALLBACK_SELECTOR() : await oneInchPlugin.CALLBACK_SELECTOR(),
+            loanPlugin: await loanPlugin.getAddress(),
+            swapPlugin: isIn ? await swapPlugin.getAddress() : await oneInchPlugin.getAddress(),
             flp: WETH_EVAULT
         };
     }

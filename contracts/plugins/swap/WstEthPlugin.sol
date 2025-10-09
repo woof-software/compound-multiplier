@@ -20,9 +20,6 @@ import { IWEth } from "../../external/weth/IWEth.sol";
  */
 contract WstEthPlugin is ICometSwapPlugin {
     using SafeERC20 for IERC20;
-    /// @notice Callback function selector for this swap plugin
-    /// @dev Used by CometMultiplierAdapter to identify and route swap calls to this plugin
-    bytes4 public constant CALLBACK_SELECTOR = 0x77aa7e1b;
 
     /// @notice Address of the wstETH token contract
     address public constant WSTETH_ADDRESS = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
@@ -65,5 +62,9 @@ contract WstEthPlugin is ICometSwapPlugin {
         amountOut = IERC20(wstEth).balanceOf(address(this)) - initial;
         require(amountOut >= minAmountOut, InvalidAmountOut());
         emit SwapExecuted(wstEth, wEth, wstEth, amountOut);
+    }
+
+    function supportsInterface(bytes4 interfaceId) external pure returns (bool) {
+        return interfaceId == type(ICometSwapPlugin).interfaceId;
     }
 }

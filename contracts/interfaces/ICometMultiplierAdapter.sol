@@ -7,7 +7,7 @@ interface ICometMultiplierAdapter {
     error UnsupportedPriceFeed();
     error UnknownCallbackSelector();
     error UnknownMarket();
-    error InvalidPluginSelector();
+    error UnknownPlugin();
     error InvalidLeverage();
     error InvalidAmountOut();
     error InvalidAsset();
@@ -26,12 +26,11 @@ interface ICometMultiplierAdapter {
     struct Options {
         address market;
         address flp;
-        bytes4 loanSelector;
-        bytes4 swapSelector;
+        address loanPlugin;
+        address swapPlugin;
     }
 
-    event AssetAdded(address indexed collateralAsset, bytes4 pluginSelector);
-    event PluginAdded(address indexed plugin, bytes4 pluginSelector);
+    event PluginAdded(address indexed endpoint, bytes4 indexed selector, bytes32 key);
     event Executed(
         address indexed user,
         address indexed market,

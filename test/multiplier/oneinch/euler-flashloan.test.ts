@@ -39,8 +39,8 @@ describe.skip("Comet Multiplier Adapter / 1inch / Euler", function () {
     async function getMarketOptions() {
         return {
             market: COMET_USDC_MARKET,
-            loanSelector: await loanPlugin.CALLBACK_SELECTOR(),
-            swapSelector: await swapPlugin.CALLBACK_SELECTOR(),
+            loanPlugin: await loanPlugin.getAddress(),
+            swapPlugin: await swapPlugin.getAddress(),
             flp: USDC_EVAULT
         };
     }

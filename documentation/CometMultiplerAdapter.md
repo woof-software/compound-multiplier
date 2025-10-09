@@ -334,8 +334,8 @@ IComet(cometUSDC).allow(adapterAddress, true);
 // Prepare options
 CometMultiplierAdapter.Options memory opts = CometMultiplierAdapter.Options({
     market: cometUSDC,
-    loanSelector: morphoPlugin.CALLBACK_SELECTOR(),
-    swapSelector: lifiPlugin.CALLBACK_SELECTOR(),
+    loanPlugin: morphoPlugin,
+    swapPlugin: lifiPlugin,
     flp: morphoBlueAddress
 });
 
@@ -377,4 +377,61 @@ adapter.executeMultiplierBySig(
 );
 ```
 
-### Reduce Leverage Position
+### Reduce Leveraged Position
+
+```solidity
+// Authorize contract if not already done
+IComet(cometUSDC).allow(adapterAddress, true);
+
+// Prepare options
+CometMultiplierAdapter.Options memory opts = CometMultiplierAdapter.Options({
+    market: cometUSDC,
+    loanPlugin: morphoPlugin,
+    swapPlugin: lifiPlugin,
+    flp: morphoBlueAddress
+});
+
+// Reduce position by 1 WETH (partial deleverage)
+adapter.withdrawMultiplier(
+    opts,
+    wethAddress,
+    1 ether,            // Amount to withdraw
+    lifiSwapData,
+    2450 * 1e6          // Min USDC from swap
+);
+
+// Or close entire position
+adapter.withdrawMultiplier(
+    opts,
+    wethAddress,
+    type(uint256).max,  // Withdraw all collateral
+    lifiSwapData,
+    4900 * 1e6          // Min USDC from swap (full position)
+);
+```
+
+### Reduce Leveraged Position with Signature
+
+```solidity
+// Create EIP-712 signature off-chain
+AllowBySig.AllowParams memory allowParams = AllowBySig.AllowParams({
+    owner: userAddress,
+    manager: adapterAddress,
+    isAllowed: true,
+    nonce: IComet(cometUSDC).userNonce(userAddress),
+    expiry: block.timestamp + 3600,
+    v: signature.v,
+    r: signature.r,
+    s: signature.s
+});
+
+// Execute deleverage without prior approval
+adapter.withdrawMultiplierBySig(
+    opts,
+    wethAddress,
+    1 ether,            // Amount to withdraw
+    lifiSwapData,
+    2450 * 1e6,
+    allowParams
+);
+```

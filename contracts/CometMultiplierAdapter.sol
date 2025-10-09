@@ -13,6 +13,7 @@ import { IComet } from "./external/compound/IComet.sol";
 import { ICometMultiplierAdapter } from "./interfaces/ICometMultiplierAdapter.sol";
 import { ICometSwapPlugin } from "./interfaces/ICometSwapPlugin.sol";
 import { ICometFlashLoanPlugin } from "./interfaces/ICometFlashLoanPlugin.sol";
+import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import { IAllowBySig } from "./interfaces/IAllowBySig.sol";
 import { ICometPlugin } from "./interfaces/ICometPlugin.sol";
 
@@ -31,19 +32,23 @@ contract CometMultiplierAdapter is ReentrancyGuard, ICometMultiplierAdapter, IAl
     /// @notice Precision constant for leverage calculations (represents 1x leverage)
     uint256 constant LEVERAGE_PRECISION = 10_000;
 
+    /// @notice Magic byte to identify valid plugin calls
+    bytes1 constant PLUGIN_EXCIST = 0x01;
+
     /// @notice Offset constants for transient storage slots
-    uint8 constant AMOUNT_OFFSET = 0x20;
-    uint8 constant MARKET_OFFSET = 0x40;
-    uint8 constant COLLATERAL_OFFSET = 0x60;
-    uint8 constant MIN_AMOUNT_OUT_OFFSET = 0x80;
-    uint8 constant SWAP_SELECTOR_OFFSET = 0xA0;
+    uint8 constant SWAP_PLUGIN_OFFSET = 0x20;
+    uint8 constant LOAN_PLUGIN_OFFSET = 0x40;
+    uint8 constant AMOUNT_OFFSET = 0x60;
+    uint8 constant MARKET_OFFSET = 0x80;
+    uint8 constant COLLATERAL_OFFSET = 0xA0;
+    uint8 constant MIN_AMOUNT_OUT_OFFSET = 0xC0;
 
     /// @notice Storage slot for transient data, derived from contract name hash
     bytes32 constant SLOT_ADAPTER = bytes32(uint256(keccak256("CometMultiplierAdapter.adapter")) - 1);
 
     /// @notice Mapping of function selectors to their corresponding plugin configurations
     /// @dev Key is the callback selector, value contains plugin endpoint and configuration
-    mapping(bytes4 => Plugin) public plugins;
+    mapping(bytes32 => bytes) public plugins;
 
     /// @notice Wrapped ETH (WETH) token address
     address public immutable wEth;
@@ -56,13 +61,23 @@ contract CometMultiplierAdapter is ReentrancyGuard, ICometMultiplierAdapter, IAl
     constructor(Plugin[] memory _plugins, address _wEth) {
         for (uint256 i = 0; i < _plugins.length; i++) {
             Plugin memory plugin = _plugins[i];
-            bytes4 pluginSelector = ICometFlashLoanPlugin(plugin.endpoint).CALLBACK_SELECTOR();
-            require(pluginSelector != bytes4(0), InvalidPluginSelector());
-            plugins[pluginSelector] = plugin;
+            bytes4 pluginSelector;
+
+            if (IERC165(plugin.endpoint).supportsInterface(type(ICometFlashLoanPlugin).interfaceId)) {
+                pluginSelector = ICometFlashLoanPlugin(plugin.endpoint).CALLBACK_SELECTOR();
+            } else if (IERC165(plugin.endpoint).supportsInterface(type(ICometSwapPlugin).interfaceId)) {
+                pluginSelector = bytes4(0);
+            } else {
+                revert UnknownPlugin();
+            }
+
+            bytes32 key = keccak256(abi.encodePacked(plugin.endpoint, pluginSelector));
+            plugins[key] = abi.encodePacked(PLUGIN_EXCIST, plugin.config);
+
+            emit PluginAdded(plugin.endpoint, pluginSelector, key);
         }
 
         require(_wEth != address(0), InvalidAsset());
-
         wEth = _wEth;
     }
 
@@ -73,18 +88,13 @@ contract CometMultiplierAdapter is ReentrancyGuard, ICometMultiplierAdapter, IAl
      * @custom:security This function uses delegatecall to plugin endpoints, ensuring they execute in this contract's context
      */
     fallback() external payable {
-        address endpoint = plugins[msg.sig].endpoint;
+        (Mode mode, address endpoint) = _tloadFirst();
+
         require(endpoint != address(0), UnknownCallbackSelector());
         (bool ok, bytes memory payload) = endpoint.delegatecall(msg.data);
         _catch(ok);
         ICometFlashLoanPlugin.CallbackData memory data = abi.decode(payload, (ICometFlashLoanPlugin.CallbackData));
         require(IERC20(data.asset).balanceOf(address(this)) >= data.snapshot + data.debt, InvalidAmountOut());
-
-        bytes32 slot = SLOT_ADAPTER;
-        Mode mode;
-        assembly {
-            mode := tload(slot)
-        }
 
         if (mode == Mode.EXECUTE) {
             _execute(data, endpoint);
@@ -193,9 +203,10 @@ contract CometMultiplierAdapter is ReentrancyGuard, ICometMultiplierAdapter, IAl
         bytes calldata swapData,
         uint256 minAmountOut
     ) internal {
-        Plugin memory plugin = plugins[opts.loanSelector];
-        require(plugin.endpoint != address(0), InvalidPluginSelector());
         IComet comet = IComet(opts.market);
+        bytes memory config = _validate(
+            keccak256(abi.encodePacked(opts.loanPlugin, ICometFlashLoanPlugin(opts.loanPlugin).CALLBACK_SELECTOR()))
+        );
 
         if (msg.value > 0) {
             require(collateral == wEth, InvalidAsset());
@@ -209,10 +220,18 @@ contract CometMultiplierAdapter is ReentrancyGuard, ICometMultiplierAdapter, IAl
 
         address baseAsset = comet.baseToken();
 
-        _tstore(collateralAmount, opts.market, collateral, minAmountOut, opts.swapSelector, Mode.EXECUTE);
+        _tstore(
+            opts.loanPlugin,
+            opts.swapPlugin,
+            collateralAmount,
+            opts.market,
+            collateral,
+            minAmountOut,
+            Mode.EXECUTE
+        );
 
         _loan(
-            plugin.endpoint,
+            opts.loanPlugin,
             ICometFlashLoanPlugin.CallbackData({
                 debt: leveraged,
                 fee: 0, // to be handled by plugin
@@ -222,7 +241,7 @@ contract CometMultiplierAdapter is ReentrancyGuard, ICometMultiplierAdapter, IAl
                 asset: baseAsset,
                 swapData: swapData
             }),
-            plugin.config
+            config
         );
     }
 
@@ -236,11 +255,12 @@ contract CometMultiplierAdapter is ReentrancyGuard, ICometMultiplierAdapter, IAl
         bytes calldata swapData,
         uint256 minAmountOut
     ) internal {
-        Plugin memory loanPlugin = plugins[opts.loanSelector];
         IComet comet = IComet(opts.market);
+        bytes memory config = _validate(
+            keccak256(abi.encodePacked(opts.loanPlugin, ICometFlashLoanPlugin(opts.loanPlugin).CALLBACK_SELECTOR()))
+        );
         uint256 loanDebt;
         address baseAsset = comet.baseToken();
-
         uint256 repayAmount = comet.borrowBalanceOf(msg.sender);
         require(repayAmount > 0, NothingToDeleverage());
         if (collateralAmount == type(uint256).max) {
@@ -253,10 +273,18 @@ contract CometMultiplierAdapter is ReentrancyGuard, ICometMultiplierAdapter, IAl
 
         require(loanDebt > 0, InvalidLeverage());
 
-        _tstore(collateralAmount, opts.market, collateral, minAmountOut, opts.swapSelector, Mode.WITHDRAW);
+        _tstore(
+            opts.loanPlugin,
+            opts.swapPlugin,
+            collateralAmount,
+            opts.market,
+            collateral,
+            minAmountOut,
+            Mode.WITHDRAW
+        );
 
         _loan(
-            loanPlugin.endpoint,
+            opts.loanPlugin,
             ICometFlashLoanPlugin.CallbackData({
                 debt: loanDebt,
                 fee: 0, // to be handled by plugin
@@ -266,29 +294,28 @@ contract CometMultiplierAdapter is ReentrancyGuard, ICometMultiplierAdapter, IAl
                 asset: baseAsset,
                 swapData: swapData
             }),
-            loanPlugin.config
+            config
         );
     }
 
     /**
      * @notice Executes the leveraged position creation during flash loan callback
      * @param data Flash loan callback data containing loan details and user information
-     * @param endpoint Address of the flash loan plugin for repayment
+     * @param loanPlugin Address of the flash loan plugin for repayment
      * @dev Internal function that:
      *      1. Swaps borrowed base asset to collateral
      *      2. Supplies total collateral (original + swapped) to Comet
      *      3. Withdraws base asset from user's position to repay the flash loan
      */
-    function _execute(ICometFlashLoanPlugin.CallbackData memory data, address endpoint) private {
-        (uint256 amount, IComet market, address collateral, uint256 minAmountOut, bytes4 swapSelector) = _tload();
-        uint256 totalAmount = _swap(data.asset, collateral, data.debt, minAmountOut, swapSelector, data.swapData) +
+    function _execute(ICometFlashLoanPlugin.CallbackData memory data, address loanPlugin) private {
+        (address swapPlugin, uint256 amount, IComet market, address collateral, uint256 minAmountOut) = _tloadSecond();
+        uint256 totalAmount = _swap(swapPlugin, data.asset, collateral, data.debt, minAmountOut, data.swapData) +
             amount;
 
         IERC20(collateral).safeIncreaseAllowance(address(market), totalAmount);
         market.supplyTo(data.user, collateral, totalAmount);
         market.withdrawFrom(data.user, address(this), data.asset, data.debt + data.fee);
-
-        (bool done, ) = endpoint.delegatecall(
+        (bool done, ) = loanPlugin.delegatecall(
             abi.encodeWithSelector(
                 ICometFlashLoanPlugin.repayFlashLoan.selector,
                 data.flp,
@@ -305,15 +332,15 @@ contract CometMultiplierAdapter is ReentrancyGuard, ICometMultiplierAdapter, IAl
     /**
      * @notice Executes the position withdrawal during flash loan callback
      * @param data Flash loan callback data containing loan details and user information
-     * @param endpoint Address of the flash loan plugin for repayment
+     * @param loanPlugin Address of the flash loan plugin for repayment
      * @dev Internal function that:
      *      1. Temporarily repays user's debt using flash loan
      *      2. Withdraws collateral from the unlocked position
      *      3. Swaps collateral to base asset
      *      4. Repays flash loan and returns any remaining tokens to user
      */
-    function _withdraw(ICometFlashLoanPlugin.CallbackData memory data, address endpoint) private {
-        (uint256 amount, IComet market, address collateral, uint256 minAmountOut, bytes4 swapSelector) = _tload();
+    function _withdraw(ICometFlashLoanPlugin.CallbackData memory data, address loanPlugin) private {
+        (address swapPlugin, uint256 amount, IComet market, address collateral, uint256 minAmountOut) = _tloadSecond();
 
         IERC20(data.asset).safeIncreaseAllowance(address(market), data.debt);
         market.supplyTo(data.user, data.asset, data.debt);
@@ -323,13 +350,13 @@ contract CometMultiplierAdapter is ReentrancyGuard, ICometMultiplierAdapter, IAl
         market.withdrawFrom(data.user, address(this), collateral, take);
         uint256 repaymentAmount = data.debt + data.fee;
 
-        require(_swap(collateral, data.asset, take, minAmountOut, swapSelector, data.swapData) > 0, InvalidAmountOut());
+        require(_swap(swapPlugin, collateral, data.asset, take, minAmountOut, data.swapData) > 0, InvalidAmountOut());
 
         uint256 baseLeft = IERC20(data.asset).balanceOf(address(this));
 
         require(baseLeft >= repaymentAmount, InvalidAmountOut());
 
-        (bool done, ) = endpoint.delegatecall(
+        (bool done, ) = loanPlugin.delegatecall(
             abi.encodeWithSelector(ICometFlashLoanPlugin.repayFlashLoan.selector, data.flp, data.asset, repaymentAmount)
         );
 
@@ -350,21 +377,19 @@ contract CometMultiplierAdapter is ReentrancyGuard, ICometMultiplierAdapter, IAl
      * @param dstToken Address of the destination token to swap to
      * @param amount Amount of source tokens to swap
      * @param minAmountOut Minimum amount of destination tokens expected
-     * @param swapSelector Function selector of the swap plugin to use
      * @param swapData Encoded parameters for the swap execution
      * @return amountOut Actual amount of destination tokens received
      * @dev Uses delegatecall to execute swap in the context of this contract
      */
     function _swap(
+        address swapPlugin,
         address srcToken,
         address dstToken,
         uint256 amount,
         uint256 minAmountOut,
-        bytes4 swapSelector,
         bytes memory swapData
     ) internal returns (uint256 amountOut) {
-        Plugin memory plugin = plugins[swapSelector];
-        require(plugin.endpoint != address(0), InvalidPluginSelector());
+        bytes memory config = _validate(keccak256(abi.encodePacked(swapPlugin, bytes4(0))));
 
         bytes memory callData = abi.encodeWithSelector(
             ICometSwapPlugin.executeSwap.selector,
@@ -372,10 +397,10 @@ contract CometMultiplierAdapter is ReentrancyGuard, ICometMultiplierAdapter, IAl
             dstToken,
             amount,
             minAmountOut,
-            plugin.config,
+            config,
             swapData
         );
-        (bool ok, bytes memory data) = address(plugin.endpoint).delegatecall(callData);
+        (bool ok, bytes memory data) = address(swapPlugin).delegatecall(callData);
         _catch(ok);
 
         amountOut = abi.decode(data, (uint256));
@@ -395,6 +420,23 @@ contract CometMultiplierAdapter is ReentrancyGuard, ICometMultiplierAdapter, IAl
             abi.encodeWithSelector(ICometFlashLoanPlugin.takeFlashLoan.selector, data, config)
         );
         _catch(ok);
+    }
+
+    /**
+     * @notice Validates and extracts plugin config
+     * @param key Plugin key (keccak256 of endpoint and selector)
+     * @return config Plugin configuration without magic byte
+     * @dev Reverts if plugin is not registered or magic byte is invalid
+     */
+    function _validate(bytes32 key) internal view returns (bytes memory config) {
+        bytes memory configWithMagic = plugins[key];
+        require(configWithMagic.length > 0, UnknownPlugin());
+        require(configWithMagic[0] == PLUGIN_EXCIST, UnknownPlugin());
+        assembly {
+            let len := mload(configWithMagic)
+            config := add(configWithMagic, 1)
+            mstore(config, sub(len, 1))
+        }
     }
 
     /**
@@ -456,58 +498,76 @@ contract CometMultiplierAdapter is ReentrancyGuard, ICometMultiplierAdapter, IAl
 
     /**
      * @notice Stores operation parameters in transient storage for callback access
+     * @param swapPlugin Address of the swap plugin
      * @param amount Collateral amount being processed
      * @param market Address of the Comet market
      * @param collateral Address of the collateral token
      * @param minAmountOut Minimum expected output amount
-     * @param swapSelector Function selector for the swap plugin
      * @param mode Operation mode (EXECUTE or WITHDRAW)
      * @dev Uses EIP-1153 transient storage for gas-efficient temporary data storage
      */
     function _tstore(
+        address loanPlugin,
+        address swapPlugin,
         uint256 amount,
         address market,
         address collateral,
         uint256 minAmountOut,
-        bytes4 swapSelector,
         Mode mode
     ) internal {
         bytes32 slot = SLOT_ADAPTER;
         assembly {
             tstore(slot, mode)
+            tstore(add(slot, LOAN_PLUGIN_OFFSET), loanPlugin)
+            tstore(add(slot, SWAP_PLUGIN_OFFSET), swapPlugin)
             tstore(add(slot, AMOUNT_OFFSET), amount)
             tstore(add(slot, MARKET_OFFSET), market)
             tstore(add(slot, COLLATERAL_OFFSET), collateral)
             tstore(add(slot, MIN_AMOUNT_OUT_OFFSET), minAmountOut)
-            tstore(add(slot, SWAP_SELECTOR_OFFSET), swapSelector)
         }
     }
 
     /**
-     * @notice Retrieves and clears operation parameters from transient storage
+     * @notice Retrieves and clears first operation parameters from transient storage
+     * @return mode Operation mode (EXECUTE or WITHDRAW)
+     * @return loanPlugin Address of the flashloan plugin
+     * @dev Automatically clears the storage slots after reading to prevent reuse
+     */
+    function _tloadFirst() internal returns (Mode mode, address loanPlugin) {
+        bytes32 slot = SLOT_ADAPTER;
+        assembly {
+            mode := tload(slot)
+            loanPlugin := tload(add(slot, LOAN_PLUGIN_OFFSET))
+            tstore(slot, 0)
+            tstore(add(slot, LOAN_PLUGIN_OFFSET), 0)
+        }
+    }
+
+    /**
+     * @notice Retrieves and clears second operation parameters from transient storage
+     * @return swapPlugin Address of the swap plugin
      * @return amount Collateral amount being processed
      * @return market Address of the Comet market
      * @return collateral Address of the collateral token
      * @return minAmountOut Minimum expected output amount
-     * @return swapSelector Function selector for the swap plugin
      * @dev Automatically clears the storage slots after reading to prevent reuse
      */
-    function _tload()
+    function _tloadSecond()
         internal
-        returns (uint256 amount, IComet market, address collateral, uint256 minAmountOut, bytes4 swapSelector)
+        returns (address swapPlugin, uint256 amount, IComet market, address collateral, uint256 minAmountOut)
     {
         bytes32 slot = SLOT_ADAPTER;
         assembly {
+            swapPlugin := tload(add(slot, SWAP_PLUGIN_OFFSET))
             amount := tload(add(slot, AMOUNT_OFFSET))
             market := tload(add(slot, MARKET_OFFSET))
             collateral := tload(add(slot, COLLATERAL_OFFSET))
             minAmountOut := tload(add(slot, MIN_AMOUNT_OUT_OFFSET))
-            swapSelector := tload(add(slot, SWAP_SELECTOR_OFFSET))
+            tstore(add(slot, SWAP_PLUGIN_OFFSET), 0)
             tstore(add(slot, AMOUNT_OFFSET), 0)
             tstore(add(slot, MARKET_OFFSET), 0)
             tstore(add(slot, COLLATERAL_OFFSET), 0)
             tstore(add(slot, MIN_AMOUNT_OUT_OFFSET), 0)
-            tstore(add(slot, SWAP_SELECTOR_OFFSET), 0)
         }
     }
 

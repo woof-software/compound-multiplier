@@ -43,8 +43,8 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
     async function getMarketOptions() {
         return {
             market: COMET_USDC_MARKET,
-            loanSelector: await loanPlugin.CALLBACK_SELECTOR(),
-            swapSelector: await swapPlugin.CALLBACK_SELECTOR(),
+            loanPlugin: await loanPlugin.getAddress(),
+            swapPlugin: await swapPlugin.getAddress(),
             flp: UNI_V3_USDC_WETH_005
         };
     }

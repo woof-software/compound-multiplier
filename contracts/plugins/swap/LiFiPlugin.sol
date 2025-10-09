@@ -15,9 +15,6 @@ import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.s
  */
 contract LiFiPlugin is ICometSwapPlugin {
     using SafeERC20 for IERC20;
-    /// @notice Callback function selector for this swap plugin
-    /// @dev Used by CometMultiplierAdapter to identify and route swap calls to this plugin
-    bytes4 public constant CALLBACK_SELECTOR = 0x8b9d1a3c;
 
     /**
      * @inheritdoc ICometSwapPlugin
@@ -54,5 +51,9 @@ contract LiFiPlugin is ICometSwapPlugin {
         amountOut = balAfter - balBefore;
 
         emit SwapExecuted(router, srcToken, dstToken, amountOut);
+    }
+
+    function supportsInterface(bytes4 interfaceId) external pure returns (bool) {
+        return interfaceId == type(ICometSwapPlugin).interfaceId;
     }
 }

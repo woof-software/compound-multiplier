@@ -5,6 +5,7 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IEVault } from "../../external/euler/IEVault.sol";
 import { ICometFlashLoanPlugin } from "../../interfaces/ICometFlashLoanPlugin.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 /**
  * @title EulerV2Plugin
@@ -57,5 +58,9 @@ contract EulerV2Plugin is ICometFlashLoanPlugin {
         require(keccak256(data) == flidExpected, InvalidFlashLoanId());
         _data = abi.decode(data, (CallbackData));
         require(_data.flp == msg.sender, UnauthorizedCallback());
+    }
+
+    function supportsInterface(bytes4 interfaceId) external pure returns (bool) {
+        return interfaceId == type(ICometFlashLoanPlugin).interfaceId || interfaceId == type(IERC165).interfaceId;
     }
 }
