@@ -20,10 +20,10 @@ error UnknownCallbackSelector()
 error UnknownMarket()
 ```
 
-### InvalidPluginSelector
+### UnknownPlugin
 
 ```solidity
-error InvalidPluginSelector()
+error UnknownPlugin()
 ```
 
 ### InvalidLeverage
@@ -89,36 +89,21 @@ enum Mode {
 }
 ```
 
-### Plugin
-
-```solidity
-struct Plugin {
-  address endpoint;
-  bytes config;
-}
-```
-
 ### Options
 
 ```solidity
 struct Options {
   address market;
   address flp;
-  bytes4 loanSelector;
-  bytes4 swapSelector;
+  address loanPlugin;
+  address swapPlugin;
 }
-```
-
-### AssetAdded
-
-```solidity
-event AssetAdded(address collateralAsset, bytes4 pluginSelector)
 ```
 
 ### PluginAdded
 
 ```solidity
-event PluginAdded(address plugin, bytes4 pluginSelector)
+event PluginAdded(address endpoint, bytes4 selector, bytes32 key)
 ```
 
 ### Executed

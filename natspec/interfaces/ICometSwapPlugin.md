@@ -38,12 +38,6 @@ error InvalidSwapParameters()
 error SwapFailed()
 ```
 
-### CALLBACK_SELECTOR
-
-```solidity
-function CALLBACK_SELECTOR() external view returns (bytes4)
-```
-
 ### executeSwap
 
 ```solidity

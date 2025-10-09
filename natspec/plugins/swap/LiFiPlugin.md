@@ -7,16 +7,6 @@ Swap plugin for integrating LiFi aggregator with CometMultiplierAdapter
 _Implements ICometSwapPlugin interface to provide standardized token swap functionality
 using the LiFi aggregation router for optimal swap execution_
 
-### CALLBACK_SELECTOR
-
-```solidity
-bytes4 CALLBACK_SELECTOR
-```
-
-Callback function selector for this swap plugin
-
-_Used by CometMultiplierAdapter to identify and route swap calls to this plugin_
-
 ### executeSwap
 
 ```solidity
@@ -41,3 +31,16 @@ Executes a token swap between two assets
 | Name      | Type    | Description                                                |
 | --------- | ------- | ---------------------------------------------------------- |
 | amountOut | uint256 | Actual amount of destination tokens received from the swap |
+
+### supportsInterface
+
+```solidity
+function supportsInterface(bytes4 interfaceId) external pure returns (bool)
+```
+
+\_Returns true if this contract implements the interface defined by
+`interfaceId`. See the corresponding
+https://eips.ethereum.org/EIPS/eip-165#how-interfaces-are-identified[ERC section]
+to learn more about how these ids are created.
+
+This function call must use less than 30 000 gas.\_

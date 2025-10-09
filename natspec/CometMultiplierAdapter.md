@@ -16,13 +16,33 @@ uint256 LEVERAGE_PRECISION
 
 Precision constant for leverage calculations (represents 1x leverage)
 
+### PLUGIN_EXCIST
+
+```solidity
+bytes1 PLUGIN_EXCIST
+```
+
+Magic byte to identify valid plugin calls
+
+### SWAP_PLUGIN_OFFSET
+
+```solidity
+uint8 SWAP_PLUGIN_OFFSET
+```
+
+Offset constants for transient storage slots
+
+### LOAN_PLUGIN_OFFSET
+
+```solidity
+uint8 LOAN_PLUGIN_OFFSET
+```
+
 ### AMOUNT_OFFSET
 
 ```solidity
 uint8 AMOUNT_OFFSET
 ```
-
-Offset constants for transient storage slots
 
 ### MARKET_OFFSET
 
@@ -42,12 +62,6 @@ uint8 COLLATERAL_OFFSET
 uint8 MIN_AMOUNT_OUT_OFFSET
 ```
 
-### SWAP_SELECTOR_OFFSET
-
-```solidity
-uint8 SWAP_SELECTOR_OFFSET
-```
-
 ### SLOT_ADAPTER
 
 ```solidity
@@ -59,7 +73,7 @@ Storage slot for transient data, derived from contract name hash
 ### plugins
 
 ```solidity
-mapping(bytes4 => struct ICometMultiplierAdapter.Plugin) plugins
+mapping(bytes32 => bytes) plugins
 ```
 
 Mapping of function selectors to their corresponding plugin configurations
@@ -77,7 +91,7 @@ Wrapped ETH (WETH) token address
 ### constructor
 
 ```solidity
-constructor(struct ICometMultiplierAdapter.Plugin[] _plugins, address _wEth) public
+constructor(struct ICometPlugin.Plugin[] _plugins, address _wEth) public
 ```
 
 Initializes the adapter with flash loan and swap plugins
@@ -86,10 +100,10 @@ _Each plugin must have a valid non-zero callback selector_
 
 #### Parameters
 
-| Name      | Type                                    | Description                                                                      |
-| --------- | --------------------------------------- | -------------------------------------------------------------------------------- |
-| \_plugins | struct ICometMultiplierAdapter.Plugin[] | Array of plugin configurations containing endpoints and their callback selectors |
-| \_wEth    | address                                 |                                                                                  |
+| Name      | Type                         | Description                                                                      |
+| --------- | ---------------------------- | -------------------------------------------------------------------------------- |
+| \_plugins | struct ICometPlugin.Plugin[] | Array of plugin configurations containing endpoints and their callback selectors |
+| \_wEth    | address                      |                                                                                  |
 
 ### fallback
 
@@ -224,7 +238,7 @@ Internal implementation of withdrawMultiplier
 ### \_swap
 
 ```solidity
-function _swap(address srcToken, address dstToken, uint256 amount, uint256 minAmountOut, bytes4 swapSelector, bytes swapData) internal returns (uint256 amountOut)
+function _swap(address swapPlugin, address srcToken, address dstToken, uint256 amount, uint256 minAmountOut, bytes swapData) internal returns (uint256 amountOut)
 ```
 
 Executes a token swap using the configured swap plugin
@@ -235,11 +249,11 @@ _Uses delegatecall to execute swap in the context of this contract_
 
 | Name         | Type    | Description                                   |
 | ------------ | ------- | --------------------------------------------- |
+| swapPlugin   | address |                                               |
 | srcToken     | address | Address of the source token to swap from      |
 | dstToken     | address | Address of the destination token to swap to   |
 | amount       | uint256 | Amount of source tokens to swap               |
 | minAmountOut | uint256 | Minimum amount of destination tokens expected |
-| swapSelector | bytes4  | Function selector of the swap plugin to use   |
 | swapData     | bytes   | Encoded parameters for the swap execution     |
 
 #### Return Values
@@ -265,6 +279,28 @@ _Uses delegatecall to execute the flash loan in this contract's context_
 | endpoint | address                                   | Address of the flash loan plugin                      |
 | data     | struct ICometFlashLoanPlugin.CallbackData | Callback data to be passed to the flash loan callback |
 | config   | bytes                                     | Plugin-specific configuration data                    |
+
+### \_validate
+
+```solidity
+function _validate(bytes32 key) internal view returns (bytes config)
+```
+
+Validates and extracts plugin config
+
+_Reverts if plugin is not registered or magic byte is invalid_
+
+#### Parameters
+
+| Name | Type    | Description                                     |
+| ---- | ------- | ----------------------------------------------- |
+| key  | bytes32 | Plugin key (keccak256 of endpoint and selector) |
+
+#### Return Values
+
+| Name   | Type  | Description                             |
+| ------ | ----- | --------------------------------------- |
+| config | bytes | Plugin configuration without magic byte |
 
 ### \_leveraged
 
@@ -341,7 +377,7 @@ _Used to normalize prices across different decimal precisions_
 ### \_tstore
 
 ```solidity
-function _tstore(uint256 amount, address market, address collateral, uint256 minAmountOut, bytes4 swapSelector, enum ICometMultiplierAdapter.Mode mode) internal
+function _tstore(address loanPlugin, address swapPlugin, uint256 amount, address market, address collateral, uint256 minAmountOut, enum ICometMultiplierAdapter.Mode mode) internal
 ```
 
 Stores operation parameters in transient storage for callback access
@@ -350,34 +386,52 @@ _Uses EIP-1153 transient storage for gas-efficient temporary data storage_
 
 #### Parameters
 
-| Name         | Type                              | Description                           |
-| ------------ | --------------------------------- | ------------------------------------- |
-| amount       | uint256                           | Collateral amount being processed     |
-| market       | address                           | Address of the Comet market           |
-| collateral   | address                           | Address of the collateral token       |
-| minAmountOut | uint256                           | Minimum expected output amount        |
-| swapSelector | bytes4                            | Function selector for the swap plugin |
-| mode         | enum ICometMultiplierAdapter.Mode | Operation mode (EXECUTE or WITHDRAW)  |
+| Name         | Type                              | Description                          |
+| ------------ | --------------------------------- | ------------------------------------ |
+| loanPlugin   | address                           |                                      |
+| swapPlugin   | address                           | Address of the swap plugin           |
+| amount       | uint256                           | Collateral amount being processed    |
+| market       | address                           | Address of the Comet market          |
+| collateral   | address                           | Address of the collateral token      |
+| minAmountOut | uint256                           | Minimum expected output amount       |
+| mode         | enum ICometMultiplierAdapter.Mode | Operation mode (EXECUTE or WITHDRAW) |
 
-### \_tload
+### \_tloadFirst
 
 ```solidity
-function _tload() internal returns (uint256 amount, contract IComet market, address collateral, uint256 minAmountOut, bytes4 swapSelector)
+function _tloadFirst() internal returns (enum ICometMultiplierAdapter.Mode mode, address loanPlugin)
 ```
 
-Retrieves and clears operation parameters from transient storage
+Retrieves and clears first operation parameters from transient storage
 
 _Automatically clears the storage slots after reading to prevent reuse_
 
 #### Return Values
 
-| Name         | Type            | Description                           |
-| ------------ | --------------- | ------------------------------------- |
-| amount       | uint256         | Collateral amount being processed     |
-| market       | contract IComet | Address of the Comet market           |
-| collateral   | address         | Address of the collateral token       |
-| minAmountOut | uint256         | Minimum expected output amount        |
-| swapSelector | bytes4          | Function selector for the swap plugin |
+| Name       | Type                              | Description                          |
+| ---------- | --------------------------------- | ------------------------------------ |
+| mode       | enum ICometMultiplierAdapter.Mode | Operation mode (EXECUTE or WITHDRAW) |
+| loanPlugin | address                           | Address of the flashloan plugin      |
+
+### \_tloadSecond
+
+```solidity
+function _tloadSecond() internal returns (address swapPlugin, uint256 amount, contract IComet market, address collateral, uint256 minAmountOut)
+```
+
+Retrieves and clears second operation parameters from transient storage
+
+_Automatically clears the storage slots after reading to prevent reuse_
+
+#### Return Values
+
+| Name         | Type            | Description                       |
+| ------------ | --------------- | --------------------------------- |
+| swapPlugin   | address         | Address of the swap plugin        |
+| amount       | uint256         | Collateral amount being processed |
+| market       | contract IComet | Address of the Comet market       |
+| collateral   | address         | Address of the collateral token   |
+| minAmountOut | uint256         | Minimum expected output amount    |
 
 ### \_catch
 

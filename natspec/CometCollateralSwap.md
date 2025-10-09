@@ -71,7 +71,7 @@ _The plugin encapsulates swap logic and integrates with the chosen DEX aggregato
 ### plugins
 
 ```solidity
-mapping(bytes4 => struct ICometCollateralSwap.Plugin) plugins
+mapping(bytes4 => struct ICometPlugin.Plugin) plugins
 ```
 
 Maps plugins callback selector to the plugin endpoint address
@@ -79,7 +79,7 @@ Maps plugins callback selector to the plugin endpoint address
 ### constructor
 
 ```solidity
-constructor(struct ICometCollateralSwap.Plugin[] plugins_, address swapRouter_, address swapPlugin_) public
+constructor(struct ICometPlugin.Plugin[] plugins_, address swapRouter_, address swapPlugin_) public
 ```
 
 Constructor
@@ -88,11 +88,11 @@ _Emits PluginRegistered event for each registered plugin_
 
 #### Parameters
 
-| Name         | Type                                 | Description                         |
-| ------------ | ------------------------------------ | ----------------------------------- |
-| plugins\_    | struct ICometCollateralSwap.Plugin[] | Array of flash loan plugins structs |
-| swapRouter\_ | address                              | Address of the swap router          |
-| swapPlugin\_ | address                              | Address of the swap plugin          |
+| Name         | Type                         | Description                         |
+| ------------ | ---------------------------- | ----------------------------------- |
+| plugins\_    | struct ICometPlugin.Plugin[] | Array of flash loan plugins structs |
+| swapRouter\_ | address                      | Address of the swap router          |
+| swapPlugin\_ | address                      | Address of the swap plugin          |
 
 ### fallback
 

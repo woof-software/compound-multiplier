@@ -62,3 +62,16 @@ Repays the flash loan
 ```solidity
 function onFlashLoan(bytes data) external returns (struct ICometFlashLoanPlugin.CallbackData _data)
 ```
+
+### supportsInterface
+
+```solidity
+function supportsInterface(bytes4 interfaceId) external pure returns (bool)
+```
+
+\_Returns true if this contract implements the interface defined by
+`interfaceId`. See the corresponding
+https://eips.ethereum.org/EIPS/eip-165#how-interfaces-are-identified[ERC section]
+to learn more about how these ids are created.
+
+This function call must use less than 30 000 gas.\_

@@ -7,24 +7,6 @@ Interface for CompoundV3 collateral swap contract
 _This contract enables users to swap one collateral asset for another within their Compound V3 position
 using flash loans. The swap maintains the user's debt position while changing their collateral composition._
 
-### Plugin
-
-Configuration for flash loan plugin endpoints
-
-_Each plugin provides flash loan functionality from different providers (Uniswap V3, AAVE, Morpho, etc.)_
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-
-```solidity
-struct Plugin {
-  address endpoint;
-  address flp;
-}
-```
-
 ### SwapParams
 
 Parameters required to execute a collateral swap
@@ -39,20 +21,21 @@ _Contains all necessary information for the swap including assets, amounts, slip
 ```solidity
 struct SwapParams {
   address comet;
-  bytes4 callbackSelector;
+  address flp;
   address fromAsset;
-  uint256 fromAmount;
   address toAsset;
-  bytes swapCalldata;
+  uint256 fromAmount;
   uint256 minAmountOut;
   uint256 maxHealthFactorDropBps;
+  bytes4 callbackSelector;
+  bytes swapCalldata;
 }
 ```
 
 ### PluginRegistered
 
 ```solidity
-event PluginRegistered(bytes4 callbackSelector, address pluginEndpoint, address flp)
+event PluginRegistered(bytes4 callbackSelector, address pluginEndpoint, bytes config)
 ```
 
 Emitted when a new flash loan plugin is registered
@@ -61,11 +44,11 @@ _This event is fired during contract construction for each plugin_
 
 #### Parameters
 
-| Name             | Type    | Description                                                        |
-| ---------------- | ------- | ------------------------------------------------------------------ |
-| callbackSelector | bytes4  | The unique bytes4 selector for this plugin's callback function     |
-| pluginEndpoint   | address | The address of the plugin contract                                 |
-| flp              | address | The address of the flash loan provider this plugin interfaces with |
+| Name             | Type    | Description                                                    |
+| ---------------- | ------- | -------------------------------------------------------------- |
+| callbackSelector | bytes4  | The unique bytes4 selector for this plugin's callback function |
+| pluginEndpoint   | address | The address of the plugin contract                             |
+| config           | bytes   | Pluigin configuration data                                     |
 
 ### UnauthorizedCallback
 

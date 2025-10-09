@@ -6,16 +6,6 @@ Swap plugin for converting between WETH and wstETH via Lido staking
 
 _Implements ICometSwapPlugin interface to provide specialized WETH / wstETH conversion_
 
-### CALLBACK_SELECTOR
-
-```solidity
-bytes4 CALLBACK_SELECTOR
-```
-
-Callback function selector for this swap plugin
-
-_Used by CometMultiplierAdapter to identify and route swap calls to this plugin_
-
 ### WSTETH_ADDRESS
 
 ```solidity
@@ -62,3 +52,16 @@ Executes a token swap between two assets
 ```solidity
 function _lidoSwap(address wEth, address wstEth, address stEth, uint256 amountIn, uint256 minAmountOut) internal returns (uint256 amountOut)
 ```
+
+### supportsInterface
+
+```solidity
+function supportsInterface(bytes4 interfaceId) external pure returns (bool)
+```
+
+\_Returns true if this contract implements the interface defined by
+`interfaceId`. See the corresponding
+https://eips.ethereum.org/EIPS/eip-165#how-interfaces-are-identified[ERC section]
+to learn more about how these ids are created.
+
+This function call must use less than 30 000 gas.\_
