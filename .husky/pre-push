@@ -7,8 +7,11 @@ if ! git diff --cached --quiet; then
     git commit -m "chore(abi): Update";
 fi
 
+rm -rf natspec/
+
 pnpm gen:docs
 mv docs natspec
+
 pnpm prettier -u --no-error-on-unmatched-pattern --write "natspec/**/*"
 if [ -d "natspec/" ]; then
     git add natspec/
