@@ -6,8 +6,8 @@
     "error SwapFailed()",
     "error ZeroAddress()",
     "event SwapExecuted(address indexed,address indexed,address indexed,uint256)",
-    "function CALLBACK_SELECTOR() view returns (bytes4)",
     "function STETH_ADDRESS() view returns (address)",
     "function WSTETH_ADDRESS() view returns (address)",
-    "function executeSwap(address,address,uint256,uint256,bytes,bytes) returns (uint256)"
+    "function executeSwap(address,address,uint256,uint256,bytes,bytes) returns (uint256)",
+    "function supportsInterface(bytes4) pure returns (bool)"
 ]

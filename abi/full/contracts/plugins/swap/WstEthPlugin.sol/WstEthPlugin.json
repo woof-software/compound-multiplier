@@ -6,8 +6,8 @@
     "error SwapFailed()",
     "error ZeroAddress()",
     "event SwapExecuted(address indexed router, address indexed srcToken, address indexed dstToken, uint256 actualAmountOut)",
-    "function CALLBACK_SELECTOR() view returns (bytes4)",
     "function STETH_ADDRESS() view returns (address)",
     "function WSTETH_ADDRESS() view returns (address)",
-    "function executeSwap(address srcToken, address dstToken, uint256 amountIn, uint256 minAmountOut, bytes, bytes) returns (uint256 amountOut)"
+    "function executeSwap(address srcToken, address dstToken, uint256 amountIn, uint256 minAmountOut, bytes, bytes) returns (uint256 amountOut)",
+    "function supportsInterface(bytes4 interfaceId) pure returns (bool)"
 ]

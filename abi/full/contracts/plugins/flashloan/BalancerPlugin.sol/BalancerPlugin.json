@@ -7,5 +7,6 @@
     "function SLOT_PLUGIN() view returns (bytes32)",
     "function receiveFlashLoan(address[] tokens, uint256[] amounts, uint256[] feeAmounts, bytes userData) returns (tuple(uint256 debt, uint256 fee, uint256 snapshot, address user, address flp, address asset, bytes swapData) _data)",
     "function repayFlashLoan(address flp, address asset, uint256 amount)",
+    "function supportsInterface(bytes4 interfaceId) pure returns (bool)",
     "function takeFlashLoan(tuple(uint256 debt, uint256 fee, uint256 snapshot, address user, address flp, address asset, bytes swapData) data, bytes) payable"
 ]
