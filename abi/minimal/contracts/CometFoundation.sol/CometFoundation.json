@@ -1,0 +1,11 @@
+[
+    "constructor(tuple(address,bytes)[])",
+    "error InvalidAmountOut()",
+    "error InvalidAsset()",
+    "error InvalidOpts()",
+    "error UnknownPlugin()",
+    "event PluginAdded(address indexed,bytes4 indexed,bytes32)",
+    "function FACTOR_SCALE() view returns (uint64)",
+    "function PRECEISION() view returns (uint16)",
+    "function plugins(bytes32) view returns (bytes)"
+]

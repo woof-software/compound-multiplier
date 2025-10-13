@@ -1,0 +1,17 @@
+[
+    "constructor(tuple(address endpoint, bytes config)[] _plugins) payable",
+    "error InsufficientAmountOut()",
+    "error InvalidAmountOut()",
+    "error InvalidAsset()",
+    "error InvalidOpts()",
+    "error InvalidSwapParameters()",
+    "error NotSufficientLiquidity()",
+    "error SafeERC20FailedOperation(address token)",
+    "error UnknownPlugin()",
+    "event PluginAdded(address indexed endpoint, bytes4 indexed selector, bytes32 key)",
+    "function FACTOR_SCALE() view returns (uint64)",
+    "function PRECEISION() view returns (uint16)",
+    "function executeSwap(tuple(tuple(address comet, address flp, address loanPlugin, address swapPlugin) opts, address fromAsset, address toAsset, uint256 fromAmount, uint256 minAmountOut, uint256 maxHealthFactorDropBps, bytes swapCalldata) swapParams)",
+    "function executeSwapBySig(tuple(tuple(address comet, address flp, address loanPlugin, address swapPlugin) opts, address fromAsset, address toAsset, uint256 fromAmount, uint256 minAmountOut, uint256 maxHealthFactorDropBps, bytes swapCalldata) swapParams, tuple(uint256 nonce, uint256 expiry, bytes32 r, bytes32 s, uint8 v) allowParams)",
+    "function plugins(bytes32) view returns (bytes)"
+]
