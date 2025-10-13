@@ -3,6 +3,7 @@ pragma solidity =0.8.30;
 
 import { IAllowBySig } from "./IAllowBySig.sol";
 import { ICometFoundation } from "./ICometFoundation.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
  * @title ICometCollateralSwap
@@ -29,8 +30,8 @@ interface ICometCollateralSwap is ICometFoundation {
      */
     struct SwapParams {
         Options opts;
-        address fromAsset;
-        address toAsset;
+        IERC20 fromAsset;
+        IERC20 toAsset;
         uint256 fromAmount;
         uint256 minAmountOut;
         uint256 maxHealthFactorDropBps;

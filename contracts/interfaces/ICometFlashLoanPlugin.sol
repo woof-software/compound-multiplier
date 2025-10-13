@@ -2,6 +2,7 @@
 pragma solidity =0.8.30;
 
 import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface ICometFlashLoanPlugin is IERC165 {
     error UnauthorizedCallback();
@@ -27,7 +28,7 @@ interface ICometFlashLoanPlugin is IERC165 {
         uint256 snapshot;
         address user;
         address flp;
-        address asset;
+        IERC20 asset;
         bytes swapData;
     }
 

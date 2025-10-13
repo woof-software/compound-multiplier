@@ -91,7 +91,7 @@ contract CometCollateralSwap is CometFoundation, ICometCollateralSwap {
      * - May revert with plugin-specific errors if delegate calls fail
      */
     fallback() external {
-        (address loanPlugin, address swapPlugin, IComet comet, address fromAsset, uint256 fromAmount) = _tload();
+        (address loanPlugin, address swapPlugin, IComet comet, IERC20 fromAsset, uint256 fromAmount) = _tload();
 
         require(loanPlugin != address(0) && swapPlugin != address(0), UnknownPlugin());
 
@@ -106,14 +106,14 @@ contract CometCollateralSwap is CometFoundation, ICometCollateralSwap {
         require(asset.balanceOf(address(this)) == data.snapshot + debt, InvalidAmountOut());
 
         asset.safeIncreaseAllowance(address(comet), debt);
-        comet.supplyTo(user, address(asset), debt);
+        comet.supplyTo(user, asset, debt);
         comet.withdrawFrom(user, address(this), fromAsset, fromAmount);
 
         uint256 repayAmount = debt + data.fee;
 
         _swap(swapPlugin, fromAsset, data.asset, fromAmount, repayAmount, data.swapData);
 
-        _supplyDust(user, IERC20(fromAsset), comet, 0);
+        _supplyDust(user, fromAsset, comet, 0);
         _supplyDust(user, asset, comet, repayAmount);
 
         _repay(loanPlugin, data.flp, data.asset, repayAmount);
@@ -150,8 +150,8 @@ contract CometCollateralSwap is CometFoundation, ICometCollateralSwap {
         address loanPlugin = swapParams.opts.loanPlugin;
         address swapPlugin = swapParams.opts.swapPlugin;
         address comet = swapParams.opts.comet;
-        address toAsset = swapParams.toAsset;
-        address fromAsset = swapParams.fromAsset;
+        IERC20 toAsset = swapParams.toAsset;
+        IERC20 fromAsset = swapParams.fromAsset;
         uint256 minAmountOut = swapParams.minAmountOut;
         uint256 fromAmount = swapParams.fromAmount;
 
@@ -176,7 +176,7 @@ contract CometCollateralSwap is CometFoundation, ICometCollateralSwap {
             ICometFlashLoanPlugin.CallbackData({
                 debt: minAmountOut,
                 fee: 0, // to be handled by plugin
-                snapshot: IERC20(toAsset).balanceOf(address(this)),
+                snapshot: toAsset.balanceOf(address(this)),
                 user: msg.sender,
                 flp: swapParams.opts.flp,
                 asset: toAsset,
@@ -200,8 +200,8 @@ contract CometCollateralSwap is CometFoundation, ICometCollateralSwap {
      */
     function _checkCollateralization(
         IComet comet,
-        address assetFrom,
-        address assetTo,
+        IERC20 assetFrom,
+        IERC20 assetTo,
         uint256 fromAmount,
         uint256 minAmountOut,
         uint256 maxHealthFactorDropBps
@@ -237,7 +237,7 @@ contract CometCollateralSwap is CometFoundation, ICometCollateralSwap {
         address loanPlugin,
         address swapPlugin,
         address comet,
-        address collateral,
+        IERC20 collateral,
         uint256 amount
     ) internal {
         bytes32 slot = SLOT_FOUNDATION;
@@ -260,7 +260,7 @@ contract CometCollateralSwap is CometFoundation, ICometCollateralSwap {
      */
     function _tload()
         internal
-        returns (address loanPlugin, address swapPlugin, IComet comet, address fromAsset, uint256 fromAmount)
+        returns (address loanPlugin, address swapPlugin, IComet comet, IERC20 fromAsset, uint256 fromAmount)
     {
         bytes32 slot = SLOT_FOUNDATION;
         assembly {
@@ -283,8 +283,8 @@ contract CometCollateralSwap is CometFoundation, ICometCollateralSwap {
      */
     function _validateExecParams(SwapParams calldata swapParams) internal pure {
         require(
-            swapParams.fromAsset != address(0) &&
-                swapParams.toAsset != address(0) &&
+            address(swapParams.fromAsset) != address(0) &&
+                address(swapParams.toAsset) != address(0) &&
                 swapParams.minAmountOut > 0 &&
                 swapParams.maxHealthFactorDropBps < PRECEISION,
             InvalidSwapParameters()
@@ -302,7 +302,7 @@ contract CometCollateralSwap is CometFoundation, ICometCollateralSwap {
         uint256 balance = asset.balanceOf(address(this)) - repayAmount;
         if (balance != 0) {
             asset.safeIncreaseAllowance(address(comet), balance);
-            comet.supplyTo(user, address(asset), balance);
+            comet.supplyTo(user, asset, balance);
         }
     }
 }

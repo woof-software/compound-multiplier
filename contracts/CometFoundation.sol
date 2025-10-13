@@ -2,6 +2,7 @@
 pragma solidity =0.8.30;
 
 import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import { ICometFoundation } from "./interfaces/ICometFoundation.sol";
 import { ICometSwapPlugin } from "./interfaces/ICometSwapPlugin.sol";
@@ -96,8 +97,8 @@ contract CometFoundation is ICometFoundation {
      */
     function _swap(
         address swapPlugin,
-        address srcToken,
-        address dstToken,
+        IERC20 srcToken,
+        IERC20 dstToken,
         uint256 amount,
         uint256 minAmountOut,
         bytes memory swapData
@@ -141,7 +142,7 @@ contract CometFoundation is ICometFoundation {
      * @param amount Total amount to repay (principal + fee)
      * @dev Uses delegatecall to invoke the repay function on the flash loan plugin
      */
-    function _repay(address endpoint, address flp, address baseAsset, uint256 amount) internal {
+    function _repay(address endpoint, address flp, IERC20 baseAsset, uint256 amount) internal {
         (bool ok, ) = endpoint.delegatecall(
             abi.encodeWithSelector(ICometFlashLoanPlugin.repayFlashLoan.selector, flp, baseAsset, amount)
         );
@@ -154,7 +155,7 @@ contract CometFoundation is ICometFoundation {
      * @return config Plugin configuration without magic byte
      * @dev Reverts if plugin is not registered or magic byte is invalid
      */
-    function _validateLoan(Options memory opts) internal view returns (bytes memory config) {
+    function _validateLoan(Options calldata opts) internal view returns (bytes memory config) {
         require(opts.loanPlugin != address(0) && opts.comet != address(0) && opts.flp != address(0), InvalidOpts());
         config = _config(opts.loanPlugin, ICometFlashLoanPlugin(opts.loanPlugin).CALLBACK_SELECTOR());
     }

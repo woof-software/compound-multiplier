@@ -64,7 +64,7 @@ contract BalancerPlugin is IFlashLoanRecipient, ICometFlashLoanPlugin {
         _data = abi.decode(userData, (CallbackData));
 
         require(_data.flp == msg.sender, UnauthorizedCallback());
-        require(_data.asset == address(tokens[0]) && _data.debt == amounts[0], InvalidFlashLoanData());
+        require(address(_data.asset) == address(tokens[0]) && _data.debt == amounts[0], InvalidFlashLoanData());
 
         _data.fee = feeAmounts[0];
     }

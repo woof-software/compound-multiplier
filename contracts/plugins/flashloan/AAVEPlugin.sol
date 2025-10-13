@@ -64,7 +64,10 @@ contract AAVEPlugin is ICometFlashLoanPlugin {
         _data = abi.decode(params, (CallbackData));
 
         require(_data.flp == msg.sender, UnauthorizedCallback());
-        require(_data.debt == amount && _data.asset == asset && initiator == address(this), InvalidFlashLoanData());
+        require(
+            _data.debt == amount && address(_data.asset) == asset && initiator == address(this),
+            InvalidFlashLoanData()
+        );
 
         _data.fee = premium;
     }

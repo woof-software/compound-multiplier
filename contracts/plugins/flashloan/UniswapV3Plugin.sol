@@ -35,10 +35,11 @@ contract UniswapV3Plugin is ICometFlashLoanPlugin {
         IUniswapV3Pool pool = IUniswapV3Pool(data.flp);
         address token0 = pool.token0();
         address token1 = pool.token1();
-        require(token0 == data.asset || token1 == data.asset, UnauthorizedCallback());
+        address asset = address(data.asset);
+        require(token0 == asset || token1 == asset, UnauthorizedCallback());
 
-        uint256 amount0 = token0 == data.asset ? data.debt : 0;
-        uint256 amount1 = token1 == data.asset ? data.debt : 0;
+        uint256 amount0 = token0 == asset ? data.debt : 0;
+        uint256 amount1 = token1 == asset ? data.debt : 0;
 
         pool.flash(address(this), amount0, amount1, _data);
     }
@@ -77,7 +78,8 @@ contract UniswapV3Plugin is ICometFlashLoanPlugin {
         IUniswapV3Pool pool = IUniswapV3Pool(_data.flp);
         address token0 = pool.token0();
         address token1 = pool.token1();
-        uint256 fee = token0 == _data.asset ? fee0 : (token1 == _data.asset ? fee1 : type(uint256).max);
+        address asset = address(_data.asset);
+        uint256 fee = token0 == asset ? fee0 : (token1 == asset ? fee1 : type(uint256).max);
         require(fee != type(uint256).max, UnauthorizedCallback());
 
         _data.fee = fee;

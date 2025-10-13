@@ -3,6 +3,7 @@ pragma solidity =0.8.30;
 
 import { IAllowBySig } from "./IAllowBySig.sol";
 import { ICometFoundation } from "./ICometFoundation.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 error InvalidAsset();
 
@@ -70,7 +71,7 @@ interface ICometMultiplier is ICometFoundation {
      */
     function executeMultiplier(
         Options memory opts,
-        address collateral,
+        IERC20 collateral,
         uint256 collateralAmount,
         uint256 leverage,
         bytes calldata swapData,
@@ -91,7 +92,7 @@ interface ICometMultiplier is ICometFoundation {
      */
     function executeMultiplierBySig(
         Options memory opts,
-        address collateral,
+        IERC20 collateral,
         uint256 collateralAmount,
         uint256 leverage,
         bytes calldata swapData,
@@ -114,7 +115,7 @@ interface ICometMultiplier is ICometFoundation {
      */
     function withdrawMultiplier(
         Options memory opts,
-        address collateral,
+        IERC20 collateral,
         uint256 collateralAmount,
         bytes calldata swapData,
         uint256 minAmountOut
@@ -133,7 +134,7 @@ interface ICometMultiplier is ICometFoundation {
      */
     function withdrawMultiplierBySig(
         Options memory opts,
-        address collateral,
+        IERC20 collateral,
         uint256 collateralAmount,
         bytes calldata swapData,
         uint256 minAmountOut,
