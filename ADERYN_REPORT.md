@@ -162,17 +162,3 @@ If the same constant literal value is used multiple times, create a constant sta
   ```
 
 </details>
-
-## L-2: Large literal values multiples of 10000 can be replaced with scientific notation
-
-Use `e` notation, for example: `1e18`, instead of its full numeric value.
-
-<details><summary>1 Found Instances</summary>
-
-- Found in contracts/CometFoundation.sol [Line: 22](contracts/CometFoundation.sol#L22)
-
-  ```solidity
-      uint16 public constant PRECEISION = 10_000;
-  ```
-
-</details>

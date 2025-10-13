@@ -9,7 +9,7 @@ import { ICometFlashLoanPlugin } from "./interfaces/ICometFlashLoanPlugin.sol";
 import { IComet } from "./external/compound/IComet.sol";
 
 /**
- * @title Comet Foundation
+ * @title CometFoundation
  * @author WOOF! Software
  * @custom:security-contact
  * @notice This contract serves as a foundational component for managing plugins that facilitate flash loans and token swaps.
@@ -19,7 +19,7 @@ import { IComet } from "./external/compound/IComet.sol";
 contract CometFoundation is ICometFoundation {
     /// @dev The scale for factors
     uint64 public constant FACTOR_SCALE = 1e18;
-    uint16 public constant PRECEISION = 10_000;
+    uint16 public constant PRECEISION = 1e4;
 
     /// @notice Magic byte to identify valid plugin calls
     bytes1 constant PLUGIN_MAGIC = 0x01;

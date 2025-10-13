@@ -150,16 +150,22 @@ contract CometMultiplier is CometFoundation, ReentrancyGuard, ICometMultiplier {
             IERC20(collateral).safeTransferFrom(msg.sender, address(this), collateralAmount);
         }
 
-        uint256 leveraged = _leveraged(comet, collateral, collateralAmount, leverage);
-
         address baseAsset = comet.baseToken();
 
-        _tstore(opts.loanPlugin, opts.swapPlugin, opts.comet, collateral, collateralAmount, minAmountOut, Mode.EXECUTE);
+        _tstore(
+            opts.loanPlugin,
+            opts.swapPlugin,
+            address(comet),
+            collateral,
+            collateralAmount,
+            minAmountOut,
+            Mode.EXECUTE
+        );
 
         _loan(
             opts.loanPlugin,
             ICometFlashLoanPlugin.CallbackData({
-                debt: leveraged,
+                debt: _leveraged(comet, collateral, collateralAmount, leverage),
                 fee: 0, // to be handled by plugin
                 snapshot: IERC20(baseAsset).balanceOf(address(this)),
                 user: msg.sender,
@@ -191,8 +197,7 @@ contract CometMultiplier is CometFoundation, ReentrancyGuard, ICometMultiplier {
         if (collateralAmount == type(uint256).max) {
             loanDebt = repayAmount;
         } else {
-            uint128 userBalance = comet.collateralBalanceOf(msg.sender, collateral);
-            require(collateralAmount <= userBalance, InvalidCollateralAmount());
+            require(collateralAmount <= comet.collateralBalanceOf(msg.sender, collateral), InvalidCollateralAmount());
             loanDebt = Math.min(_convert(comet, collateral, collateralAmount), repayAmount);
         }
 
@@ -201,7 +206,7 @@ contract CometMultiplier is CometFoundation, ReentrancyGuard, ICometMultiplier {
         _tstore(
             opts.loanPlugin,
             opts.swapPlugin,
-            opts.comet,
+            address(comet),
             collateral,
             collateralAmount,
             minAmountOut,
