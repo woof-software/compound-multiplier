@@ -21,8 +21,8 @@ _Contains all necessary information for the swap including assets, amounts, slip
 ```solidity
 struct SwapParams {
   struct ICometFoundation.Options opts;
-  address fromAsset;
-  address toAsset;
+  contract IERC20 fromAsset;
+  contract IERC20 toAsset;
   uint256 fromAmount;
   uint256 minAmountOut;
   uint256 maxHealthFactorDropBps;

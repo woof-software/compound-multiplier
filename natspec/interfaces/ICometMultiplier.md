@@ -100,7 +100,7 @@ Emitted when collateral is withdrawn from a leveraged position
 ### executeMultiplier
 
 ```solidity
-function executeMultiplier(struct ICometFoundation.Options opts, address collateral, uint256 collateralAmount, uint256 leverage, bytes swapData, uint256 minAmountOut) external payable
+function executeMultiplier(struct ICometFoundation.Options opts, contract IERC20 collateral, uint256 collateralAmount, uint256 leverage, bytes swapData, uint256 minAmountOut) external payable
 ```
 
 Creates a leveraged position by borrowing against supplied collateral
@@ -117,7 +117,7 @@ Creates a leveraged position by borrowing against supplied collateral
 | Name             | Type                            | Description                                                                |
 | ---------------- | ------------------------------- | -------------------------------------------------------------------------- |
 | opts             | struct ICometFoundation.Options | Configuration options including market, selectors, and flash loan provider |
-| collateral       | address                         | Address of the collateral token to supply                                  |
+| collateral       | contract IERC20                 | Address of the collateral token to supply                                  |
 | collateralAmount | uint256                         | Amount of collateral tokens to supply                                      |
 | leverage         | uint256                         | Leverage multiplier (e.g., 20000 = 2x leverage)                            |
 | swapData         | bytes                           | Encoded swap parameters for the DEX aggregator                             |
@@ -126,7 +126,7 @@ Creates a leveraged position by borrowing against supplied collateral
 ### executeMultiplierBySig
 
 ```solidity
-function executeMultiplierBySig(struct ICometFoundation.Options opts, address collateral, uint256 collateralAmount, uint256 leverage, bytes swapData, uint256 minAmountOut, struct IAllowBySig.AllowParams allowParams) external payable
+function executeMultiplierBySig(struct ICometFoundation.Options opts, contract IERC20 collateral, uint256 collateralAmount, uint256 leverage, bytes swapData, uint256 minAmountOut, struct IAllowBySig.AllowParams allowParams) external payable
 ```
 
 Creates a leveraged position with EIP-712 signature authorization
@@ -138,7 +138,7 @@ _This function first authorizes the adapter via allowBySig, then executes the po
 | Name             | Type                            | Description                                                                |
 | ---------------- | ------------------------------- | -------------------------------------------------------------------------- |
 | opts             | struct ICometFoundation.Options | Configuration options including market, selectors, and flash loan provider |
-| collateral       | address                         | Address of the collateral token to supply                                  |
+| collateral       | contract IERC20                 | Address of the collateral token to supply                                  |
 | collateralAmount | uint256                         | Amount of collateral tokens to supply                                      |
 | leverage         | uint256                         | Leverage multiplier (e.g., 20000 = 2x leverage)                            |
 | swapData         | bytes                           | Encoded swap parameters for the DEX aggregator                             |
@@ -148,7 +148,7 @@ _This function first authorizes the adapter via allowBySig, then executes the po
 ### withdrawMultiplier
 
 ```solidity
-function withdrawMultiplier(struct ICometFoundation.Options opts, address collateral, uint256 collateralAmount, bytes swapData, uint256 minAmountOut) external
+function withdrawMultiplier(struct ICometFoundation.Options opts, contract IERC20 collateral, uint256 collateralAmount, bytes swapData, uint256 minAmountOut) external
 ```
 
 Reduces or closes a leveraged position by withdrawing collateral and repaying debt
@@ -164,7 +164,7 @@ Reduces or closes a leveraged position by withdrawing collateral and repaying de
 | Name             | Type                            | Description                                                                |
 | ---------------- | ------------------------------- | -------------------------------------------------------------------------- |
 | opts             | struct ICometFoundation.Options | Configuration options including market, selectors, and flash loan provider |
-| collateral       | address                         | Address of the collateral token to withdraw                                |
+| collateral       | contract IERC20                 | Address of the collateral token to withdraw                                |
 | collateralAmount | uint256                         | Amount of collateral tokens to withdraw (or type(uint256).max for maximum) |
 | swapData         | bytes                           | Encoded swap parameters for converting collateral to base asset            |
 | minAmountOut     | uint256                         | Minimum amount of base asset expected from the swap                        |
@@ -172,7 +172,7 @@ Reduces or closes a leveraged position by withdrawing collateral and repaying de
 ### withdrawMultiplierBySig
 
 ```solidity
-function withdrawMultiplierBySig(struct ICometFoundation.Options opts, address collateral, uint256 collateralAmount, bytes swapData, uint256 minAmountOut, struct IAllowBySig.AllowParams allowParams) external
+function withdrawMultiplierBySig(struct ICometFoundation.Options opts, contract IERC20 collateral, uint256 collateralAmount, bytes swapData, uint256 minAmountOut, struct IAllowBySig.AllowParams allowParams) external
 ```
 
 Reduces or closes a leveraged position with EIP-712 signature authorization
@@ -184,7 +184,7 @@ _This function first authorizes the adapter via allowBySig, then withdraws the p
 | Name             | Type                            | Description                                                                |
 | ---------------- | ------------------------------- | -------------------------------------------------------------------------- |
 | opts             | struct ICometFoundation.Options | Configuration options including market, selectors, and flash loan provider |
-| collateral       | address                         | Address of the collateral token to withdraw                                |
+| collateral       | contract IERC20                 | Address of the collateral token to withdraw                                |
 | collateralAmount | uint256                         | Amount of collateral tokens to withdraw (or type(uint256).max for maximum) |
 | swapData         | bytes                           | Encoded swap parameters for converting collateral to base asset            |
 | minAmountOut     | uint256                         | Minimum amount of base asset expected from the swap                        |

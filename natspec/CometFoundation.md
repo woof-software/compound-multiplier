@@ -115,7 +115,7 @@ _Each plugin must have a valid non-zero callback selector_
 ### \_swap
 
 ```solidity
-function _swap(address swapPlugin, address srcToken, address dstToken, uint256 amount, uint256 minAmountOut, bytes swapData) internal returns (uint256 amountOut)
+function _swap(address swapPlugin, contract IERC20 srcToken, contract IERC20 dstToken, uint256 amount, uint256 minAmountOut, bytes swapData) internal returns (uint256 amountOut)
 ```
 
 Executes a token swap using the configured swap plugin
@@ -124,14 +124,14 @@ _Uses delegatecall to execute swap in the context of this contract_
 
 #### Parameters
 
-| Name         | Type    | Description                                   |
-| ------------ | ------- | --------------------------------------------- |
-| swapPlugin   | address |                                               |
-| srcToken     | address | Address of the source token to swap from      |
-| dstToken     | address | Address of the destination token to swap to   |
-| amount       | uint256 | Amount of source tokens to swap               |
-| minAmountOut | uint256 | Minimum amount of destination tokens expected |
-| swapData     | bytes   | Encoded parameters for the swap execution     |
+| Name         | Type            | Description                                   |
+| ------------ | --------------- | --------------------------------------------- |
+| swapPlugin   | address         |                                               |
+| srcToken     | contract IERC20 | Address of the source token to swap from      |
+| dstToken     | contract IERC20 | Address of the destination token to swap to   |
+| amount       | uint256         | Amount of source tokens to swap               |
+| minAmountOut | uint256         | Minimum amount of destination tokens expected |
+| swapData     | bytes           | Encoded parameters for the swap execution     |
 
 #### Return Values
 
@@ -160,7 +160,7 @@ _Uses delegatecall to execute the flash loan in this contract's context_
 ### \_repay
 
 ```solidity
-function _repay(address endpoint, address flp, address baseAsset, uint256 amount) internal
+function _repay(address endpoint, address flp, contract IERC20 baseAsset, uint256 amount) internal
 ```
 
 Repays a flash loan to the specified plugin
@@ -169,12 +169,12 @@ _Uses delegatecall to invoke the repay function on the flash loan plugin_
 
 #### Parameters
 
-| Name      | Type    | Description                             |
-| --------- | ------- | --------------------------------------- |
-| endpoint  | address |                                         |
-| flp       | address | Address of the flash loan provider      |
-| baseAsset | address | Address of the borrowed asset           |
-| amount    | uint256 | Total amount to repay (principal + fee) |
+| Name      | Type            | Description                             |
+| --------- | --------------- | --------------------------------------- |
+| endpoint  | address         |                                         |
+| flp       | address         | Address of the flash loan provider      |
+| baseAsset | contract IERC20 | Address of the borrowed asset           |
+| amount    | uint256         | Total amount to repay (principal + fee) |
 
 ### \_validateLoan
 

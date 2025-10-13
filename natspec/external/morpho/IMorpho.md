@@ -7,5 +7,5 @@ _Use this interface for Morpho to have access to all the functions with the appr
 ### flashLoan
 
 ```solidity
-function flashLoan(address token, uint256 assets, bytes data) external
+function flashLoan(contract IERC20 token, uint256 assets, bytes data) external
 ```

@@ -37,13 +37,13 @@ error Unauthorized()
 ### supply
 
 ```solidity
-function supply(address asset, uint256 amount) external
+function supply(contract IERC20 asset, uint256 amount) external
 ```
 
 ### supplyTo
 
 ```solidity
-function supplyTo(address dst, address asset, uint256 amount) external
+function supplyTo(address dst, contract IERC20 asset, uint256 amount) external
 ```
 
 ### withdraw
@@ -55,13 +55,13 @@ function withdraw(address asset, uint256 amount) external
 ### withdrawFrom
 
 ```solidity
-function withdrawFrom(address src, address to, address asset, uint256 amount) external
+function withdrawFrom(address src, address to, contract IERC20 asset, uint256 amount) external
 ```
 
 ### getAssetInfoByAddress
 
 ```solidity
-function getAssetInfoByAddress(address asset) external view returns (struct IComet.AssetInfo)
+function getAssetInfoByAddress(contract IERC20 asset) external view returns (struct IComet.AssetInfo)
 ```
 
 ### getPrice
@@ -79,13 +79,13 @@ function borrowBalanceOf(address account) external view returns (uint256)
 ### collateralBalanceOf
 
 ```solidity
-function collateralBalanceOf(address account, address asset) external view returns (uint128)
+function collateralBalanceOf(address account, contract IERC20 asset) external view returns (uint128)
 ```
 
 ### baseToken
 
 ```solidity
-function baseToken() external view returns (address)
+function baseToken() external view returns (contract IERC20)
 ```
 
 ### baseScale

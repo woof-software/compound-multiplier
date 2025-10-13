@@ -82,7 +82,7 @@ function _executeSwap(struct ICometCollateralSwap.SwapParams swapParams) interna
 ### \_checkCollateralization
 
 ```solidity
-function _checkCollateralization(contract IComet comet, address assetFrom, address assetTo, uint256 fromAmount, uint256 minAmountOut, uint256 maxHealthFactorDropBps) internal view returns (bool)
+function _checkCollateralization(contract IComet comet, contract IERC20 assetFrom, contract IERC20 assetTo, uint256 fromAmount, uint256 minAmountOut, uint256 maxHealthFactorDropBps) internal view returns (bool)
 ```
 
 _Checks if the collateralization is sufficient for the swap.
@@ -94,8 +94,8 @@ Implementation: https://github.com/compound-finance/comet/blob/main/contracts/Co
 | Name                   | Type            | Description                                                  |
 | ---------------------- | --------------- | ------------------------------------------------------------ |
 | comet                  | contract IComet | The Comet contract instance.                                 |
-| assetFrom              | address         | The address of the asset being swapped from.                 |
-| assetTo                | address         | The address of the asset being swapped to.                   |
+| assetFrom              | contract IERC20 | The address of the asset being swapped from.                 |
+| assetTo                | contract IERC20 | The address of the asset being swapped to.                   |
 | fromAmount             | uint256         | The amount of the asset being swapped from.                  |
 | minAmountOut           | uint256         | The minimum amount of the asset being swapped to.            |
 | maxHealthFactorDropBps | uint256         | The maximum allowed drop in health factor (in basis points). |
@@ -103,7 +103,7 @@ Implementation: https://github.com/compound-finance/comet/blob/main/contracts/Co
 ### \_tstore
 
 ```solidity
-function _tstore(address loanPlugin, address swapPlugin, address comet, address collateral, uint256 amount) internal
+function _tstore(address loanPlugin, address swapPlugin, address comet, contract IERC20 collateral, uint256 amount) internal
 ```
 
 Stores operation parameters in transient storage for callback access
@@ -112,18 +112,18 @@ _Uses EIP-1153 transient storage for gas-efficient temporary data storage_
 
 #### Parameters
 
-| Name       | Type    | Description                       |
-| ---------- | ------- | --------------------------------- |
-| loanPlugin | address | Address of the flash loan plugin  |
-| swapPlugin | address | Address of the swap plugin        |
-| comet      | address | Address of the Comet comet        |
-| collateral | address | Address of the collateral token   |
-| amount     | uint256 | Collateral amount being processed |
+| Name       | Type            | Description                       |
+| ---------- | --------------- | --------------------------------- |
+| loanPlugin | address         | Address of the flash loan plugin  |
+| swapPlugin | address         | Address of the swap plugin        |
+| comet      | address         | Address of the Comet comet        |
+| collateral | contract IERC20 | Address of the collateral token   |
+| amount     | uint256         | Collateral amount being processed |
 
 ### \_tload
 
 ```solidity
-function _tload() internal returns (address loanPlugin, address swapPlugin, contract IComet comet, address fromAsset, uint256 fromAmount)
+function _tload() internal returns (address loanPlugin, address swapPlugin, contract IComet comet, contract IERC20 fromAsset, uint256 fromAmount)
 ```
 
 _Loads and clears swap parameters from transient storage_
@@ -135,7 +135,7 @@ _Loads and clears swap parameters from transient storage_
 | loanPlugin | address         | The flash loan plugin address |
 | swapPlugin | address         | The swap plugin address       |
 | comet      | contract IComet | The Comet contract address    |
-| fromAsset  | address         | The asset being swapped from  |
+| fromAsset  | contract IERC20 | The asset being swapped from  |
 | fromAmount | uint256         | The amount being swapped      |
 
 ### \_validateExecParams

@@ -45,7 +45,7 @@ struct CallbackData {
   uint256 snapshot;
   address user;
   address flp;
-  address asset;
+  contract IERC20 asset;
   bytes swapData;
 }
 ```
