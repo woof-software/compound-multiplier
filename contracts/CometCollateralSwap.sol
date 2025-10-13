@@ -155,7 +155,6 @@ contract CometCollateralSwap is CometFoundation, ICometCollateralSwap {
         uint256 minAmountOut = swapParams.minAmountOut;
         uint256 fromAmount = swapParams.fromAmount;
 
-        bytes memory config = _validateSwap(swapPlugin);
         _validateExecParams(swapParams);
 
         require(
@@ -183,7 +182,7 @@ contract CometCollateralSwap is CometFoundation, ICometCollateralSwap {
                 asset: toAsset,
                 swapData: swapParams.swapCalldata
             }),
-            config
+            _validateSwap(swapPlugin)
         );
     }
 

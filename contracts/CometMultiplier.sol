@@ -139,7 +139,6 @@ contract CometMultiplier is CometFoundation, ReentrancyGuard, ICometMultiplier {
         bytes calldata swapData,
         uint256 minAmountOut
     ) internal {
-        bytes memory config = _validateLoan(opts);
         IComet comet = IComet(opts.comet);
 
         if (msg.value > 0) {
@@ -173,7 +172,7 @@ contract CometMultiplier is CometFoundation, ReentrancyGuard, ICometMultiplier {
                 asset: baseAsset,
                 swapData: swapData
             }),
-            config
+            _validateLoan(opts)
         );
     }
 
@@ -187,7 +186,6 @@ contract CometMultiplier is CometFoundation, ReentrancyGuard, ICometMultiplier {
         bytes calldata swapData,
         uint256 minAmountOut
     ) internal {
-        bytes memory config = _validateLoan(opts);
         IComet comet = IComet(opts.comet);
 
         uint256 loanDebt;
@@ -224,7 +222,7 @@ contract CometMultiplier is CometFoundation, ReentrancyGuard, ICometMultiplier {
                 asset: baseAsset,
                 swapData: swapData
             }),
-            config
+            _validateLoan(opts)
         );
     }
 
