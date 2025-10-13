@@ -14,28 +14,13 @@
                         "type": "bytes"
                     }
                 ],
-                "internalType": "struct ICometPlugin.Plugin[]",
-                "name": "plugins_",
+                "internalType": "struct ICometFoundation.Plugin[]",
+                "name": "_plugins",
                 "type": "tuple[]"
-            },
-            {
-                "internalType": "address",
-                "name": "swapRouter_",
-                "type": "address"
-            },
-            {
-                "internalType": "address",
-                "name": "swapPlugin_",
-                "type": "address"
             }
         ],
-        "stateMutability": "nonpayable",
+        "stateMutability": "payable",
         "type": "constructor"
-    },
-    {
-        "inputs": [],
-        "name": "FlashLoanFailed",
-        "type": "error"
     },
     {
         "inputs": [],
@@ -45,6 +30,16 @@
     {
         "inputs": [],
         "name": "InvalidAmountOut",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "InvalidAsset",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "InvalidOpts",
         "type": "error"
     },
     {
@@ -70,27 +65,7 @@
     },
     {
         "inputs": [],
-        "name": "UnauthorizedCallback",
-        "type": "error"
-    },
-    {
-        "inputs": [],
-        "name": "UnknownCallbackSelector",
-        "type": "error"
-    },
-    {
-        "inputs": [],
         "name": "UnknownPlugin",
-        "type": "error"
-    },
-    {
-        "inputs": [],
-        "name": "ZeroAddress",
-        "type": "error"
-    },
-    {
-        "inputs": [],
-        "name": "ZeroLength",
         "type": "error"
     },
     {
@@ -98,42 +73,29 @@
         "inputs": [
             {
                 "indexed": true,
-                "internalType": "bytes4",
-                "name": "callbackSelector",
-                "type": "bytes4"
-            },
-            {
-                "indexed": true,
                 "internalType": "address",
-                "name": "pluginEndpoint",
+                "name": "endpoint",
                 "type": "address"
             },
             {
+                "indexed": true,
+                "internalType": "bytes4",
+                "name": "selector",
+                "type": "bytes4"
+            },
+            {
                 "indexed": false,
-                "internalType": "bytes",
-                "name": "config",
-                "type": "bytes"
+                "internalType": "bytes32",
+                "name": "key",
+                "type": "bytes32"
             }
         ],
-        "name": "PluginRegistered",
+        "name": "PluginAdded",
         "type": "event"
     },
     {
         "stateMutability": "nonpayable",
         "type": "fallback"
-    },
-    {
-        "inputs": [],
-        "name": "PRECEISION",
-        "outputs": [
-            {
-                "internalType": "uint16",
-                "name": "",
-                "type": "uint16"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
     },
     {
         "inputs": [],
@@ -150,36 +112,12 @@
     },
     {
         "inputs": [],
-        "name": "SLOT_ADAPTER",
+        "name": "PRECEISION",
         "outputs": [
             {
-                "internalType": "bytes32",
+                "internalType": "uint16",
                 "name": "",
-                "type": "bytes32"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "bytes4",
-                "name": "",
-                "type": "bytes4"
-            }
-        ],
-        "name": "plugins",
-        "outputs": [
-            {
-                "internalType": "address",
-                "name": "endpoint",
-                "type": "address"
-            },
-            {
-                "internalType": "bytes",
-                "name": "config",
-                "type": "bytes"
+                "type": "uint16"
             }
         ],
         "stateMutability": "view",
@@ -190,14 +128,31 @@
             {
                 "components": [
                     {
-                        "internalType": "address",
-                        "name": "comet",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "address",
-                        "name": "flp",
-                        "type": "address"
+                        "components": [
+                            {
+                                "internalType": "address",
+                                "name": "comet",
+                                "type": "address"
+                            },
+                            {
+                                "internalType": "address",
+                                "name": "flp",
+                                "type": "address"
+                            },
+                            {
+                                "internalType": "address",
+                                "name": "loanPlugin",
+                                "type": "address"
+                            },
+                            {
+                                "internalType": "address",
+                                "name": "swapPlugin",
+                                "type": "address"
+                            }
+                        ],
+                        "internalType": "struct ICometFoundation.Options",
+                        "name": "opts",
+                        "type": "tuple"
                     },
                     {
                         "internalType": "address",
@@ -223,11 +178,6 @@
                         "internalType": "uint256",
                         "name": "maxHealthFactorDropBps",
                         "type": "uint256"
-                    },
-                    {
-                        "internalType": "bytes4",
-                        "name": "callbackSelector",
-                        "type": "bytes4"
                     },
                     {
                         "internalType": "bytes",
@@ -240,35 +190,9 @@
                 "type": "tuple"
             }
         ],
-        "name": "swap",
+        "name": "executeSwap",
         "outputs": [],
         "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "swapPlugin",
-        "outputs": [
-            {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "swapRouter",
-        "outputs": [
-            {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "stateMutability": "view",
         "type": "function"
     },
     {
@@ -276,14 +200,31 @@
             {
                 "components": [
                     {
-                        "internalType": "address",
-                        "name": "comet",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "address",
-                        "name": "flp",
-                        "type": "address"
+                        "components": [
+                            {
+                                "internalType": "address",
+                                "name": "comet",
+                                "type": "address"
+                            },
+                            {
+                                "internalType": "address",
+                                "name": "flp",
+                                "type": "address"
+                            },
+                            {
+                                "internalType": "address",
+                                "name": "loanPlugin",
+                                "type": "address"
+                            },
+                            {
+                                "internalType": "address",
+                                "name": "swapPlugin",
+                                "type": "address"
+                            }
+                        ],
+                        "internalType": "struct ICometFoundation.Options",
+                        "name": "opts",
+                        "type": "tuple"
                     },
                     {
                         "internalType": "address",
@@ -309,11 +250,6 @@
                         "internalType": "uint256",
                         "name": "maxHealthFactorDropBps",
                         "type": "uint256"
-                    },
-                    {
-                        "internalType": "bytes4",
-                        "name": "callbackSelector",
-                        "type": "bytes4"
                     },
                     {
                         "internalType": "bytes",
@@ -358,9 +294,32 @@
                 "type": "tuple"
             }
         ],
-        "name": "swapWithPermit",
+        "name": "executeSwapBySig",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bytes32",
+                "name": "",
+                "type": "bytes32"
+            }
+        ],
+        "name": "plugins",
+        "outputs": [
+            {
+                "internalType": "bytes",
+                "name": "",
+                "type": "bytes"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "stateMutability": "payable",
+        "type": "receive"
     }
 ]

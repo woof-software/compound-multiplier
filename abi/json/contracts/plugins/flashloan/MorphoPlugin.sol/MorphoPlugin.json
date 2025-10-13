@@ -1,6 +1,11 @@
 [
     {
         "inputs": [],
+        "name": "InvalidAmountOut",
+        "type": "error"
+    },
+    {
+        "inputs": [],
         "name": "InvalidFlashLoanData",
         "type": "error"
     },

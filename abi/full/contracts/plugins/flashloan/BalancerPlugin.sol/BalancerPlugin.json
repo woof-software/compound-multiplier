@@ -1,4 +1,5 @@
 [
+    "error InvalidAmountOut()",
     "error InvalidFlashLoanData()",
     "error InvalidFlashLoanId()",
     "error SafeERC20FailedOperation(address token)",
