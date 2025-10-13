@@ -151,15 +151,7 @@ contract CometMultiplier is CometFoundation, ReentrancyGuard, ICometMultiplier {
 
         IERC20 baseAsset = comet.baseToken();
 
-        _tstore(
-            opts.loanPlugin,
-            opts.swapPlugin,
-            address(comet),
-            collateral,
-            collateralAmount,
-            minAmountOut,
-            Mode.EXECUTE
-        );
+        _tstore(opts.loanPlugin, opts.swapPlugin, comet, collateral, collateralAmount, minAmountOut, Mode.EXECUTE);
 
         _loan(
             opts.loanPlugin,
@@ -201,15 +193,7 @@ contract CometMultiplier is CometFoundation, ReentrancyGuard, ICometMultiplier {
 
         require(loanDebt > 0, InvalidLeverage());
 
-        _tstore(
-            opts.loanPlugin,
-            opts.swapPlugin,
-            address(comet),
-            collateral,
-            collateralAmount,
-            minAmountOut,
-            Mode.WITHDRAW
-        );
+        _tstore(opts.loanPlugin, opts.swapPlugin, comet, collateral, collateralAmount, minAmountOut, Mode.WITHDRAW);
 
         _loan(
             opts.loanPlugin,
@@ -353,7 +337,7 @@ contract CometMultiplier is CometFoundation, ReentrancyGuard, ICometMultiplier {
     function _tstore(
         address loanPlugin,
         address swapPlugin,
-        address comet,
+        IComet comet,
         IERC20 collateral,
         uint256 amount,
         uint256 minAmountOut,
