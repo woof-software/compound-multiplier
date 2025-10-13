@@ -1,6 +1,6 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
-import { CometMultiplierAdapter, EulerV2Plugin, LiFiPlugin, IComet, IERC20, ICometExt } from "../../../typechain-types";
+import { CometMultiplier, EulerV2Plugin, LiFiPlugin, IComet, IERC20, ICometExt } from "../../../typechain-types";
 import {
     calculateMaxSafeWithdrawal,
     calculateHealthFactor,
@@ -27,7 +27,7 @@ import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 const opts = { maxFeePerGas: 4_000_000_000 };
 
 describe("Comet Multiplier Adapter / LiFi / Euler", function () {
-    let adapter: CometMultiplierAdapter;
+    let adapter: CometMultiplier;
     let loanPlugin: EulerV2Plugin;
     let swapPlugin: LiFiPlugin;
     let comet: IComet;
@@ -41,7 +41,7 @@ describe("Comet Multiplier Adapter / LiFi / Euler", function () {
 
     async function getMarketOptions() {
         return {
-            market: COMET_USDC_MARKET,
+            comet: COMET_USDC_MARKET,
             loanPlugin: await loanPlugin.getAddress(),
             swapPlugin: await swapPlugin.getAddress(),
             flp: USDC_EVAULT
@@ -74,7 +74,7 @@ describe("Comet Multiplier Adapter / LiFi / Euler", function () {
             }
         ];
 
-        const Adapter = await ethers.getContractFactory("CometMultiplierAdapter", owner);
+        const Adapter = await ethers.getContractFactory("CometMultiplier", owner);
 
         weth = await ethers.getContractAt("IERC20", WETH_ADDRESS);
         usdc = await ethers.getContractAt("IERC20", USDC_ADDRESS);

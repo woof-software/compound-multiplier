@@ -9,7 +9,7 @@ import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.s
  * @title LiFiPlugin
  * @author WOOF! Software
  * @custom:security-contact dmitriy@woof.software
- * @notice Swap plugin for integrating LiFi aggregator with CometMultiplierAdapter
+ * @notice Swap plugin for integrating LiFi aggregator with CometMultiplier
  * @dev Implements ICometSwapPlugin interface to provide standardized token swap functionality
  *      using the LiFi aggregation router for optimal swap execution
  */

@@ -56,8 +56,8 @@ async function main() {
         }
     }
 
-    console.log("\nDeploying CometMultiplierAdapter...");
-    const Adapter = await ethers.getContractFactory("CometMultiplierAdapter");
+    console.log("\nDeploying CometMultiplier...");
+    const Adapter = await ethers.getContractFactory("CometMultiplier");
     const adapter = await Adapter.deploy(pluginArray, config.weth, opts);
     await adapter.waitForDeployment();
     const adapterAddress = await adapter.getAddress();
@@ -65,12 +65,12 @@ async function main() {
     console.log("\nVerifying contract...");
     await verify(adapterAddress, [pluginArray, config.weth]);
 
-    deploymentData.CometMultiplierAdapter = adapterAddress;
+    deploymentData.CometMultiplier = adapterAddress;
     deploymentData.multiplierDeployedAt = new Date().toISOString();
 
     fs.writeFileSync(deploymentFile, JSON.stringify(deploymentData, null, 2));
 
-    console.log("CometMultiplierAdapter:", adapterAddress);
+    console.log("CometMultiplier:", adapterAddress);
     console.log("Deployment saved to:", deploymentFile);
 }
 

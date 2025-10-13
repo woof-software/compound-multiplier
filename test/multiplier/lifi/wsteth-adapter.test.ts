@@ -1,34 +1,27 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
-import {
-    CometMultiplier,
-    EulerV2Plugin,
-    IComet,
-    IERC20,
-    WstEthPlugin,
-    OneInchV6SwapPlugin
-} from "../../../typechain-types";
-import { get1inchSwapData } from "../../helpers/helpers";
+import { CometMultiplier, EulerV2Plugin, IComet, IERC20, WstEthPlugin } from "../../../typechain-types";
+import { executeWithRetry, getQuote, LIFI_ROUTER } from "../../helpers/helpers";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
-import { executeWithRetry } from "../../helpers/helpers";
+
+import { LiFiPlugin } from "../../../typechain-types";
 
 const WETH_ADDRESS = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
 const STETH_ADDRESS = "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84";
 const WSTETH_ADDRESS = "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0";
 const COMET_WETH_MARKET = "0xA17581A9E3356d9A858b789D68B4d866e593aE94";
 const WETH_EVAULT = process.env.WETH_EVAULT ?? "0xD8b27CF359b7D15710a5BE299AF6e7Bf904984C2";
-const ONE_INCH_ROUTER_V6 = "0x111111125421cA6dc452d289314280a0f8842A65";
 
 const WSTETH_WHALE = "0x0B925eD163218f6662a35e0f0371Ac234f9E9371";
 const WETH_WHALE = "0x28a55C4b4f9615FDE3CDAdDf6cc01FcF2E38A6b0";
 
 const opts = { maxFeePerGas: 4_000_000_000 };
 
-describe.skip("Comet Multiplier Adapter / 1inch / wstETH", function () {
+describe("Comet Multiplier Adapter / LiFI / wstETH", function () {
     let adapter: CometMultiplier;
     let loanPlugin: EulerV2Plugin;
     let swapPlugin: WstEthPlugin;
-    let oneInchPlugin: OneInchV6SwapPlugin;
+    let lifiPlugin: LiFiPlugin;
 
     let comet: IComet;
     let weth: IERC20;
@@ -42,7 +35,7 @@ describe.skip("Comet Multiplier Adapter / 1inch / wstETH", function () {
         return {
             comet: COMET_WETH_MARKET,
             loanPlugin: await loanPlugin.getAddress(),
-            swapPlugin: isIn ? await swapPlugin.getAddress() : await oneInchPlugin.getAddress(),
+            swapPlugin: isIn ? await swapPlugin.getAddress() : await lifiPlugin.getAddress(),
             flp: WETH_EVAULT
         };
     }
@@ -68,12 +61,9 @@ describe.skip("Comet Multiplier Adapter / 1inch / wstETH", function () {
         const market = await getMarketOptions(false);
 
         return executeWithRetry(async () => {
-            const swapData = await get1inchSwapData(
-                WSTETH_ADDRESS,
-                WETH_ADDRESS,
-                take.toString(),
-                await adapter.getAddress()
-            );
+            const swapData = (
+                await getQuote("1", "1", WSTETH_ADDRESS, WETH_ADDRESS, take.toString(), await adapter.getAddress())
+            ).swapCalldata;
 
             return adapter
                 .connect(signer)
@@ -130,23 +120,23 @@ describe.skip("Comet Multiplier Adapter / 1inch / wstETH", function () {
         const LoanFactory = await ethers.getContractFactory("EulerV2Plugin", owner);
         loanPlugin = await LoanFactory.deploy(opts);
 
-        const OneInchFactory = await ethers.getContractFactory("OneInchV6SwapPlugin", owner);
-        oneInchPlugin = await OneInchFactory.deploy(opts);
+        const LifiFactory = await ethers.getContractFactory("LiFiPlugin", owner);
+        lifiPlugin = await LifiFactory.deploy(opts);
 
         const SwapFactory = await ethers.getContractFactory("WstEthPlugin", owner);
         swapPlugin = await SwapFactory.deploy(opts);
 
-        const oneInchConfig = ethers.AbiCoder.defaultAbiCoder().encode(["address"], [ONE_INCH_ROUTER_V6]);
+        const lifiCfg = ethers.AbiCoder.defaultAbiCoder().encode(["address"], [LIFI_ROUTER]);
 
         const swapCfg = ethers.AbiCoder.defaultAbiCoder().encode(
             ["address", "address", "address", "bytes"],
-            [WSTETH_ADDRESS, STETH_ADDRESS, await oneInchPlugin.getAddress(), oneInchConfig]
+            [WSTETH_ADDRESS, STETH_ADDRESS, await lifiPlugin.getAddress(), lifiCfg]
         );
 
         const plugins = [
             { endpoint: await loanPlugin.getAddress(), config: "0x" },
             { endpoint: await swapPlugin.getAddress(), config: swapCfg },
-            { endpoint: await oneInchPlugin.getAddress(), config: oneInchConfig }
+            { endpoint: await lifiPlugin.getAddress(), config: lifiCfg }
         ];
 
         const Adapter = await ethers.getContractFactory("CometMultiplier", owner);

@@ -182,7 +182,7 @@ contract SwapIntegratedContract {
 
 ### Usage in Main Contracts
 
-Swap plugins are integrated into main contracts like `CometCollateralSwap` and `CometMultiplierAdapter`:
+Swap plugins are integrated into main contracts like `CometCollateralSwap` and `CometMultiplier`:
 
 1. **Plugin Configuration**: Main contracts store references to swap plugin addresses
 2. **Delegatecall Execution**: Swaps are executed via delegatecall to maintain the main contract's context

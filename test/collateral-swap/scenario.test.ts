@@ -19,14 +19,14 @@ import {
     BALANCER_VAULT
 } from "../helpers/helpers";
 import { expect } from "chai";
-import { $CometCollateralSwap } from "../../typechain-types/contracts-exposed/CometCollateralSwap.sol/$CometCollateralSwap";
+import { CometCollateralSwap } from "../../typechain-types";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 
 describe("Collateral Swap Scenarios", function () {
     let snapshot: SnapshotRestorer;
 
     // Contracts
-    let collateralSwap: $CometCollateralSwap;
+    let collateralSwap: CometCollateralSwap;
     let comet: IComet;
 
     // Tokens
@@ -71,16 +71,25 @@ describe("Collateral Swap Scenarios", function () {
 
         balancerPluginA = {
             endpoint: await balancerPlugin.endpoint.getAddress(),
-            config: balancerPlugin.config
+            config: "0x"
         };
         aavePluginA = {
             endpoint: await aavePlugin.endpoint.getAddress(),
-            config: aavePlugin.config
+            config: "0x"
         };
 
         ({ lifiPlugin } = await getSwapPlugins());
 
-        collateralSwap = await deployCollateralSwap([balancerPluginA, aavePluginA], SWAP_ROUTER, lifiPlugin.endpoint);
+        collateralSwap = await ethers.deployContract("CometCollateralSwap", [
+            [
+                balancerPluginA,
+                aavePluginA,
+                {
+                    endpoint: lifiPlugin.endpoint,
+                    config: ethers.AbiCoder.defaultAbiCoder().encode(["address"], [SWAP_ROUTER])
+                }
+            ]
+        ]);
 
         comet = await getComet();
         ({ weth, wstETH, rsETH, rETH, wbtc } = await tokensInstances());
@@ -111,14 +120,17 @@ describe("Collateral Swap Scenarios", function () {
         const fromAmount = (supplyAmountCollateralA * 9995n) / 2n / 10000n;
 
         let swapParams: ICometCollateralSwap.SwapParamsStruct = {
-            comet: comet,
-            callbackSelector: await aavePl.CALLBACK_SELECTOR(),
-            fromAsset: collateralA,
+            opts: {
+                loanPlugin: await aavePl.getAddress(),
+                swapPlugin: lifiPlugin.endpoint,
+                comet: await comet.getAddress(),
+                flp: aaveFLP
+            },
+            fromAsset: await collateralA.getAddress(),
             fromAmount: fromAmount,
-            flp: aaveFLP,
-            toAsset: collateralB,
+            toAsset: await collateralB.getAddress(),
             swapCalldata: "",
-            minAmountOut: 0,
+            minAmountOut: 0n,
             maxHealthFactorDropBps: 500n // 5% of health factor
         };
 
@@ -138,7 +150,6 @@ describe("Collateral Swap Scenarios", function () {
         const liquidityCollateralB = await getLiquidity(comet, collateralB, collateralBBalanceBefore);
 
         // Perform swap
-
         await executeWithRetry(async () => {
             const { swapCalldata, toAmountMin } = await getQuote(
                 "ETH",
@@ -152,7 +163,7 @@ describe("Collateral Swap Scenarios", function () {
             swapParams.swapCalldata = swapCalldata;
             swapParams.minAmountOut = toAmountMin;
 
-            await collateralSwap.connect(alice).swap(swapParams);
+            await collateralSwap.connect(alice).executeSwap(swapParams);
         });
 
         // Post-checks
@@ -189,14 +200,17 @@ describe("Collateral Swap Scenarios", function () {
         const fromAmount = (supplyAmountCollateralB * 9995n) / 2n / 10000n;
 
         let swapParams: ICometCollateralSwap.SwapParamsStruct = {
-            comet: comet,
-            callbackSelector: await aavePl.CALLBACK_SELECTOR(),
-            fromAsset: collateralB,
+            opts: {
+                loanPlugin: await aavePl.getAddress(),
+                swapPlugin: lifiPlugin.endpoint,
+                comet: await comet.getAddress(),
+                flp: aaveFLP
+            },
+            fromAsset: await collateralB.getAddress(),
             fromAmount: fromAmount,
-            toAsset: collateralC,
-            flp: aaveFLP,
+            toAsset: await collateralC.getAddress(),
             swapCalldata: "",
-            minAmountOut: 0,
+            minAmountOut: 0n,
             maxHealthFactorDropBps: 1500n // 15% of health factor
         };
 
@@ -236,7 +250,7 @@ describe("Collateral Swap Scenarios", function () {
             swapParams.swapCalldata = swapCalldata;
             swapParams.minAmountOut = toAmountMin;
 
-            await collateralSwap.connect(alice).swap(swapParams);
+            await collateralSwap.connect(alice).executeSwap(swapParams);
         });
 
         // Post-checks
@@ -279,14 +293,17 @@ describe("Collateral Swap Scenarios", function () {
         const fromAmount = (supplyAmountCollateralB * 9995n) / 2n / 10000n;
 
         let swapParams: ICometCollateralSwap.SwapParamsStruct = {
-            comet: comet,
-            callbackSelector: await aavePl.CALLBACK_SELECTOR(),
-            fromAsset: collateralB,
+            opts: {
+                loanPlugin: await aavePl.getAddress(),
+                swapPlugin: lifiPlugin.endpoint,
+                comet: await comet.getAddress(),
+                flp: aaveFLP
+            },
+            fromAsset: await collateralB.getAddress(),
             fromAmount: fromAmount,
-            flp: aaveFLP,
-            toAsset: collateralC,
+            toAsset: await collateralC.getAddress(),
             swapCalldata: "",
-            minAmountOut: 0,
+            minAmountOut: 0n,
             maxHealthFactorDropBps: 1500n // 15% of health factor
         };
 
@@ -315,7 +332,6 @@ describe("Collateral Swap Scenarios", function () {
         const liquidityCollateralB = await getLiquidity(comet, collateralB, collateralBBalanceBefore);
 
         // Perform swap
-
         await executeWithRetry(async () => {
             const { swapCalldata, toAmountMin } = await getQuote(
                 "ETH",
@@ -329,7 +345,7 @@ describe("Collateral Swap Scenarios", function () {
             swapParams.swapCalldata = swapCalldata;
             swapParams.minAmountOut = toAmountMin;
 
-            await collateralSwap.connect(alice).swap(swapParams);
+            await collateralSwap.connect(alice).executeSwap(swapParams);
         });
 
         // Post-checks
@@ -372,14 +388,17 @@ describe("Collateral Swap Scenarios", function () {
         const fromAmount = (supplyAmountCollateralB * 9995n) / 2n / 10000n;
 
         let swapParams: ICometCollateralSwap.SwapParamsStruct = {
-            comet: comet,
-            callbackSelector: await aavePl.CALLBACK_SELECTOR(),
-            fromAsset: collateralB,
+            opts: {
+                loanPlugin: await aavePl.getAddress(),
+                swapPlugin: lifiPlugin.endpoint,
+                comet: await comet.getAddress(),
+                flp: aaveFLP
+            },
+            fromAsset: await collateralB.getAddress(),
             fromAmount: fromAmount,
-            flp: aaveFLP,
-            toAsset: collateralC,
+            toAsset: await collateralC.getAddress(),
             swapCalldata: "",
-            minAmountOut: 0,
+            minAmountOut: 0n,
             maxHealthFactorDropBps: 1500n // 15% of health factor
         };
 
@@ -396,8 +415,6 @@ describe("Collateral Swap Scenarios", function () {
         await comet.connect(alice).supply(collateralC, supplyAmountCollateralC);
 
         // Borrow
-
-        const blockTag = await ethers.provider.getBlock("latest");
         await comet.connect(alice).withdraw(weth, BORROW_AMOUNT, { gasLimit: 1_000_000 });
 
         // Pre-checks
@@ -414,7 +431,6 @@ describe("Collateral Swap Scenarios", function () {
         const liquidityCollateralB = await getLiquidity(comet, collateralB, collateralBBalanceBefore);
 
         // Perform swap
-
         await executeWithRetry(async () => {
             const { swapCalldata, toAmountMin } = await getQuote(
                 "ETH",
@@ -427,7 +443,7 @@ describe("Collateral Swap Scenarios", function () {
 
             swapParams.swapCalldata = swapCalldata;
             swapParams.minAmountOut = toAmountMin;
-            await collateralSwap.connect(alice).swap(swapParams);
+            await collateralSwap.connect(alice).executeSwap(swapParams);
         });
 
         // Post-checks
@@ -487,7 +503,6 @@ describe("Collateral Swap Scenarios", function () {
         const liquidityCollateralBBefore = await getLiquidity(comet, collateralB, collateralBBalanceBefore);
 
         // Perform swap A: wbtc -> wstETH via AAVE
-
         await executeWithRetry(async () => {
             // Get swap calldata for wbtc -> wstETH (first swap)
             const { swapCalldata: swapCalldataA, toAmountMin: toAmountMinA } = await getQuote(
@@ -500,18 +515,21 @@ describe("Collateral Swap Scenarios", function () {
             );
 
             swapParamsA = {
-                comet: comet,
-                callbackSelector: await aavePl.CALLBACK_SELECTOR(),
-                fromAsset: collateralA,
+                opts: {
+                    loanPlugin: await aavePl.getAddress(),
+                    swapPlugin: lifiPlugin.endpoint,
+                    comet: await comet.getAddress(),
+                    flp: aaveFLP
+                },
+                fromAsset: await collateralA.getAddress(),
                 fromAmount: fromAmountA,
-                toAsset: collateralB,
-                flp: aaveFLP,
+                toAsset: await collateralB.getAddress(),
                 swapCalldata: swapCalldataA,
                 minAmountOut: toAmountMinA,
                 maxHealthFactorDropBps: 1500n // 15% of health factor
             };
 
-            await collateralSwap.connect(alice).swap(swapParamsA);
+            await collateralSwap.connect(alice).executeSwap(swapParamsA);
         });
 
         // Check intermediate state after first swap
@@ -522,7 +540,6 @@ describe("Collateral Swap Scenarios", function () {
         const fromAmountB = (collateralBBalanceAfterFirstSwap * 9995n) / 2n / 10000n; // Half of wstETH balance
 
         // Get swap calldata for wstETH -> wbtc (second swap) using the actual wstETH amount from first swap
-
         await executeWithRetry(async () => {
             const { swapCalldata: swapCalldataB, toAmountMin: toAmountMinB } = await getQuote(
                 "ETH",
@@ -534,19 +551,22 @@ describe("Collateral Swap Scenarios", function () {
             );
 
             swapParamsB = {
-                comet: comet,
-                callbackSelector: await balancerPl.CALLBACK_SELECTOR(),
-                fromAsset: collateralB, // wstETH
+                opts: {
+                    loanPlugin: await balancerPl.getAddress(),
+                    swapPlugin: lifiPlugin.endpoint,
+                    comet: await comet.getAddress(),
+                    flp: balancerFLP
+                },
+                fromAsset: await collateralB.getAddress(), // wstETH
                 fromAmount: fromAmountB,
-                toAsset: collateralA, // WBTC
-                flp: balancerFLP,
+                toAsset: await collateralA.getAddress(), // WBTC
                 swapCalldata: swapCalldataB,
                 minAmountOut: toAmountMinB,
                 maxHealthFactorDropBps: 1500n // 15% of health factor
             };
 
             // Perform swap B: wstETH -> wbtc via Balancer
-            await collateralSwap.connect(alice).swap(swapParamsB);
+            await collateralSwap.connect(alice).executeSwap(swapParamsB);
         });
 
         // Post-checks
@@ -605,12 +625,15 @@ describe("Collateral Swap Scenarios", function () {
         );
 
         let swapParamsB: ICometCollateralSwap.SwapParamsStruct = {
-            comet: comet,
-            callbackSelector: await aavePl.CALLBACK_SELECTOR(),
-            fromAsset: collateralA,
+            opts: {
+                loanPlugin: await aavePl.getAddress(),
+                swapPlugin: lifiPlugin.endpoint,
+                comet: await comet.getAddress(),
+                flp: aaveFLP
+            },
+            fromAsset: await collateralA.getAddress(),
             fromAmount: fromAmount,
-            toAsset: collateralB,
-            flp: aaveFLP,
+            toAsset: await collateralB.getAddress(),
             swapCalldata: swapCalldataB,
             minAmountOut: toAmountMinB,
             maxHealthFactorDropBps: 1500n // 15% of health factor
@@ -627,12 +650,15 @@ describe("Collateral Swap Scenarios", function () {
         );
 
         let swapParamsC: ICometCollateralSwap.SwapParamsStruct = {
-            comet: comet,
-            callbackSelector: await aavePl.CALLBACK_SELECTOR(),
-            fromAsset: collateralA,
+            opts: {
+                loanPlugin: await aavePl.getAddress(),
+                swapPlugin: lifiPlugin.endpoint,
+                comet: await comet.getAddress(),
+                flp: aaveFLP
+            },
+            fromAsset: await collateralA.getAddress(),
             fromAmount: fromAmount,
-            flp: aaveFLP,
-            toAsset: collateralC,
+            toAsset: await collateralC.getAddress(),
             swapCalldata: swapCalldataC,
             minAmountOut: toAmountMinC,
             maxHealthFactorDropBps: 1500n // 15% of health factor
@@ -657,7 +683,7 @@ describe("Collateral Swap Scenarios", function () {
         const liquidityCollateralCBefore = await getLiquidity(comet, collateralC, collateralCBalanceBefore);
 
         // Perform swap B: wstETH -> rETH via AAVE
-        await collateralSwap.connect(alice).swap(swapParamsB);
+        await collateralSwap.connect(alice).executeSwap(swapParamsB);
 
         // Check intermediate state
         const collateralABalanceAfterFirstSwap = await comet.collateralBalanceOf(alice, collateralA);
@@ -665,7 +691,7 @@ describe("Collateral Swap Scenarios", function () {
         const collateralCBalanceAfterFirstSwap = await comet.collateralBalanceOf(alice, collateralC);
 
         // Perform swap C: wstETH -> rsETH via AAVE
-        await collateralSwap.connect(alice).swap(swapParamsC);
+        await collateralSwap.connect(alice).executeSwap(swapParamsC);
 
         // Post-checks
         expect(await collateralA.balanceOf(collateralSwap)).to.eq(0);
@@ -720,14 +746,17 @@ describe("Collateral Swap Scenarios", function () {
         const fromAmount = (supplyAmountCollateralA * 9995n) / 2n / 10000n;
 
         let swapParams: ICometCollateralSwap.SwapParamsStruct = {
-            comet: comet,
-            callbackSelector: await balancerPl.CALLBACK_SELECTOR(),
-            fromAsset: collateralA,
+            opts: {
+                loanPlugin: await balancerPl.getAddress(),
+                swapPlugin: lifiPlugin.endpoint,
+                comet: await comet.getAddress(),
+                flp: balancerFLP
+            },
+            fromAsset: await collateralA.getAddress(),
             fromAmount: fromAmount,
-            toAsset: collateralB,
-            flp: balancerFLP,
+            toAsset: await collateralB.getAddress(),
             swapCalldata: "",
-            minAmountOut: 0,
+            minAmountOut: 0n,
             maxHealthFactorDropBps: 1500n // 15% of health factor
         };
 
@@ -757,6 +786,7 @@ describe("Collateral Swap Scenarios", function () {
         // Borrow
         await comet.connect(alice).withdraw(weth, borrowAmount);
 
-        collateralSwap.connect(alice).swap(swapParams);
+        // Should revert because position would become unhealthy
+        await expect(collateralSwap.connect(alice).executeSwap(swapParams)).to.be.reverted;
     });
 });

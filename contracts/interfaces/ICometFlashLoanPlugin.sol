@@ -7,7 +7,20 @@ interface ICometFlashLoanPlugin is IERC165 {
     error UnauthorizedCallback();
     error InvalidFlashLoanId();
     error InvalidFlashLoanData();
+    error InvalidAmountOut();
 
+    /**
+     * @notice Data structure for flash loan callback parameters
+     * @param debt The amount of debt to be repaid
+     * @param fee The fee associated with the flash loan
+     * @param snapshot A unique identifier for the flash loan operation
+     * @param user The address of the user initiating the flash loan
+     * @param flp The address of the flash loan provider
+     * @param asset The address of the asset being borrowed
+     * @param swapData Encoded data for executing a swap if needed
+     * @dev This struct is used to pass necessary information during the flash loan callback
+     *      and must be encoded/decoded appropriately.
+     */
     struct CallbackData {
         uint256 debt;
         uint256 fee;
@@ -39,5 +52,9 @@ interface ICometFlashLoanPlugin is IERC165 {
      */
     function repayFlashLoan(address flp, address baseAsset, uint256 amount) external;
 
+    /**
+     * @notice Checks if the contract implements a specific interface
+     * @param interfaceId The interface identifier, as specified in ERC-165
+     */
     function supportsInterface(bytes4 interfaceId) external view returns (bool);
 }

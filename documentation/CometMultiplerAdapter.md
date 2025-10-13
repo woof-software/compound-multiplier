@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `CometMultiplierAdapter` contract enables users to create and manage leveraged positions on Compound V3 (Comet) markets using flash loans. The contract maintains leveraged collateral positions while using borrowed base assets, allowing for portfolio amplification and risk management without requiring additional capital upfront.
+The `CometMultiplier` contract enables users to create and manage leveraged positions on Compound V3 (Comet) markets using flash loans. The contract maintains leveraged collateral positions while using borrowed base assets, allowing for portfolio amplification and risk management without requiring additional capital upfront.
 
 ## Key Features
 
@@ -19,7 +19,7 @@ The `CometMultiplierAdapter` contract enables users to create and manage leverag
 
 ### Core Components
 
-1. **CometMultiplierAdapter**: Main contract handling leverage orchestration
+1. **CometMultiplier**: Main contract handling leverage orchestration
 2. **Loan Plugins**: Modular plugins for different flash loan providers
    - MorphoPlugin
    - EulerV2Plugin
@@ -86,7 +86,7 @@ Creates a leveraged position using flash loans.
 
 ```solidity
 // Create 2x leveraged WETH position
-CometMultiplierAdapter.Options memory opts = CometMultiplierAdapter.Options({
+CometMultiplier.Options memory opts = CometMultiplier.Options({
     market: cometUSDC,
     loanSelector: morphoPlugin.CALLBACK_SELECTOR(),
     swapSelector: lifiPlugin.CALLBACK_SELECTOR(),
@@ -275,7 +275,7 @@ This script:
 
 1. Reads plugin configurations from deployment files
 2. Assembles plugin array with endpoints and configurations
-3. Deploys CometMultiplierAdapter
+3. Deploys CometMultiplier
 4. Verifies the contract on Etherscan
 5. Saves deployment address to `deployments/mainnet.json`
 
@@ -313,7 +313,7 @@ After successful deployment, `deployments/mainnet.json` contains:
       "router": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0"
     }
   },
-  "CometMultiplierAdapter": "0x..."
+  "CometMultiplier": "0x..."
 }
 ```
 
@@ -332,7 +332,7 @@ After successful deployment, `deployments/mainnet.json` contains:
 IComet(cometUSDC).allow(adapterAddress, true);
 
 // Prepare options
-CometMultiplierAdapter.Options memory opts = CometMultiplierAdapter.Options({
+CometMultiplier.Options memory opts = CometMultiplier.Options({
     market: cometUSDC,
     loanPlugin: morphoPlugin,
     swapPlugin: lifiPlugin,
@@ -384,7 +384,7 @@ adapter.executeMultiplierBySig(
 IComet(cometUSDC).allow(adapterAddress, true);
 
 // Prepare options
-CometMultiplierAdapter.Options memory opts = CometMultiplierAdapter.Options({
+CometMultiplier.Options memory opts = CometMultiplier.Options({
     market: cometUSDC,
     loanPlugin: morphoPlugin,
     swapPlugin: lifiPlugin,

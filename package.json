@@ -13,7 +13,7 @@
         "coverageh": "pnpm coverage h",
         "coveragef": "pnpm coverage f",
         "coveragef:sum": "pnpm coverage f sum",
-        "deploy:adapter": "hardhat run scripts/deploy/deploy.adapter.ts --network mainnet",
+        "deploy:adapter": "hardhat run scripts/deploy/deploy.multiplier.ts --network mainnet",
         "deploy:cswap": "hardhat run scripts/deploy/deploy.cswap.ts --network mainnet",
         "slither": "pnpm clean:build && slither .",
         "test": "pnpm testh && pnpm testf",

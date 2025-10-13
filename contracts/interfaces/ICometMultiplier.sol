@@ -2,51 +2,56 @@
 pragma solidity =0.8.30;
 
 import { IAllowBySig } from "./IAllowBySig.sol";
+import { ICometFoundation } from "./ICometFoundation.sol";
 
-interface ICometMultiplierAdapter {
-    error UnsupportedPriceFeed();
-    error UnknownCallbackSelector();
+error InvalidAsset();
+
+interface ICometMultiplier is ICometFoundation {
     error UnknownMarket();
-    error UnknownPlugin();
     error InvalidLeverage();
-    error InvalidAmountOut();
-    error InvalidAsset();
     error CallbackFailed();
-    error FlashLoanFailed();
     error InvalidMode();
     error AlreadyExists();
     error NothingToDeleverage();
     error InvalidCollateralAmount();
 
+    /// @notice Operation modes for the multiplier adapter
     enum Mode {
         EXECUTE,
         WITHDRAW
     }
 
-    struct Options {
-        address market;
-        address flp;
-        address loanPlugin;
-        address swapPlugin;
-    }
-
-    event PluginAdded(address indexed endpoint, bytes4 indexed selector, bytes32 key);
+    /**
+     * @notice Emitted when a leveraged position is executed or withdrawn
+     * @param user The address of the user performing the operation
+     * @param comet The address of the Compound V3 Comet market
+     * @param collateral The address of the collateral asset involved
+     * @param totalAmount The total amount of collateral supplied or withdrawn
+     * @param debtAmount The amount of debt borrowed or repaid
+     */
     event Executed(
         address indexed user,
-        address indexed market,
+        address indexed comet,
         address indexed collateral,
         uint256 totalAmount,
         uint256 debtAmount
     );
+
+    /**
+     * @notice Emitted when collateral is withdrawn from a leveraged position
+     * @param user The address of the user performing the withdrawal
+     * @param comet The address of the Compound V3 Comet market
+     * @param collateral The address of the collateral asset withdrawn
+     * @param withdrawnAmount The amount of collateral tokens withdrawn
+     * @param baseReturned The amount of base asset returned to the user after repaying debt
+     */
     event Withdrawn(
         address indexed user,
-        address indexed market,
+        address indexed comet,
         address indexed collateral,
         uint256 withdrawnAmount,
         uint256 baseReturned
     );
-
-    function wEth() external view returns (address);
 
     /**
      * @notice Creates a leveraged position by borrowing against supplied collateral
@@ -134,4 +139,9 @@ interface ICometMultiplierAdapter {
         uint256 minAmountOut,
         IAllowBySig.AllowParams calldata allowParams
     ) external;
+
+    /**
+     * @notice Returns the address of the WETH token used for wrapping/unwrapping ETH
+     */
+    function wEth() external view returns (address);
 }

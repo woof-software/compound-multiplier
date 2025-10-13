@@ -124,7 +124,7 @@
     },
     {
         "inputs": [],
-        "name": "BPS_DROP_DENOMINATOR",
+        "name": "PRECEISION",
         "outputs": [
             {
                 "internalType": "uint16",

@@ -236,7 +236,7 @@
                         "type": "address"
                     }
                 ],
-                "internalType": "struct ICometMultiplierAdapter.Options",
+                "internalType": "struct ICometMultiplier.Options",
                 "name": "opts",
                 "type": "tuple"
             },
@@ -296,7 +296,7 @@
                         "type": "address"
                     }
                 ],
-                "internalType": "struct ICometMultiplierAdapter.Options",
+                "internalType": "struct ICometMultiplier.Options",
                 "name": "opts",
                 "type": "tuple"
             },
@@ -420,7 +420,7 @@
                         "type": "address"
                     }
                 ],
-                "internalType": "struct ICometMultiplierAdapter.Options",
+                "internalType": "struct ICometMultiplier.Options",
                 "name": "opts",
                 "type": "tuple"
             },
@@ -475,7 +475,7 @@
                         "type": "address"
                     }
                 ],
-                "internalType": "struct ICometMultiplierAdapter.Options",
+                "internalType": "struct ICometMultiplier.Options",
                 "name": "opts",
                 "type": "tuple"
             },

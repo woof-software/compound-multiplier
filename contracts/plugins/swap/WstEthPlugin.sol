@@ -5,7 +5,7 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import { ICometSwapPlugin } from "../../interfaces/ICometSwapPlugin.sol";
-import { ICometMultiplierAdapter } from "../../interfaces/ICometMultiplierAdapter.sol";
+import { ICometMultiplier } from "../../interfaces/ICometMultiplier.sol";
 
 import { IWstEth } from "../../external/lido/IWstEth.sol";
 import { IStEth } from "../../external/lido/IStEth.sol";
@@ -38,7 +38,7 @@ contract WstEthPlugin is ICometSwapPlugin {
         bytes calldata,
         bytes calldata
     ) external returns (uint256 amountOut) {
-        address wEth = ICometMultiplierAdapter(address(this)).wEth();
+        address wEth = ICometMultiplier(address(this)).wEth();
         require(
             srcToken != dstToken && amountIn > 0 && minAmountOut > 0 && srcToken == wEth && dstToken == WSTETH_ADDRESS,
             InvalidInput()

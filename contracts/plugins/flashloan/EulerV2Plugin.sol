@@ -11,7 +11,7 @@ import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol
  * @title EulerV2Plugin
  * @author WOOF! Software
  * @custom:security-contact dmitriy@woof.software
- * @notice Flash loan plugin for integrating Euler V2 vaults with CometMultiplierAdapter
+ * @notice Flash loan plugin for integrating Euler V2 vaults with CometMultiplier
  * @dev Implements ICometFlashLoanPlugin interface to provide standardized flash loan functionality
  */
 contract EulerV2Plugin is ICometFlashLoanPlugin {

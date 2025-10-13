@@ -1,6 +1,6 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
-import { CometMultiplierAdapter, EulerV2Plugin, OneInchV6SwapPlugin, IComet, IERC20 } from "../../../typechain-types";
+import { CometMultiplier, EulerV2Plugin, OneInchV6SwapPlugin, IComet, IERC20 } from "../../../typechain-types";
 import { get1inchQuote, get1inchSwapData } from "../../helpers/helpers";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 import {
@@ -25,7 +25,7 @@ import { Log } from "ethers";
 const opts = { maxFeePerGas: 4_000_000_000 };
 
 describe.skip("Comet Multiplier Adapter / 1inch / Euler", function () {
-    let adapter: CometMultiplierAdapter;
+    let adapter: CometMultiplier;
     let loanPlugin: EulerV2Plugin;
     let swapPlugin: OneInchV6SwapPlugin;
     let comet: IComet;
@@ -38,7 +38,7 @@ describe.skip("Comet Multiplier Adapter / 1inch / Euler", function () {
 
     async function getMarketOptions() {
         return {
-            market: COMET_USDC_MARKET,
+            comet: COMET_USDC_MARKET,
             loanPlugin: await loanPlugin.getAddress(),
             swapPlugin: await swapPlugin.getAddress(),
             flp: USDC_EVAULT
@@ -71,7 +71,7 @@ describe.skip("Comet Multiplier Adapter / 1inch / Euler", function () {
             }
         ];
 
-        const Adapter = await ethers.getContractFactory("CometMultiplierAdapter", owner);
+        const Adapter = await ethers.getContractFactory("CometMultiplier", owner);
 
         weth = await ethers.getContractAt("IERC20", WETH_ADDRESS);
         usdc = await ethers.getContractAt("IERC20", USDC_ADDRESS);

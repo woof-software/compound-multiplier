@@ -3,7 +3,7 @@ import axios from "axios";
 import { impersonateAccount, setBalance } from "@nomicfoundation/hardhat-network-helpers";
 import { Addressable, Signer } from "ethers";
 import { ethers } from "hardhat";
-import { CometMultiplierAdapter, IComet, IERC20 } from "../../typechain-types";
+import { CometMultiplier, IComet, IERC20 } from "../../typechain-types";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 import { $CometCollateralSwap } from "../../typechain-types/contracts-exposed/CometCollateralSwap.sol/$CometCollateralSwap";
 export { SnapshotRestorer, takeSnapshot, time } from "@nomicfoundation/hardhat-network-helpers";
@@ -17,7 +17,7 @@ export { ethers };
 
 export const ZERO_ADDRESS = ethers.ZeroAddress;
 export const FACTOR_SCALE = exp(1, 18);
-export const BPS_DROP_DENOMINATOR = 10_000n;
+export const PRECEISION = 10_000n;
 
 // Mainnet data
 export const AAVE_POOL = "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2";
@@ -107,16 +107,8 @@ export async function getSwapPlugins() {
     };
 }
 
-export async function deployCollateralSwap(
-    flashLoanPlugins: Plugin[],
-    swapRouter: string,
-    swapPlugin: string | Addressable
-): Promise<$CometCollateralSwap> {
-    return (await ethers.deployContract("$CometCollateralSwap", [
-        flashLoanPlugins,
-        swapRouter,
-        swapPlugin
-    ])) as unknown as $CometCollateralSwap;
+export async function deployCollateralSwap(flashLoanPlugins: Plugin[]): Promise<$CometCollateralSwap> {
+    return (await ethers.deployContract("$CometCollateralSwap", [flashLoanPlugins])) as unknown as $CometCollateralSwap;
 }
 
 export async function calcMinAmountOut(
@@ -140,7 +132,7 @@ export async function calcMinAmountOut(
     const amountTo =
         (assetFromLiquidity * FACTOR_SCALE * assetToInfo.scale) / (priceTo * assetToInfo.borrowCollateralFactor);
 
-    return (amountTo * (BPS_DROP_DENOMINATOR - slippage)) / BPS_DROP_DENOMINATOR;
+    return (amountTo * (PRECEISION - slippage)) / PRECEISION;
 }
 
 export async function getLiquidity(comet: IComet, token: IERC20, amount: bigint): Promise<bigint> {
@@ -321,7 +313,7 @@ export async function executeMultiplier1Inch(
     weth: IERC20,
     market: any,
     comet: IComet,
-    adapter: CometMultiplierAdapter,
+    adapter: CometMultiplier,
     signer: SignerWithAddress,
     collateralAmount: bigint,
     leverage: number,
@@ -348,7 +340,7 @@ export async function executeMultiplier1Inch(
 export async function withdrawMultiplier1Inch(
     market: any,
     comet: IComet,
-    adapter: CometMultiplierAdapter,
+    adapter: CometMultiplier,
     signer: SignerWithAddress,
     requestedCollateral: bigint,
     minAmountOut?: bigint
@@ -379,7 +371,7 @@ export async function executeMultiplierLiFi(
     weth: IERC20,
     market: any,
     comet: IComet,
-    adapter: CometMultiplierAdapter,
+    adapter: CometMultiplier,
     signer: SignerWithAddress,
     collateralAmount: bigint,
     leverage: number,
@@ -408,7 +400,7 @@ export async function executeMultiplierLiFi(
 export async function withdrawMultiplierLiFi(
     market: any,
     comet: IComet,
-    adapter: CometMultiplierAdapter,
+    adapter: CometMultiplier,
     signer: SignerWithAddress,
     requestedCollateral: bigint,
     minAmountOut?: bigint

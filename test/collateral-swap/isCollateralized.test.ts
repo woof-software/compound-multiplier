@@ -2,6 +2,7 @@ import { SnapshotRestorer, takeSnapshot } from "@nomicfoundation/hardhat-network
 import { IComet, IERC20 } from "../../typechain-types";
 import {
     deployCollateralSwap,
+    ethers,
     exp,
     getComet,
     getPlugins,
@@ -41,7 +42,14 @@ describe("CometCollateralSwap", function () {
 
         const { lifiPlugin } = await getSwapPlugins();
 
-        collateralSwap = await deployCollateralSwap([balancerPluginA, aavePluginA], SWAP_ROUTER, lifiPlugin.endpoint);
+        collateralSwap = await deployCollateralSwap([
+            balancerPluginA,
+            aavePluginA,
+            {
+                endpoint: await lifiPlugin.endpoint.getAddress(),
+                config: ethers.AbiCoder.defaultAbiCoder().encode(["address"], [SWAP_ROUTER])
+            }
+        ]);
 
         comet = await getComet();
 

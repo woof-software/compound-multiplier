@@ -12,7 +12,7 @@
     "error ZeroAddress()",
     "error ZeroLength()",
     "event PluginRegistered(bytes4 indexed callbackSelector, address indexed pluginEndpoint, bytes config)",
-    "function BPS_DROP_DENOMINATOR() view returns (uint16)",
+    "function PRECEISION() view returns (uint16)",
     "function FACTOR_SCALE() view returns (uint64)",
     "function SLOT_ADAPTER() view returns (bytes32)",
     "function plugins(bytes4) view returns (address endpoint, bytes config)",

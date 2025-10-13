@@ -1,6 +1,6 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
-import { CometMultiplierAdapter, MorphoPlugin, LiFiPlugin, IComet, IERC20 } from "../../../typechain-types";
+import { CometMultiplier, MorphoPlugin, LiFiPlugin, IComet, IERC20 } from "../../../typechain-types";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 import {
     executeWithRetry,
@@ -27,7 +27,7 @@ const LIFI_ROUTER = "0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE";
 const opts = { maxFeePerGas: 4_000_000_000 };
 
 describe("Comet Multiplier Adapter / LiFi / Morpho", function () {
-    let adapter: CometMultiplierAdapter;
+    let adapter: CometMultiplier;
     let loanPlugin: MorphoPlugin;
     let swapPlugin: LiFiPlugin;
     let comet: IComet;
@@ -41,7 +41,7 @@ describe("Comet Multiplier Adapter / LiFi / Morpho", function () {
 
     async function getMarketOptions() {
         return {
-            market: COMET_USDC_MARKET,
+            comet: COMET_USDC_MARKET,
             loanPlugin: await loanPlugin.getAddress(),
             swapPlugin: await swapPlugin.getAddress(),
             flp: MORPHO
@@ -74,7 +74,7 @@ describe("Comet Multiplier Adapter / LiFi / Morpho", function () {
             }
         ];
 
-        const Adapter = await ethers.getContractFactory("CometMultiplierAdapter", owner);
+        const Adapter = await ethers.getContractFactory("CometMultiplier", owner);
 
         weth = await ethers.getContractAt("IERC20", WETH_ADDRESS);
         usdc = await ethers.getContractAt("IERC20", USDC_ADDRESS);
@@ -213,40 +213,40 @@ describe("Comet Multiplier Adapter / LiFi / Morpho", function () {
         it("should revert with insufficient allowance", async function () {
             const initialAmount = ethers.parseEther("0.1");
             const leverage = 20_000;
-            const market = await getMarketOptions();
+            const comet = await getMarketOptions();
 
             await expect(
-                adapter.connect(user2).executeMultiplier(market, WETH_ADDRESS, initialAmount, leverage, "0x", 1n)
+                adapter.connect(user2).executeMultiplier(comet, WETH_ADDRESS, initialAmount, leverage, "0x", 1n)
             ).to.be.reverted;
         });
 
         it("should revert with zero collateral amount", async function () {
             const initialAmount = 0n;
             const leverage = 20_000;
-            const market = await getMarketOptions();
+            const comet = await getMarketOptions();
 
             await expect(
-                adapter.connect(user).executeMultiplier(market, WETH_ADDRESS, initialAmount, leverage, "0x", 1n)
+                adapter.connect(user).executeMultiplier(comet, WETH_ADDRESS, initialAmount, leverage, "0x", 1n)
             ).to.be.reverted;
         });
 
         it("should revert with leverage below 1x", async function () {
             const initialAmount = ethers.parseEther("0.1");
             const leverage = 9_000;
-            const market = await getMarketOptions();
+            const comet = await getMarketOptions();
 
             await expect(
-                adapter.connect(user).executeMultiplier(market, WETH_ADDRESS, initialAmount, leverage, "0x", 1n)
+                adapter.connect(user).executeMultiplier(comet, WETH_ADDRESS, initialAmount, leverage, "0x", 1n)
             ).to.be.reverted;
         });
 
         it("should revert with leverage above maximum", async function () {
             const initialAmount = ethers.parseEther("0.1");
             const leverage = 60_000;
-            const market = await getMarketOptions();
+            const comet = await getMarketOptions();
 
             await expect(
-                adapter.connect(user).executeMultiplier(market, WETH_ADDRESS, initialAmount, leverage, "0x", 1n)
+                adapter.connect(user).executeMultiplier(comet, WETH_ADDRESS, initialAmount, leverage, "0x", 1n)
             ).to.be.reverted;
         });
         it("should execute with msg.value (native ETH) and 1.5x leverage", async function () {
@@ -371,13 +371,13 @@ describe("Comet Multiplier Adapter / LiFi / Morpho", function () {
         it("should revert with msg.value for non-WETH collateral", async function () {
             const initialAmount = ethers.parseEther("0.1");
             const leverage = 20_000;
-            const market = await getMarketOptions();
+            const comet = await getMarketOptions();
             const fakeToken = "0x0000000000000000000000000000000000000001";
 
             await expect(
                 adapter
                     .connect(user)
-                    .executeMultiplier(market, fakeToken, 0, leverage, "0x", 1n, { ...opts, value: initialAmount })
+                    .executeMultiplier(comet, fakeToken, 0, leverage, "0x", 1n, { ...opts, value: initialAmount })
             ).to.be.revertedWithCustomError(adapter, "InvalidAsset");
         });
     });
@@ -736,7 +736,7 @@ describe("Comet Multiplier Adapter / LiFi / Morpho", function () {
             if (executedEvents.length > 0) {
                 const parsedEvent = adapter.interface.parseLog(executedEvents[0]);
                 expect(parsedEvent!.args.user).to.equal(user2.address);
-                expect(parsedEvent!.args.market).to.equal(COMET_USDC_MARKET);
+                expect(parsedEvent!.args.comet).to.equal(COMET_USDC_MARKET);
                 expect(parsedEvent!.args.collateral).to.equal(WETH_ADDRESS);
                 expect(parsedEvent!.args.totalAmount).to.be.gt(initialAmount);
                 expect(parsedEvent!.args.debtAmount).to.be.gt(0);
@@ -772,7 +772,7 @@ describe("Comet Multiplier Adapter / LiFi / Morpho", function () {
             if (executedEvents.length > 0) {
                 const parsedEvent = adapter.interface.parseLog(executedEvents[0]);
                 expect(parsedEvent!.args.user).to.equal(user2.address);
-                expect(parsedEvent!.args.market).to.equal(COMET_USDC_MARKET);
+                expect(parsedEvent!.args.comet).to.equal(COMET_USDC_MARKET);
                 expect(parsedEvent!.args.collateral).to.equal(WETH_ADDRESS);
                 expect(parsedEvent!.args.totalAmount).to.be.gt(initialAmount);
                 expect(parsedEvent!.args.debtAmount).to.be.gt(0);
@@ -805,7 +805,7 @@ describe("Comet Multiplier Adapter / LiFi / Morpho", function () {
             if (withdrawnEvents.length > 0) {
                 const parsedEvent = adapter.interface.parseLog(withdrawnEvents[0]);
                 expect(parsedEvent!.args.user).to.equal(user.address);
-                expect(parsedEvent!.args.market).to.equal(COMET_USDC_MARKET);
+                expect(parsedEvent!.args.comet).to.equal(COMET_USDC_MARKET);
                 expect(parsedEvent!.args.collateral).to.equal(WETH_ADDRESS);
                 expect(parsedEvent!.args.withdrawnAmount).to.be.gt(0);
                 expect(parsedEvent!.args.baseReturned).to.be.gte(0);

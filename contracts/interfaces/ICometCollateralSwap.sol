@@ -2,6 +2,7 @@
 pragma solidity =0.8.30;
 
 import { IAllowBySig } from "./IAllowBySig.sol";
+import { ICometFoundation } from "./ICometFoundation.sol";
 
 /**
  * @title ICometCollateralSwap
@@ -9,7 +10,7 @@ import { IAllowBySig } from "./IAllowBySig.sol";
  * @dev This contract enables users to swap one collateral asset for another within their Compound V3 position
  *      using flash loans. The swap maintains the user's debt position while changing their collateral composition.
  */
-interface ICometCollateralSwap {
+interface ICometCollateralSwap is ICometFoundation {
     /*//////////////////////////////////////////////////////////////
                                 STRUCTS
     //////////////////////////////////////////////////////////////*/
@@ -27,51 +28,18 @@ interface ICometCollateralSwap {
      * @param swapCalldata The encoded calldata for the swap router to execute the asset exchange
      */
     struct SwapParams {
-        address comet;
-        address flp;
+        Options opts;
         address fromAsset;
         address toAsset;
         uint256 fromAmount;
         uint256 minAmountOut;
         uint256 maxHealthFactorDropBps;
-        bytes4 callbackSelector;
         bytes swapCalldata;
     }
 
     /*//////////////////////////////////////////////////////////////
-                                EVENTS
-    //////////////////////////////////////////////////////////////*/
-
-    /**
-     * @notice Emitted when a new flash loan plugin is registered
-     * @dev This event is fired during contract construction for each plugin
-     * @param callbackSelector The unique bytes4 selector for this plugin's callback function
-     * @param pluginEndpoint The address of the plugin contract
-     * @param config Pluigin configuration data
-     */
-    event PluginRegistered(bytes4 indexed callbackSelector, address indexed pluginEndpoint, bytes config);
-
-    /*//////////////////////////////////////////////////////////////
                                 ERRORS
     //////////////////////////////////////////////////////////////*/
-
-    /**
-     * @notice Thrown when a flash loan callback is received from an unauthorized source
-     * @dev Only the registered flash loan provider for a given callback selector may call back
-     */
-    error UnauthorizedCallback();
-
-    /**
-     * @notice Thrown when a zero address is provided where a valid address is required
-     * @dev Prevents configuration errors during contract deployment
-     */
-    error ZeroAddress();
-
-    /**
-     * @notice Thrown when trying to use a plugin that hasn't been registered
-     * @dev Occurs when callbackSelector in SwapParams doesn't match any registered plugin
-     */
-    error UnknownPlugin();
 
     /**
      * @notice Thrown when the swap would result in insufficient collateralization
@@ -80,58 +48,16 @@ interface ICometCollateralSwap {
     error NotSufficientLiquidity();
 
     /**
-     * @notice Thrown when a fallback function receives an unknown callback selector
-     * @dev The msg.sig doesn't correspond to any registered flash loan plugin callback
-     */
-    error UnknownCallbackSelector();
-
-    /**
-     * @notice Thrown when a flash loan operation fails
-     * @dev General error for flash loan execution failures
-     */
-    error FlashLoanFailed();
-
-    /**
      * @notice Thrown when the actual swap output is less than the minimum required
      * @dev Slippage protection - the swap didn't produce enough of the target asset
      */
     error InsufficientAmountOut();
 
     /**
-     * @notice Thrown when token balance validations fail during swap execution
-     * @dev Contract's token balances don't match expected values after flash loan operations
-     */
-    error InvalidAmountOut();
-
-    /**
-     * @notice Thrown when an array parameter has zero length where content is required
-     * @dev Prevents deployment with empty plugin arrays
-     */
-    error ZeroLength();
-
-    /**
      * @notice Thrown when SwapParams contain invalid values
      * @dev Covers cases like zero addresses, zero amounts, or invalid health factor parameters
      */
     error InvalidSwapParameters();
-
-    /*//////////////////////////////////////////////////////////////
-                             VIEW FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
-
-    /**
-     * @notice Returns the address of the swap router contract
-     * @dev The router handles the actual token swapping logic (e.g., 1inch aggregator)
-     * @return The address of the swap router
-     */
-    function swapRouter() external view returns (address);
-
-    /**
-     * @notice Returns the address of the swap plugin contract
-     * @dev The plugin encapsulates swap logic and integrates with the chosen DEX aggregator
-     * @return The address of the swap plugin
-     */
-    function swapPlugin() external view returns (address);
 
     /*//////////////////////////////////////////////////////////////
                            EXTERNAL FUNCTIONS
@@ -162,7 +88,7 @@ interface ICometCollateralSwap {
      * @custom:security Uses registered plugins only to prevent malicious callbacks
      * @custom:security Validates exact token balance requirements throughout execution
      */
-    function swap(SwapParams calldata swapParams) external;
+    function executeSwap(SwapParams calldata swapParams) external;
 
     /**
      * @notice Executes a collateral swap with signature-based authorization in a single transaction
@@ -188,5 +114,5 @@ interface ICometCollateralSwap {
      * @custom:security Prevents replay attacks using nonce validation
      * @custom:security Ensures only the signer can use their own signature
      */
-    function swapWithPermit(SwapParams calldata swapParams, IAllowBySig.AllowParams calldata allowParams) external;
+    function executeSwapBySig(SwapParams calldata swapParams, IAllowBySig.AllowParams calldata allowParams) external;
 }

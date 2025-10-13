@@ -12,7 +12,7 @@ A modular smart contract system for creating leveraged positions and swapping co
 
 The system provides two core functionalities:
 
-### 1. Leveraged Position Management (CometMultiplierAdapter)
+### 1. Leveraged Position Management (CometMultiplier)
 
 Create and manage leveraged collateral positions in a single transaction by:
 
@@ -32,7 +32,7 @@ Swap one collateral asset for another within existing Compound V3 positions usin
 The system uses a plugin-based architecture:
 
 ```
-CometMultiplierAdapter & CometCollateralSwap
+CometMultiplier & CometCollateralSwap
 ├── Loan Plugins (Flash Loan Sources)
 │   ├── MorphoPlugin - Morpho Blue flash loans
 │   ├── EulerV2Plugin - Euler V2 flash loans
@@ -50,7 +50,7 @@ CometMultiplierAdapter & CometCollateralSwap
 
 ### Leverage Creation Flow
 
-The `CometMultiplierAdapter` contract creates leveraged positions using flash loans:
+The `CometMultiplier` contract creates leveraged positions using flash loans:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -58,33 +58,33 @@ The `CometMultiplierAdapter` contract creates leveraged positions using flash lo
 └─────────────────────────────────────────────────────────────────────────────┘
 
 1. USER INITIATES LEVERAGE
-   User ──► CometMultiplierAdapter.executeMultiplier(1 WETH, 2x leverage)
+   User ──► CometMultiplier.executeMultiplier(1 WETH, 2x leverage)
    ✅ User deposits: 1 WETH
 
 2. FLASH LOAN REQUEST
-   CometMultiplierAdapter ──► FlashLoanPlugin.takeFlashLoan(2500 USDC)
+   CometMultiplier ──► FlashLoanPlugin.takeFlashLoan(2500 USDC)
    FlashLoanPlugin ──► Morpho/Euler/Uniswap.flashLoan(2500 USDC)
 
 3. FLASH LOAN CALLBACK
-   Morpho/Euler/Uniswap ──► CometMultiplierAdapter.fallback()
+   Morpho/Euler/Uniswap ──► CometMultiplier.fallback()
    ✅ Contract Balance: 1 WETH + 2500 USDC
 
 4. SWAP BORROWED ASSET
-   CometMultiplierAdapter ──► SwapPlugin.executeSwap(2500 USDC → WETH)
+   CometMultiplier ──► SwapPlugin.executeSwap(2500 USDC → WETH)
    SwapPlugin ──► 1inch/LiFi.swap(2500 USDC → 0.996 WETH)
    ✅ Contract Balance: 1.996 WETH total
 
 5. SUPPLY COLLATERAL TO USER
-   CometMultiplierAdapter ──► Comet.supplyTo(user, 1.996 WETH)
+   CometMultiplier ──► Comet.supplyTo(user, 1.996 WETH)
    ✅ User's WETH collateral: 1.996 WETH
 
 6. BORROW AGAINST COLLATERAL
-   CometMultiplierAdapter ──► Comet.withdrawFrom(user, 2507.5 USDC)
+   CometMultiplier ──► Comet.withdrawFrom(user, 2507.5 USDC)
    ✅ User's debt: 2507.5 USDC (includes flash loan fee)
    ✅ Contract Balance: 2507.5 USDC
 
 7. REPAY FLASH LOAN
-   CometMultiplierAdapter ──► FlashLoanPlugin.repayFlashLoan(2507.5 USDC)
+   CometMultiplier ──► FlashLoanPlugin.repayFlashLoan(2507.5 USDC)
    FlashLoanPlugin ──► Morpho/Euler/Uniswap.repay(2500 + 7.5 fee)
    ✅ Contract Balance: 0
 
@@ -93,7 +93,7 @@ RESULT: User has 2x leveraged WETH position (1.996 WETH collateral, 2507.5 USDC 
 
 ### Leverage Reduction Flow
 
-The `CometMultiplierAdapter` contract can also reduce or close leveraged positions:
+The `CometMultiplier` contract can also reduce or close leveraged positions:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -101,37 +101,37 @@ The `CometMultiplierAdapter` contract can also reduce or close leveraged positio
 └─────────────────────────────────────────────────────────────────────────────┘
 
 1. USER INITIATES DELEVERAGE
-   User ──► CometMultiplierAdapter.withdrawMultiplier(1 WETH withdraw)
+   User ──► CometMultiplier.withdrawMultiplier(1 WETH withdraw)
    Current position: 2 WETH collateral, 2500 USDC debt
 
 2. FLASH LOAN REQUEST
-   CometMultiplierAdapter ──► FlashLoanPlugin.takeFlashLoan(2507.5 USDC)
+   CometMultiplier ──► FlashLoanPlugin.takeFlashLoan(2507.5 USDC)
    FlashLoanPlugin ──► Morpho/Euler/Uniswap.flashLoan(2507.5 USDC)
 
 3. FLASH LOAN CALLBACK
-   Morpho/Euler/Uniswap ──► CometMultiplierAdapter.fallback()
+   Morpho/Euler/Uniswap ──► CometMultiplier.fallback()
    ✅ Contract Balance: 2507.5 USDC
 
 4. REPAY USER'S DEBT
-   CometMultiplierAdapter ──► Comet.supplyTo(user, 2507.5 USDC)
+   CometMultiplier ──► Comet.supplyTo(user, 2507.5 USDC)
    ✅ User's debt: 0 USDC (paid off)
 
 5. WITHDRAW COLLATERAL
-   CometMultiplierAdapter ──► Comet.withdrawFrom(user, 1 WETH)
+   CometMultiplier ──► Comet.withdrawFrom(user, 1 WETH)
    ✅ Contract Balance: 1 WETH
 
 6. SWAP COLLATERAL TO BASE
-   CometMultiplierAdapter ──► SwapPlugin.executeSwap(1 WETH → USDC)
+   CometMultiplier ──► SwapPlugin.executeSwap(1 WETH → USDC)
    SwapPlugin ──► 1inch/LiFi.swap(1 WETH → 2490 USDC)
    ✅ Contract Balance: 2490 USDC
 
 7. REPAY FLASH LOAN
-   CometMultiplierAdapter ──► FlashLoanPlugin.repayFlashLoan(2515 USDC)
+   CometMultiplier ──► FlashLoanPlugin.repayFlashLoan(2515 USDC)
    FlashLoanPlugin ──► Morpho/Euler/Uniswap.repay(2507.5 + 7.5 fee)
    ✅ Contract Balance: -25 USDC (covered by remaining collateral value)
 
 8. RETURN REMAINDER TO USER
-   CometMultiplierAdapter ──► Transfer remaining tokens to user
+   CometMultiplier ──► Transfer remaining tokens to user
    ✅ User receives any excess USDC from position closure
 
 RESULT: User deleveraged from 2x to 1x. Remaining 0.996 WETH collateral + no debt
@@ -241,7 +241,7 @@ RESULT: User's collateral successfully swapped from WETH to USDC in Comet
 
 ### Core Contracts
 
-**CometMultiplierAdapter** - Main contract that orchestrates flash loans, swaps, and Comet interactions for leveraged positions
+**CometMultiplier** - Main contract that orchestrates flash loans, swaps, and Comet interactions for leveraged positions
 
 - `executeMultiplier()` - Create leveraged position
 - `executeMultiplierBySig()` - Create leveraged position with signature
@@ -371,7 +371,7 @@ After successful deployment, `deployments/{network}.json` contains addresses for
     "oneInch": { "endpoint": "0x...", "router": "0x..." },
     "wsteth": { "endpoint": "0x...", "router": "0x..." }
   },
-  "CometMultiplierAdapter": "0x...",
+  "CometMultiplier": "0x...",
   "CometCollateralSwap": "0x..."
 }
 ```
@@ -380,7 +380,7 @@ After successful deployment, `deployments/{network}.json` contains addresses for
 
 This project includes detailed documentation for its core components:
 
-- **[CometMultiplierAdapter](./documentation/CometMultiplierAdapter.md)** - Comprehensive documentation for leveraged position management, including architecture, usage patterns, and integration examples.
+- **[CometMultiplier](./documentation/CometMultiplier.md)** - Comprehensive documentation for leveraged position management, including architecture, usage patterns, and integration examples.
 
 - **[CometCollateralSwap](./documentation/CometCollateralSwap.md)** - Complete guide to the collateral swap contract, covering swap mechanics, health factor validation, and safety mechanisms.
 

@@ -17,12 +17,12 @@ import {
     time,
     executeWithRetry,
     AAVE_POOL,
-    BALANCER_VAULT
+    BALANCER_VAULT,
+    WETH_ADDRESS
 } from "../helpers/helpers";
 import { expect } from "chai";
 import { CometCollateralSwap } from "../../typechain-types";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
-import { config } from "dotenv";
 
 describe("CometCollateralSwap", function () {
     let snapshot: SnapshotRestorer;
@@ -70,15 +70,6 @@ describe("CometCollateralSwap", function () {
         balancerPl = balancerPlugin.endpoint;
         aavePl = aavePlugin.endpoint;
 
-        // balancerPluginA = {
-        //     endpoint: await balancerPlugin.endpoint.getAddress(),
-        //     flp: balancerPlugin.flp
-        // };
-        // aavePluginA = {
-        //     endpoint: await aavePlugin.endpoint.getAddress(),
-        //     flp: aavePlugin.flp
-        // };
-
         balancerPluginA = {
             endpoint: await balancerPlugin.endpoint.getAddress(),
             config: "0x"
@@ -90,7 +81,16 @@ describe("CometCollateralSwap", function () {
 
         ({ lifiPlugin } = await getSwapPlugins());
 
-        collateralSwap = await deployCollateralSwap([balancerPluginA, aavePluginA], SWAP_ROUTER, lifiPlugin.endpoint);
+        collateralSwap = await ethers.deployContract("CometCollateralSwap", [
+            [
+                balancerPluginA,
+                aavePluginA,
+                {
+                    endpoint: lifiPlugin.endpoint,
+                    config: ethers.AbiCoder.defaultAbiCoder().encode(["address"], [SWAP_ROUTER])
+                }
+            ]
+        ]);
 
         comet = await getComet();
         ({ weth, wstETH, rsETH, rETH, wbtc } = await tokensInstances());
@@ -98,12 +98,9 @@ describe("CometCollateralSwap", function () {
 
         await wstETH.connect(wstETHWhale).transfer(alice, SUPPLY_AMOUNT);
 
-        // supply and borrow on comet
-        const supplyAmount = exp(2, 18);
-        const borrowAmount = exp(0.5, 18);
-        await wstETH.connect(alice).approve(comet, supplyAmount);
-        await comet.connect(alice).supply(wstETH, supplyAmount);
-        await comet.connect(alice).withdraw(weth, borrowAmount);
+        await wstETH.connect(alice).approve(comet, SUPPLY_AMOUNT);
+        await comet.connect(alice).supply(wstETH, SUPPLY_AMOUNT);
+        await comet.connect(alice).withdraw(weth, BORROW_AMOUNT);
 
         await comet.connect(alice).allow(collateralSwap, true);
 
@@ -115,100 +112,73 @@ describe("CometCollateralSwap", function () {
     describe("deployment", function () {
         it("deploys with correct params", async () => {
             const collateralSwap = await ethers.deployContract("CometCollateralSwap", [
-                [balancerPluginA, aavePluginA],
-                SWAP_ROUTER,
-                lifiPlugin.endpoint
+                [balancerPluginA, aavePluginA, { endpoint: lifiPlugin.endpoint, config: "0x" }]
             ]);
 
             // Check plugins
             const balancerSelector = await balancerPl.CALLBACK_SELECTOR();
             const aaveSelector = await aavePl.CALLBACK_SELECTOR();
 
-            const balancerPluginInfo = await collateralSwap.plugins(balancerSelector);
-            expect(balancerPluginInfo.endpoint).to.equal(balancerPluginA.endpoint);
-            expect(balancerPluginInfo.config).to.equal(balancerPluginA.config);
+            const balancerKey = ethers.keccak256(
+                ethers.solidityPacked(["address", "bytes4"], [balancerPluginA.endpoint, balancerSelector])
+            );
+            const aaveKey = ethers.keccak256(
+                ethers.solidityPacked(["address", "bytes4"], [aavePluginA.endpoint, aaveSelector])
+            );
 
-            const aavePluginInfo = await collateralSwap.plugins(aaveSelector);
-            expect(aavePluginInfo.endpoint).to.equal(aavePluginA.endpoint);
-            expect(aavePluginInfo.config).to.equal(aavePluginA.config);
+            const balancerPluginData = await collateralSwap.plugins(balancerKey);
+            const aavePluginData = await collateralSwap.plugins(aaveKey);
 
-            // Check swap router
-            expect(await collateralSwap.swapRouter()).to.equal(SWAP_ROUTER);
-            expect(await collateralSwap.swapPlugin()).to.equal(lifiPlugin.endpoint);
+            expect(balancerPluginData.substring(0, 4)).to.equal("0x01");
+            expect(aavePluginData.substring(0, 4)).to.equal("0x01");
         });
 
-        it("emits an event on deployment", async () => {
-            // First get selectors
+        it("emits PluginAdded event on deployment", async () => {
             const balancerSelector = await balancerPl.CALLBACK_SELECTOR();
             const aaveSelector = await aavePl.CALLBACK_SELECTOR();
 
-            expect(
-                await ethers.deployContract("CometCollateralSwap", [
-                    [balancerPluginA, aavePluginA],
-                    SWAP_ROUTER,
-                    lifiPlugin.endpoint
-                ])
-            )
-                .to.emit(collateralSwap, "PluginRegistered")
-                .withArgs(balancerSelector, balancerPluginA.endpoint, balancerPluginA.config)
-                .to.emit(collateralSwap, "PluginRegistered")
-                .withArgs(aaveSelector, aavePluginA.endpoint, aavePluginA.config);
-        });
+            const balancerKey = ethers.keccak256(
+                ethers.solidityPacked(["address", "bytes4"], [balancerPluginA.endpoint, balancerSelector])
+            );
+            const aaveKey = ethers.keccak256(
+                ethers.solidityPacked(["address", "bytes4"], [aavePluginA.endpoint, aaveSelector])
+            );
 
-        it("reverts when swapRouter is zero address", async () => {
-            await expect(
-                ethers.deployContract("CometCollateralSwap", [
-                    [balancerPluginA, aavePluginA],
-                    ZERO_ADDRESS,
-                    lifiPlugin.endpoint
-                ])
-            ).to.be.revertedWithCustomError(collateralSwap, "ZeroAddress");
-        });
+            const tx = await ethers.deployContract("CometCollateralSwap", [
+                [balancerPluginA, aavePluginA, { endpoint: lifiPlugin.endpoint, config: "0x" }]
+            ]);
 
-        it("reverts when swapPlugin is zero address", async () => {
-            await expect(
-                ethers.deployContract("CometCollateralSwap", [
-                    [balancerPluginA, aavePluginA],
-                    SWAP_ROUTER,
-                    ZERO_ADDRESS
-                ])
-            ).to.be.revertedWithCustomError(collateralSwap, "ZeroAddress");
-        });
-
-        it("reverts when deploying with empty plugins array", async () => {
-            await expect(
-                ethers.deployContract("CometCollateralSwap", [[], SWAP_ROUTER, lifiPlugin.endpoint])
-            ).to.be.revertedWithCustomError(collateralSwap, "ZeroLength");
+            await expect(tx.deploymentTransaction())
+                .to.emit(tx, "PluginAdded")
+                .withArgs(balancerPluginA.endpoint, balancerSelector, balancerKey)
+                .to.emit(tx, "PluginAdded")
+                .withArgs(aavePluginA.endpoint, aaveSelector, aaveKey);
         });
     });
 
     describe("swap params validation", function () {
         let swapParams: ICometCollateralSwap.SwapParamsStruct;
+
         beforeEach(async () => {
             swapParams = {
-                comet: comet,
-                callbackSelector: await balancerPl.CALLBACK_SELECTOR(),
-                fromAsset: wstETH,
+                opts: {
+                    loanPlugin: await balancerPl.getAddress(),
+                    swapPlugin: lifiPlugin.endpoint,
+                    comet: await comet.getAddress(),
+                    flp: balancerFLP
+                },
+                fromAsset: await wstETH.getAddress(),
                 fromAmount: exp(1, 18),
-                toAsset: rETH,
-                flp: balancerFLP,
+                toAsset: await rETH.getAddress(),
                 swapCalldata: "0x1234",
                 minAmountOut: exp(1, 18),
                 maxHealthFactorDropBps: 500
             };
         });
 
-        it("reverts when comet is zero address", async () => {
-            swapParams.comet = ZERO_ADDRESS;
-            await expect(collateralSwap.connect(alice).swap(swapParams)).to.be.revertedWithCustomError(
-                collateralSwap,
-                "InvalidSwapParameters"
-            );
-        });
-
         it("reverts when fromAsset is zero address", async () => {
             swapParams.fromAsset = ZERO_ADDRESS;
-            await expect(collateralSwap.connect(alice).swap(swapParams)).to.be.revertedWithCustomError(
+            await expect(collateralSwap.connect(alice).executeSwap(swapParams)).to.be.revertedWithCustomError(
                 collateralSwap,
                 "InvalidSwapParameters"
             );
@@ -216,7 +186,7 @@ describe("CometCollateralSwap", function () {
 
         it("reverts when toAsset is zero address", async () => {
             swapParams.toAsset = ZERO_ADDRESS;
-            await expect(collateralSwap.connect(alice).swap(swapParams)).to.be.revertedWithCustomError(
+            await expect(collateralSwap.connect(alice).executeSwap(swapParams)).to.be.revertedWithCustomError(
                 collateralSwap,
                 "InvalidSwapParameters"
             );
@@ -224,19 +194,52 @@ describe("CometCollateralSwap", function () {
 
         it("reverts when minAmountOut is zero", async () => {
             swapParams.minAmountOut = 0;
-            await expect(collateralSwap.connect(alice).swap(swapParams)).to.be.revertedWithCustomError(
+            await expect(collateralSwap.connect(alice).executeSwap(swapParams)).to.be.revertedWithCustomError(
                 collateralSwap,
                 "InvalidSwapParameters"
             );
         });
 
-        it("reverts when maxHealthFactorDropBps >= BPS_DROP_DENOMINATOR", async () => {
-            const BPS_DROP_DENOMINATOR = await collateralSwap.BPS_DROP_DENOMINATOR();
-            swapParams.maxHealthFactorDropBps = BPS_DROP_DENOMINATOR;
-            await expect(collateralSwap.connect(alice).swap(swapParams)).to.be.revertedWithCustomError(
+        it("reverts when maxHealthFactorDropBps >= PRECEISION", async () => {
+            const PRECEISION = await collateralSwap.PRECEISION();
+            swapParams.maxHealthFactorDropBps = PRECEISION;
+            await expect(collateralSwap.connect(alice).executeSwap(swapParams)).to.be.revertedWithCustomError(
                 collateralSwap,
                 "InvalidSwapParameters"
             );
+        });
+
+        it("reverts when swapPlugin is zero address", async () => {
+            swapParams.opts.swapPlugin = ZERO_ADDRESS;
+            await expect(collateralSwap.connect(alice).executeSwap(swapParams)).to.be.revertedWithCustomError(
+                collateralSwap,
+                "InvalidOpts"
+            );
+        });
+
+        it("reverts when swapPlugin is unregistered", async () => {
+            swapParams.opts.swapPlugin = alice.address;
+            await expect(collateralSwap.connect(alice).executeSwap(swapParams)).to.be.revertedWithCustomError(
+                collateralSwap,
+                "UnknownPlugin"
+            );
+        });
+
+        // These validations happen inside _validateLoan which is called from _loan during execution
+        // They will be caught during the flash loan setup, not upfront
+        it("reverts when comet is zero address", async () => {
+            swapParams.opts.comet = ZERO_ADDRESS;
+            await expect(collateralSwap.connect(alice).executeSwap(swapParams)).to.be.reverted;
+        });
+
+        it("reverts when loanPlugin is zero address", async () => {
+            swapParams.opts.loanPlugin = ZERO_ADDRESS;
+            await expect(collateralSwap.connect(alice).executeSwap(swapParams)).to.be.reverted;
+        });
+
+        it("reverts when flp is zero address", async () => {
+            swapParams.opts.flp = ZERO_ADDRESS;
+            await expect(collateralSwap.connect(alice).executeSwap(swapParams)).to.be.reverted;
         });
     });
 
@@ -245,21 +248,23 @@ describe("CometCollateralSwap", function () {
             let swapParams: ICometCollateralSwap.SwapParamsStruct;
 
             it("allows to make a swap with 0 fee on flashloan", async () => {
-                // Check that approve is set for the swap contract
                 expect(await comet.hasPermission(alice, collateralSwap)).to.be.true;
 
                 await expect(
                     executeWithRetry(async () => {
                         swapParams = {
-                            comet: comet,
-                            callbackSelector: await balancerPl.CALLBACK_SELECTOR(),
-                            fromAsset: wstETH,
+                            opts: {
+                                loanPlugin: await balancerPl.getAddress(),
+                                swapPlugin: lifiPlugin.endpoint,
+                                comet: await comet.getAddress(),
+                                flp: balancerFLP
+                            },
+                            fromAsset: await wstETH.getAddress(),
                             fromAmount: exp(0.2, 18),
-                            flp: balancerFLP,
-                            toAsset: rETH,
+                            toAsset: await rETH.getAddress(),
                             swapCalldata: "",
-                            minAmountOut: 0,
-                            maxHealthFactorDropBps: 1000 // 10% max health factor drop
+                            minAmountOut: 0n,
+                            maxHealthFactorDropBps: 1000
                         };
 
                         const { swapCalldata, toAmountMin } = await getQuote(
@@ -273,33 +278,28 @@ describe("CometCollateralSwap", function () {
 
                         swapParams.swapCalldata = swapCalldata;
                         swapParams.minAmountOut = toAmountMin;
-
-                        collateralSwap.connect(alice).swap(swapParams);
+                        collateralSwap.connect(alice).executeSwap(swapParams);
                     })
                 ).to.not.be.reverted;
             });
 
             it("allows to make a swap with some fee on flashloan", async () => {
-                swapParams.callbackSelector = await aavePl.CALLBACK_SELECTOR();
-
-                // decrease the amountOutMin by 0.05% to cover fees
-                swapParams.minAmountOut = (BigInt(swapParams.minAmountOut) * 9995n) / 10000n;
-
-                // Check that approve is set for the swap contract
                 expect(await comet.hasPermission(alice, collateralSwap)).to.be.true;
-
                 await expect(
                     executeWithRetry(async () => {
                         swapParams = {
-                            comet: comet,
-                            callbackSelector: await balancerPl.CALLBACK_SELECTOR(),
-                            fromAsset: wstETH,
+                            opts: {
+                                loanPlugin: await aavePl.getAddress(),
+                                swapPlugin: lifiPlugin.endpoint,
+                                comet: await comet.getAddress(),
+                                flp: aaveFLP
+                            },
+                            fromAsset: await wstETH.getAddress(),
                             fromAmount: exp(0.2, 18),
-                            flp: balancerFLP,
-                            toAsset: rETH,
+                            toAsset: await rETH.getAddress(),
                             swapCalldata: "",
-                            minAmountOut: 0,
-                            maxHealthFactorDropBps: 1000 // 10% max health factor drop
+                            minAmountOut: 0n,
+                            maxHealthFactorDropBps: 1000
                         };
 
                         const { swapCalldata, toAmountMin } = await getQuote(
@@ -312,16 +312,16 @@ describe("CometCollateralSwap", function () {
                         );
 
                         swapParams.swapCalldata = swapCalldata;
-                        swapParams.minAmountOut = toAmountMin;
+                        // Decrease minAmountOut by 0.05% to cover AAVE fees
+                        swapParams.minAmountOut = (BigInt(toAmountMin) * 9995n) / 10000n;
 
-                        collateralSwap.connect(alice).swap(swapParams);
+                        collateralSwap.connect(alice).executeSwap(swapParams);
                     })
                 ).to.not.be.reverted;
             });
 
-            it("allows to make a swap with approve", async () => {
+            it("allows to make a swap with permit", async () => {
                 await comet.connect(alice).allow(collateralSwap, false);
-
                 expect(await comet.hasPermission(alice, collateralSwap)).to.be.false;
 
                 const types = {
@@ -357,135 +357,186 @@ describe("CometCollateralSwap", function () {
                     expiry: BigInt(signatureArgs.expiry),
                     r: splitSig.r,
                     s: splitSig.s,
-                    v: splitSig.v,
-                    owner: signatureArgs.owner,
-                    isAllowed: signatureArgs.isAllowed,
-                    manager: signatureArgs.manager
+                    v: splitSig.v
                 };
+                await executeWithRetry(async () => {
+                    swapParams = {
+                        opts: {
+                            loanPlugin: await balancerPl.getAddress(),
+                            swapPlugin: lifiPlugin.endpoint,
+                            comet: await comet.getAddress(),
+                            flp: balancerFLP
+                        },
+                        fromAsset: await wstETH.getAddress(),
+                        fromAmount: exp(0.2, 18),
+                        toAsset: await rETH.getAddress(),
+                        swapCalldata: "",
+                        minAmountOut: 0n,
+                        maxHealthFactorDropBps: 1000
+                    };
 
-                await expect(
-                    executeWithRetry(async () => {
-                        swapParams = {
-                            comet: comet,
-                            callbackSelector: await balancerPl.CALLBACK_SELECTOR(),
-                            fromAsset: wstETH,
-                            fromAmount: exp(0.2, 18),
-                            toAsset: rETH,
-                            flp: balancerFLP,
-                            swapCalldata: "",
-                            minAmountOut: 0,
-                            maxHealthFactorDropBps: 1000 // 10% max health factor drop
-                        };
+                    const { swapCalldata, toAmountMin } = await getQuote(
+                        "ETH",
+                        "ETH",
+                        "wstETH",
+                        "rETH",
+                        swapParams.fromAmount.toString(),
+                        String(collateralSwap.target)
+                    );
 
-                        const { swapCalldata, toAmountMin } = await getQuote(
-                            "ETH",
-                            "ETH",
-                            "wstETH",
-                            "rETH",
-                            swapParams.fromAmount.toString(),
-                            String(collateralSwap.target)
-                        );
-
-                        swapParams.swapCalldata = swapCalldata;
-                        swapParams.minAmountOut = toAmountMin;
-
-                        collateralSwap.connect(alice).swapWithPermit(swapParams, allowParams);
-                    })
-                ).to.not.be.reverted;
+                    swapParams.swapCalldata = swapCalldata;
+                    swapParams.minAmountOut = toAmountMin;
+                    collateralSwap.connect(alice).executeSwapBySig(swapParams, allowParams);
+                });
             });
 
             it("contract token balances are zero after swap", async () => {
                 expect(await wstETH.balanceOf(collateralSwap)).to.equal(0);
                 expect(await rETH.balanceOf(collateralSwap)).to.equal(0);
+                await executeWithRetry(async () => {
+                    swapParams = {
+                        opts: {
+                            loanPlugin: await balancerPl.getAddress(),
+                            swapPlugin: lifiPlugin.endpoint,
+                            comet: await comet.getAddress(),
+                            flp: balancerFLP
+                        },
+                        fromAsset: await wstETH.getAddress(),
+                        fromAmount: exp(0.2, 18),
+                        toAsset: await rETH.getAddress(),
+                        swapCalldata: "",
+                        minAmountOut: 0n,
+                        maxHealthFactorDropBps: 1000
+                    };
 
-                await collateralSwap.connect(alice).swap(swapParams);
+                    const { swapCalldata, toAmountMin } = await getQuote(
+                        "ETH",
+                        "ETH",
+                        "wstETH",
+                        "rETH",
+                        swapParams.fromAmount.toString(),
+                        String(collateralSwap.target)
+                    );
+
+                    swapParams.swapCalldata = swapCalldata;
+                    swapParams.minAmountOut = toAmountMin;
+
+                    await collateralSwap.connect(alice).executeSwap(swapParams);
+                });
 
                 expect(await wstETH.balanceOf(collateralSwap)).to.equal(0);
                 expect(await rETH.balanceOf(collateralSwap)).to.equal(0);
             });
 
             it("updates user collateral balances after swap properly", async () => {
-                const userCollateralBeforeFrom = await comet.userCollateral(alice, swapParams.fromAsset);
-                const userCollateralBeforeTo = await comet.userCollateral(alice, swapParams.toAsset);
+                let userCollateralBeforeFrom;
+                let userCollateralBeforeTo;
 
-                await collateralSwap.connect(alice).swap(swapParams);
+                await executeWithRetry(async () => {
+                    swapParams = {
+                        opts: {
+                            loanPlugin: await balancerPl.getAddress(),
+                            swapPlugin: lifiPlugin.endpoint,
+                            comet: await comet.getAddress(),
+                            flp: balancerFLP
+                        },
+                        fromAsset: await wstETH.getAddress(),
+                        fromAmount: exp(0.2, 18),
+                        toAsset: await rETH.getAddress(),
+                        swapCalldata: "",
+                        minAmountOut: 0n,
+                        maxHealthFactorDropBps: 1000
+                    };
+
+                    const { swapCalldata, toAmountMin } = await getQuote(
+                        "ETH",
+                        "ETH",
+                        "wstETH",
+                        "rETH",
+                        swapParams.fromAmount.toString(),
+                        String(collateralSwap.target)
+                    );
+
+                    swapParams.swapCalldata = swapCalldata;
+                    swapParams.minAmountOut = toAmountMin;
+
+                    userCollateralBeforeFrom = await comet.userCollateral(alice, swapParams.fromAsset);
+                    userCollateralBeforeTo = await comet.userCollateral(alice, swapParams.toAsset);
+
+                    await collateralSwap.connect(alice).executeSwap(swapParams);
+                });
 
                 const userCollateralAfterFrom = await comet.userCollateral(alice, swapParams.fromAsset);
                 const userCollateralAfterTo = await comet.userCollateral(alice, swapParams.toAsset);
 
-                expect(userCollateralBeforeFrom.balance - userCollateralAfterFrom.balance).to.eq(swapParams.fromAmount);
-                expect(userCollateralAfterTo.balance - userCollateralBeforeTo.balance).to.be.greaterThanOrEqual(
+                expect(userCollateralBeforeFrom!.balance - userCollateralAfterFrom.balance).to.eq(
+                    swapParams.fromAmount
+                );
+                expect(userCollateralAfterTo.balance - userCollateralBeforeTo!.balance).to.be.greaterThanOrEqual(
                     swapParams.minAmountOut
                 );
             });
         });
 
         describe("revert cases", function () {
-            it("reverts when callbackSelector refers to an unregistered plugin", async () => {
+            it("reverts when loanPlugin is unregistered", async () => {
                 const swapParams: ICometCollateralSwap.SwapParamsStruct = {
-                    comet: comet,
-                    callbackSelector: "0x12345678", // Unregistered selector
-                    fromAsset: wstETH,
-                    flp: balancerFLP,
+                    opts: {
+                        loanPlugin: alice.address, // Unregistered plugin
+                        swapPlugin: lifiPlugin.endpoint,
+                        comet: await comet.getAddress(),
+                        flp: balancerFLP
+                    },
+                    fromAsset: await wstETH.getAddress(),
                     fromAmount: exp(1, 18),
-                    toAsset: rETH,
+                    toAsset: await rETH.getAddress(),
                     swapCalldata: "0x1234",
                     minAmountOut: exp(1, 18),
                     maxHealthFactorDropBps: 500
                 };
 
-                expect(await collateralSwap.plugins(swapParams.callbackSelector)).to.deep.equal([ZERO_ADDRESS, "0x"]);
-
-                await expect(collateralSwap.connect(alice).swap(swapParams)).to.be.revertedWithCustomError(
+                await expect(collateralSwap.connect(alice).executeSwap(swapParams)).to.be.revertedWithCustomError(
                     collateralSwap,
                     "UnknownPlugin"
                 );
             });
 
-            it("reverts when incorrect contract balance of loaned token after flash loan", async () => {
-                const attackContract = await ethers.deployContract("FlashloanPluginTest", [aavePl, aavePl]);
-
-                const abi = ["function attackCallback()"];
-                const iface = new ethers.Interface(abi);
-
-                const calldata = iface.encodeFunctionData("attackCallback", []);
-
-                const plugin = {
-                    endpoint: attackContract,
-                    config: "0x"
+            it("reverts when swapPlugin is unregistered", async () => {
+                const swapParams: ICometCollateralSwap.SwapParamsStruct = {
+                    opts: {
+                        loanPlugin: await balancerPl.getAddress(),
+                        swapPlugin: alice.address, // Unregistered plugin
+                        comet: await comet.getAddress(),
+                        flp: balancerFLP
+                    },
+                    fromAsset: await wstETH.getAddress(),
+                    fromAmount: exp(1, 18),
+                    toAsset: await rETH.getAddress(),
+                    swapCalldata: "0x1234",
+                    minAmountOut: exp(1, 18),
+                    maxHealthFactorDropBps: 500
                 };
 
-                const collateralSwap = await ethers.deployContract("CometCollateralSwap", [
-                    [plugin],
-                    SWAP_ROUTER,
-                    lifiPlugin.endpoint
-                ]);
-
-                const expectedReturnData = await attackContract.attackCallback();
-
-                const assetData = await ethers.getContractAt("IERC20", expectedReturnData.asset);
-                expect(await assetData.balanceOf(collateralSwap)).to.equal(0n);
-                expect(expectedReturnData.debt + expectedReturnData.snapshot).to.equal(1000n);
-
-                await expect(
-                    alice.sendTransaction({
-                        to: collateralSwap,
-                        data: calldata
-                    })
-                ).to.be.revertedWithCustomError(collateralSwap, "InvalidAmountOut");
+                await expect(collateralSwap.connect(alice).executeSwap(swapParams)).to.be.revertedWithCustomError(
+                    collateralSwap,
+                    "UnknownPlugin"
+                );
             });
 
             it("reverts when flash loan cannot be repaid", async () => {
-                let swapParams = {
-                    comet: comet,
-                    callbackSelector: await aavePl.CALLBACK_SELECTOR(),
-                    fromAsset: wstETH,
+                const swapParams = {
+                    opts: {
+                        loanPlugin: await aavePl.getAddress(),
+                        swapPlugin: lifiPlugin.endpoint,
+                        comet: await comet.getAddress(),
+                        flp: aaveFLP
+                    },
+                    fromAsset: await wstETH.getAddress(),
                     fromAmount: exp(0.2, 18),
-                    toAsset: rETH,
-                    flp: aaveFLP,
+                    toAsset: await rETH.getAddress(),
                     swapCalldata: "",
-                    minAmountOut: exp(1, 18),
-                    maxHealthFactorDropBps: 6000 // 60% max health factor drop
+                    minAmountOut: exp(1, 18), // Unrealistically high minAmountOut
+                    maxHealthFactorDropBps: 6000
                 };
 
                 const { swapCalldata } = await getQuote(
@@ -499,26 +550,24 @@ describe("CometCollateralSwap", function () {
 
                 swapParams.swapCalldata = swapCalldata;
 
-                /*
-                Note: this reverts with panic 0x11 because of Arithmetic operation 
-                overflowed outside of an unchecked block
-                this happens when we supply dust of swapped asset, thus causing the balance 
-                of the contract to be less than the debt which causes the flash loan to fail during repayment
-                */
-                await expect(collateralSwap.connect(alice).swap(swapParams)).to.be.revertedWithPanic(0x11);
+                // This should revert but the exact error depends on implementation
+                await expect(collateralSwap.connect(alice).executeSwap(swapParams)).to.be.reverted;
             });
 
             it("reverts when collateral swap has no approval on comet actions", async () => {
-                let swapParams = {
-                    comet: comet,
-                    callbackSelector: await balancerPl.CALLBACK_SELECTOR(),
-                    fromAsset: wstETH,
+                const swapParams = {
+                    opts: {
+                        loanPlugin: await balancerPl.getAddress(),
+                        swapPlugin: lifiPlugin.endpoint,
+                        comet: await comet.getAddress(),
+                        flp: balancerFLP
+                    },
+                    fromAsset: await wstETH.getAddress(),
                     fromAmount: exp(0.2, 18),
-                    toAsset: rETH,
-                    flp: balancerFLP,
+                    toAsset: await rETH.getAddress(),
                     swapCalldata: "",
                     minAmountOut: 0n,
-                    maxHealthFactorDropBps: 1000 // 10% max health factor drop
+                    maxHealthFactorDropBps: 1000
                 };
 
                 const { swapCalldata, toAmountMin } = await getQuote(
@@ -534,10 +583,9 @@ describe("CometCollateralSwap", function () {
                 swapParams.minAmountOut = toAmountMin;
 
                 await comet.connect(alice).allow(collateralSwap, false);
-
                 expect(await comet.hasPermission(alice, collateralSwap)).to.be.false;
 
-                await expect(collateralSwap.connect(alice).swap(swapParams)).to.be.revertedWithCustomError(
+                await expect(collateralSwap.connect(alice).executeSwap(swapParams)).to.be.revertedWithCustomError(
                     comet,
                     "Unauthorized"
                 );

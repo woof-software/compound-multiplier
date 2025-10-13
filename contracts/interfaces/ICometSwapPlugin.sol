@@ -4,18 +4,20 @@ pragma solidity =0.8.30;
 import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 interface ICometSwapPlugin is IERC165 {
-    event SwapExecuted(
-        address indexed router,
-        address indexed srcToken,
-        address indexed dstToken,
-        uint256 actualAmountOut
-    );
-
     error InvalidAmountOut();
     error InvalidInput();
     error ZeroAddress();
     error InvalidSwapParameters();
     error SwapFailed();
+
+    /**
+     * @notice Emitted when a token swap is successfully executed
+     * @param router The address of the router or contract used to perform the swap
+     * @param srcToken Address of the source token swapped from
+     * @param dstToken Address of the destination token swapped to
+     * @param amountOut The actual amount of destination tokens received from the swap
+     */
+    event SwapExecuted(address indexed router, address indexed srcToken, address indexed dstToken, uint256 amountOut);
 
     /**
      * @notice Executes a token swap between two assets

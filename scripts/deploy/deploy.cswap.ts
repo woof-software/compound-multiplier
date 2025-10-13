@@ -5,7 +5,7 @@ import { verify } from "../utils/verify";
 
 interface Plugin {
     endpoint: string;
-    flp: string;
+    config: string;
 }
 
 async function main() {
@@ -26,21 +26,21 @@ async function main() {
         throw new Error("Plugins data not found in deployment file");
     }
 
-    const flashPluginWhitelist = ["aave", "balancer"];
-    const flashPlugins: Plugin[] = [];
+    const pluginsWhitelist = ["aave", "balancer"];
+    const plugins: Plugin[] = [];
 
-    for (const name of flashPluginWhitelist) {
+    for (const name of pluginsWhitelist) {
         const plugin = deploymentData.loanPlugins[name];
         if (plugin) {
-            flashPlugins.push({
+            plugins.push({
                 endpoint: plugin.endpoint,
-                flp: plugin.flp
+                config: "0x0" // Not used for flash loan plugins
             });
             console.log(`Added ${name} plugin:`, plugin.endpoint);
         }
     }
 
-    if (flashPlugins.length === 0) {
+    if (plugins.length === 0) {
         throw new Error("No flash loan plugins found. CometCollateralSwap requires AAVE or Balancer plugins.");
     }
 
@@ -49,37 +49,33 @@ async function main() {
         throw new Error("LiFi plugin not found. CometCollateralSwap requires LiFi plugin.");
     }
 
-    const swapRouter = lifiPlugin.router;
-    const swapPluginEndpoint = lifiPlugin.endpoint;
-
-    console.log(`\nSwap router (LiFi):`, swapRouter);
-    console.log(`Swap plugin endpoint:`, swapPluginEndpoint);
-    console.log(`Total flash plugins:`, flashPlugins.length);
+    plugins.push({
+        endpoint: lifiPlugin.endpoint,
+        config: ethers.AbiCoder.defaultAbiCoder().encode(["address"], [lifiPlugin.router])
+    });
+    console.log("Added LiFi plugin:", lifiPlugin.endpoint);
 
     const gasPrice = network.config.gasPrice;
     const opts = gasPrice ? { gasPrice } : {};
 
     console.log("\nDeploying CometCollateralSwap...");
-    const CometCollateralSwap = await ethers.deployContract(
-        "CometCollateralSwap",
-        [flashPlugins, swapRouter, swapPluginEndpoint],
-        { ...opts, from: deployer.address }
-    );
+    const CometCollateralSwap = await ethers.deployContract("CometCollateralSwap", [plugins], {
+        ...opts,
+        from: deployer.address
+    });
 
     await CometCollateralSwap.waitForDeployment();
     const swapAddress = await CometCollateralSwap.getAddress();
 
     console.log("\nVerifying contract...");
-    await verify(swapAddress, [flashPlugins, swapRouter, swapPluginEndpoint]);
+    await verify(swapAddress, [plugins]);
     deploymentData.CometCollateralSwap = swapAddress;
     deploymentData.collateralSwapDeployedAt = new Date().toISOString();
 
     fs.writeFileSync(deploymentFile, JSON.stringify(deploymentData, null, 2));
 
-    console.log("\n=== Deployment Complete ===");
     console.log("CometCollateralSwap:", swapAddress);
     console.log("Deployment saved to:", deploymentFile);
-    console.log("\n✓ Success!\n");
 }
 
 main()
