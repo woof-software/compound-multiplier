@@ -213,7 +213,7 @@ _Accounts for collateral factors and price feed decimals in conversions_
 ### \_tstore
 
 ```solidity
-function _tstore(address loanPlugin, address swapPlugin, address comet, contract IERC20 collateral, uint256 amount, uint256 minAmountOut, enum ICometMultiplier.Mode mode) internal
+function _tstore(address loanPlugin, address swapPlugin, contract IComet comet, contract IERC20 collateral, uint256 amount, uint256 minAmountOut, enum ICometMultiplier.Mode mode) internal
 ```
 
 Stores operation parameters in transient storage for callback access
@@ -226,7 +226,7 @@ _Uses EIP-1153 transient storage for gas-efficient temporary data storage_
 | ------------ | -------------------------- | ------------------------------------ |
 | loanPlugin   | address                    |                                      |
 | swapPlugin   | address                    | Address of the swap plugin           |
-| comet        | address                    | Address of the Comet comet           |
+| comet        | contract IComet            | Address of the Comet comet           |
 | collateral   | contract IERC20            | Address of the collateral token      |
 | amount       | uint256                    | Collateral amount being processed    |
 | minAmountOut | uint256                    | Minimum expected output amount       |
