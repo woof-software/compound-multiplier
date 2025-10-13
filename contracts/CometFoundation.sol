@@ -102,18 +102,17 @@ contract CometFoundation is ICometFoundation {
         uint256 minAmountOut,
         bytes memory swapData
     ) internal returns (uint256 amountOut) {
-        bytes memory config = _validateSwap(swapPlugin);
-
-        bytes memory callData = abi.encodeWithSelector(
-            ICometSwapPlugin.executeSwap.selector,
-            srcToken,
-            dstToken,
-            amount,
-            minAmountOut,
-            config,
-            swapData
+        (bool ok, bytes memory data) = address(swapPlugin).delegatecall(
+            abi.encodeWithSelector(
+                ICometSwapPlugin.executeSwap.selector,
+                srcToken,
+                dstToken,
+                amount,
+                minAmountOut,
+                _validateSwap(swapPlugin),
+                swapData
+            )
         );
-        (bool ok, bytes memory data) = address(swapPlugin).delegatecall(callData);
         _catch(ok);
 
         amountOut = abi.decode(data, (uint256));
@@ -179,8 +178,7 @@ contract CometFoundation is ICometFoundation {
      * @dev Reverts if the plugin is unknown or the magic byte is invalid
      */
     function _config(address plugin, bytes4 selector) internal view returns (bytes memory config) {
-        bytes32 key = keccak256(abi.encodePacked(plugin, selector));
-        bytes memory configWithMagic = plugins[key];
+        bytes memory configWithMagic = plugins[keccak256(abi.encodePacked(plugin, selector))];
         require(configWithMagic.length > 0, UnknownPlugin());
         require(configWithMagic[0] == PLUGIN_MAGIC, UnknownPlugin());
         assembly {
