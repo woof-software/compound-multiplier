@@ -155,12 +155,12 @@
                         "type": "tuple"
                     },
                     {
-                        "internalType": "address",
+                        "internalType": "contract IERC20",
                         "name": "fromAsset",
                         "type": "address"
                     },
                     {
-                        "internalType": "address",
+                        "internalType": "contract IERC20",
                         "name": "toAsset",
                         "type": "address"
                     },
@@ -227,12 +227,12 @@
                         "type": "tuple"
                     },
                     {
-                        "internalType": "address",
+                        "internalType": "contract IERC20",
                         "name": "fromAsset",
                         "type": "address"
                     },
                     {
-                        "internalType": "address",
+                        "internalType": "contract IERC20",
                         "name": "toAsset",
                         "type": "address"
                     },

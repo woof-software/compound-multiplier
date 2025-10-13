@@ -128,7 +128,7 @@
                         "type": "address"
                     },
                     {
-                        "internalType": "address",
+                        "internalType": "contract IERC20",
                         "name": "asset",
                         "type": "address"
                     },
@@ -201,7 +201,7 @@
                         "type": "address"
                     },
                     {
-                        "internalType": "address",
+                        "internalType": "contract IERC20",
                         "name": "asset",
                         "type": "address"
                     },
