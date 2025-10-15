@@ -278,7 +278,7 @@ contract CometMultiplier is CometFoundation, ReentrancyGuard, ICometMultiplier {
      * @param collateralAmount Amount of collateral being supplied
      * @param leverage Leverage multiplier (e.g., 20000 = 2x)
      * @return Required loan amount in base asset terms
-     * @dev Formula: loan = (initialValue * (leverage - 1)) / PRECEISION
+     * @dev Formula: loan = (initialValue * (leverage - 1)) / PRECISION
      */
     function _leveraged(
         IComet comet,
@@ -301,8 +301,8 @@ contract CometMultiplier is CometFoundation, ReentrancyGuard, ICometMultiplier {
                     comet.baseScale(),
                     info.scale
                 ),
-                leverage - PRECEISION,
-                PRECEISION
+                leverage - PRECISION,
+                PRECISION
             );
     }
 

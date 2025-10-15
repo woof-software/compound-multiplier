@@ -14,10 +14,10 @@ uint64 FACTOR_SCALE
 
 _The scale for factors_
 
-### PRECEISION
+### PRECISION
 
 ```solidity
-uint16 PRECEISION
+uint16 PRECISION
 ```
 
 ### PLUGIN_MAGIC

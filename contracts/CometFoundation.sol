@@ -20,7 +20,7 @@ import { IComet } from "./external/compound/IComet.sol";
 contract CometFoundation is ICometFoundation {
     /// @dev The scale for factors
     uint64 public constant FACTOR_SCALE = 1e18;
-    uint16 public constant PRECEISION = 1e4;
+    uint16 public constant PRECISION = 1e4;
 
     /// @notice Magic byte to identify valid plugin calls
     bytes1 constant PLUGIN_MAGIC = 0x01;

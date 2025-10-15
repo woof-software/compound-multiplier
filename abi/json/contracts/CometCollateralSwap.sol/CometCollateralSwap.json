@@ -112,7 +112,7 @@
     },
     {
         "inputs": [],
-        "name": "PRECEISION",
+        "name": "PRECISION",
         "outputs": [
             {
                 "internalType": "uint16",

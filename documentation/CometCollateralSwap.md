@@ -78,7 +78,7 @@ Combines signature-based authorization with collateral swap in one transaction.
 ### Constants
 
 - `FACTOR_SCALE`: 1e18 - Scale factor for calculations
-- `PRECEISION`: 10,000 - Basis points denominator (100%)
+- `PRECISION`: 10,000 - Basis points denominator (100%)
 
 ## Deployment Guide
 

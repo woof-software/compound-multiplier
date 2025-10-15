@@ -6,6 +6,6 @@
     "error UnknownPlugin()",
     "event PluginAdded(address indexed endpoint, bytes4 indexed selector, bytes32 key)",
     "function FACTOR_SCALE() view returns (uint64)",
-    "function PRECEISION() view returns (uint16)",
+    "function PRECISION() view returns (uint16)",
     "function plugins(bytes32) view returns (bytes)"
 ]

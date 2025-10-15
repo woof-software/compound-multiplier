@@ -17,7 +17,7 @@ export { ethers };
 
 export const ZERO_ADDRESS = ethers.ZeroAddress;
 export const FACTOR_SCALE = exp(1, 18);
-export const PRECEISION = 10_000n;
+export const PRECISION = 10_000n;
 
 // Mainnet data
 export const AAVE_POOL = "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2";
@@ -132,7 +132,7 @@ export async function calcMinAmountOut(
     const amountTo =
         (assetFromLiquidity * FACTOR_SCALE * assetToInfo.scale) / (priceTo * assetToInfo.borrowCollateralFactor);
 
-    return (amountTo * (PRECEISION - slippage)) / PRECEISION;
+    return (amountTo * (PRECISION - slippage)) / PRECISION;
 }
 
 export async function getLiquidity(comet: IComet, token: IERC20, amount: bigint): Promise<bigint> {

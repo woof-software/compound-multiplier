@@ -200,9 +200,9 @@ describe("CometCollateralSwap", function () {
             );
         });
 
-        it("reverts when maxHealthFactorDropBps >= PRECEISION", async () => {
-            const PRECEISION = await collateralSwap.PRECEISION();
-            swapParams.maxHealthFactorDropBps = PRECEISION;
+        it("reverts when maxHealthFactorDropBps >= PRECISION", async () => {
+            const PRECISION = await collateralSwap.PRECISION();
+            swapParams.maxHealthFactorDropBps = PRECISION;
             await expect(collateralSwap.connect(alice).executeSwap(swapParams)).to.be.revertedWithCustomError(
                 collateralSwap,
                 "InvalidSwapParameters"

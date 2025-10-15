@@ -221,7 +221,7 @@ contract CometCollateralSwap is CometFoundation, ICometCollateralSwap {
             FACTOR_SCALE
         );
 
-        return Math.mulDiv(assetFromLiquidity, (PRECEISION - maxHealthFactorDropBps), PRECEISION) < assetInLiquidity;
+        return Math.mulDiv(assetFromLiquidity, (PRECISION - maxHealthFactorDropBps), PRECISION) < assetInLiquidity;
     }
 
     /**
@@ -285,8 +285,9 @@ contract CometCollateralSwap is CometFoundation, ICometCollateralSwap {
         require(
             address(swapParams.fromAsset) != address(0) &&
                 address(swapParams.toAsset) != address(0) &&
+                swapParams.fromAsset != swapParams.toAsset &&
                 swapParams.minAmountOut > 0 &&
-                swapParams.maxHealthFactorDropBps < PRECEISION,
+                swapParams.maxHealthFactorDropBps < PRECISION,
             InvalidSwapParameters()
         );
     }
