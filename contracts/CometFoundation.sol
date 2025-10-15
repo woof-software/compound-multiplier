@@ -35,6 +35,8 @@ contract CometFoundation is ICometFoundation {
     /// @notice Storage slot for transient data, derived from contract name hash
     bytes32 internal constant SLOT_FOUNDATION = bytes32(uint256(keccak256("CometFoundation.storage")) - 1);
 
+    bytes4 internal constant NULL_SELECTOR = bytes4(0);
+
     /// @notice Mapping of function selectors to their corresponding plugin configurations
     /// @dev Key is the callback selector, value contains plugin endpoint and configuration
     mapping(bytes32 => bytes) public plugins;
@@ -66,14 +68,15 @@ contract CometFoundation is ICometFoundation {
      * @dev Each plugin must have a valid non-zero callback selector
      */
     constructor(Plugin[] memory _plugins) {
+        bytes4 pluginSelector;
+
         for (uint256 i = 0; i < _plugins.length; i++) {
             Plugin memory plugin = _plugins[i];
-            bytes4 pluginSelector;
 
             if (IERC165(plugin.endpoint).supportsInterface(type(ICometFlashLoanPlugin).interfaceId)) {
                 pluginSelector = ICometFlashLoanPlugin(plugin.endpoint).CALLBACK_SELECTOR();
             } else if (IERC165(plugin.endpoint).supportsInterface(type(ICometSwapPlugin).interfaceId)) {
-                pluginSelector = bytes4(0);
+                pluginSelector = NULL_SELECTOR;
             } else {
                 revert UnknownPlugin();
             }
@@ -168,7 +171,7 @@ contract CometFoundation is ICometFoundation {
      */
     function _validateSwap(address swapPlugin) internal view returns (bytes memory config) {
         require(swapPlugin != address(0), InvalidOpts());
-        config = _config(swapPlugin, bytes4(0));
+        config = _config(swapPlugin, NULL_SELECTOR);
     }
 
     /**

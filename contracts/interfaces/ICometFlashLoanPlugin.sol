@@ -52,10 +52,4 @@ interface ICometFlashLoanPlugin is IERC165 {
      * @param amount Total repayment amount (principal + fee)
      */
     function repayFlashLoan(address flp, address baseAsset, uint256 amount) external;
-
-    /**
-     * @notice Checks if the contract implements a specific interface
-     * @param interfaceId The interface identifier, as specified in ERC-165
-     */
-    function supportsInterface(bytes4 interfaceId) external view returns (bool);
 }

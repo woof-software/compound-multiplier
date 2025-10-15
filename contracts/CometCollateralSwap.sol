@@ -182,7 +182,7 @@ contract CometCollateralSwap is CometFoundation, ICometCollateralSwap {
                 asset: toAsset,
                 swapData: swapParams.swapCalldata
             }),
-            _validateSwap(swapPlugin)
+            _validateLoan(swapParams.opts)
         );
     }
 
