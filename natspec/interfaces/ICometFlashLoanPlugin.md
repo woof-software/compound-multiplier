@@ -2,54 +2,6 @@
 
 ## ICometFlashLoanPlugin
 
-### UnauthorizedCallback
-
-```solidity
-error UnauthorizedCallback()
-```
-
-### InvalidFlashLoanProvider
-
-```solidity
-error InvalidFlashLoanProvider()
-```
-
-### InvalidFlashLoanData
-
-```solidity
-error InvalidFlashLoanData()
-```
-
-### InvalidAmountOut
-
-```solidity
-error InvalidAmountOut()
-```
-
-### CallbackData
-
-Data structure for flash loan callback parameters
-
-_This struct is used to pass necessary information during the flash loan callback
-and must be encoded/decoded appropriately._
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-
-```solidity
-struct CallbackData {
-  uint256 debt;
-  uint256 fee;
-  uint256 snapshot;
-  address user;
-  address flp;
-  contract IERC20 asset;
-  bytes swapData;
-}
-```
-
 ### CALLBACK_SELECTOR
 
 ```solidity
@@ -69,7 +21,7 @@ Storage slot to store the flash loan ID
 ### takeFlashLoan
 
 ```solidity
-function takeFlashLoan(struct ICometFlashLoanPlugin.CallbackData data, bytes) external payable
+function takeFlashLoan(struct ICometFoundation.CallbackData data, bytes) external payable
 ```
 
 Initiates a flash loan
@@ -78,10 +30,10 @@ _Stores flash loan ID in transient storage for callback validation_
 
 #### Parameters
 
-| Name | Type                                      | Description                                                              |
-| ---- | ----------------------------------------- | ------------------------------------------------------------------------ |
-| data | struct ICometFlashLoanPlugin.CallbackData | Flash loan parameters including debt amount, asset, and user information |
-|      | bytes                                     |                                                                          |
+| Name | Type                                 | Description                                                              |
+| ---- | ------------------------------------ | ------------------------------------------------------------------------ |
+| data | struct ICometFoundation.CallbackData | Flash loan parameters including debt amount, asset, and user information |
+|      | bytes                                |                                                                          |
 
 ### repayFlashLoan
 
@@ -98,17 +50,3 @@ Repays the flash loan
 | flp       | address | Address of the flash loan provider       |
 | baseAsset | address | Address of the borrowed asset            |
 | amount    | uint256 | Total repayment amount (principal + fee) |
-
-### supportsInterface
-
-```solidity
-function supportsInterface(bytes4 interfaceId) external view returns (bool)
-```
-
-Checks if the contract implements a specific interface
-
-#### Parameters
-
-| Name        | Type   | Description                                       |
-| ----------- | ------ | ------------------------------------------------- |
-| interfaceId | bytes4 | The interface identifier, as specified in ERC-165 |

@@ -25,7 +25,7 @@ Storage slot for transient flash loan ID validation
 ### takeFlashLoan
 
 ```solidity
-function takeFlashLoan(struct ICometFlashLoanPlugin.CallbackData data, bytes) external payable
+function takeFlashLoan(struct ICometFoundation.CallbackData data, bytes config) external payable
 ```
 
 Initiates a flash loan
@@ -34,10 +34,10 @@ _Stores flash loan ID in transient storage for callback validation_
 
 #### Parameters
 
-| Name | Type                                      | Description                                                              |
-| ---- | ----------------------------------------- | ------------------------------------------------------------------------ |
-| data | struct ICometFlashLoanPlugin.CallbackData | Flash loan parameters including debt amount, asset, and user information |
-|      | bytes                                     |                                                                          |
+| Name   | Type                                 | Description                                                              |
+| ------ | ------------------------------------ | ------------------------------------------------------------------------ |
+| data   | struct ICometFoundation.CallbackData | Flash loan parameters including debt amount, asset, and user information |
+| config | bytes                                |                                                                          |
 
 ### repayFlashLoan
 
@@ -58,7 +58,7 @@ Repays the flash loan
 ### onMorphoFlashLoan
 
 ```solidity
-function onMorphoFlashLoan(uint256, bytes data) external returns (struct ICometFlashLoanPlugin.CallbackData _data)
+function onMorphoFlashLoan(uint256, bytes data) external returns (struct ICometFoundation.CallbackData _data)
 ```
 
 Handles flash loan callback from Morpho protocol
@@ -74,9 +74,9 @@ _Validates flash loan ID and sender authorization before processing_
 
 #### Return Values
 
-| Name   | Type                                      | Description                                  |
-| ------ | ----------------------------------------- | -------------------------------------------- |
-| \_data | struct ICometFlashLoanPlugin.CallbackData | Decoded callback data for adapter processing |
+| Name   | Type                                 | Description                                  |
+| ------ | ------------------------------------ | -------------------------------------------- |
+| \_data | struct ICometFoundation.CallbackData | Decoded callback data for adapter processing |
 
 ### supportsInterface
 
@@ -84,10 +84,9 @@ _Validates flash loan ID and sender authorization before processing_
 function supportsInterface(bytes4 interfaceId) external pure returns (bool)
 ```
 
-Checks if the contract implements a specific interface
+\_Returns true if this contract implements the interface defined by
+`interfaceId`. See the corresponding
+https://eips.ethereum.org/EIPS/eip-165#how-interfaces-are-identified[ERC section]
+to learn more about how these ids are created.
 
-#### Parameters
-
-| Name        | Type   | Description                                       |
-| ----------- | ------ | ------------------------------------------------- |
-| interfaceId | bytes4 | The interface identifier, as specified in ERC-165 |
+This function call must use less than 30 000 gas.\_

@@ -28,13 +28,19 @@ bytes1 PLUGIN_MAGIC
 
 Magic byte to identify valid plugin calls
 
+### SNAPSHOT_OFFSET
+
+```solidity
+uint8 SNAPSHOT_OFFSET
+```
+
+Offset constants for transient storage slots
+
 ### LOAN_PLUGIN_OFFSET
 
 ```solidity
 uint8 LOAN_PLUGIN_OFFSET
 ```
-
-Offset constants for transient storage slots
 
 ### SWAP_PLUGIN_OFFSET
 
@@ -58,6 +64,12 @@ uint8 ASSET_OFFSET
 
 ```solidity
 uint8 AMOUNT_OFFSET
+```
+
+### USER_OFFSET
+
+```solidity
+uint8 USER_OFFSET
 ```
 
 ### SLOT_FOUNDATION
@@ -91,7 +103,7 @@ _Required for receiving ETH from WETH unwrapping or native ETH operations_
 ### allow
 
 ```solidity
-modifier allow(address comet, struct IAllowBySig.AllowParams allowParams)
+modifier allow(address comet, struct ICometFoundation.AllowParams allowParams)
 ```
 
 Modifier to handle Comet's allowBySig for gasless approvals
@@ -115,7 +127,7 @@ _Each plugin must have a valid non-zero callback selector_
 ### \_swap
 
 ```solidity
-function _swap(address swapPlugin, contract IERC20 srcToken, contract IERC20 dstToken, uint256 amount, uint256 minAmountOut, bytes swapData) internal returns (uint256 amountOut)
+function _swap(address swapPlugin, contract IERC20 srcToken, contract IERC20 dstToken, uint256 amount, bytes swapData) internal returns (uint256 amountOut)
 ```
 
 Executes a token swap using the configured swap plugin
@@ -124,14 +136,13 @@ _Uses delegatecall to execute swap in the context of this contract_
 
 #### Parameters
 
-| Name         | Type            | Description                                   |
-| ------------ | --------------- | --------------------------------------------- |
-| swapPlugin   | address         |                                               |
-| srcToken     | contract IERC20 | Address of the source token to swap from      |
-| dstToken     | contract IERC20 | Address of the destination token to swap to   |
-| amount       | uint256         | Amount of source tokens to swap               |
-| minAmountOut | uint256         | Minimum amount of destination tokens expected |
-| swapData     | bytes           | Encoded parameters for the swap execution     |
+| Name       | Type            | Description                                 |
+| ---------- | --------------- | ------------------------------------------- |
+| swapPlugin | address         |                                             |
+| srcToken   | contract IERC20 | Address of the source token to swap from    |
+| dstToken   | contract IERC20 | Address of the destination token to swap to |
+| amount     | uint256         | Amount of source tokens to swap             |
+| swapData   | bytes           | Encoded parameters for the swap execution   |
 
 #### Return Values
 
@@ -142,7 +153,7 @@ _Uses delegatecall to execute swap in the context of this contract_
 ### \_loan
 
 ```solidity
-function _loan(address endpoint, struct ICometFlashLoanPlugin.CallbackData data, bytes config) internal
+function _loan(address endpoint, struct ICometFoundation.CallbackData data, bytes config) internal
 ```
 
 Initiates a flash loan using the specified plugin
@@ -151,11 +162,11 @@ _Uses delegatecall to execute the flash loan in this contract's context_
 
 #### Parameters
 
-| Name     | Type                                      | Description                                           |
-| -------- | ----------------------------------------- | ----------------------------------------------------- |
-| endpoint | address                                   | Address of the flash loan plugin                      |
-| data     | struct ICometFlashLoanPlugin.CallbackData | Callback data to be passed to the flash loan callback |
-| config   | bytes                                     | Plugin-specific configuration data                    |
+| Name     | Type                                 | Description                                           |
+| -------- | ------------------------------------ | ----------------------------------------------------- |
+| endpoint | address                              | Address of the flash loan plugin                      |
+| data     | struct ICometFoundation.CallbackData | Callback data to be passed to the flash loan callback |
+| config   | bytes                                | Plugin-specific configuration data                    |
 
 ### \_repay
 

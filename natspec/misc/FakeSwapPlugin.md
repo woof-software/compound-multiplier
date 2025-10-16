@@ -2,10 +2,10 @@
 
 ## FakeSwapPlugin
 
-### CALLBACK_SELECTOR
+### SWAP_SELECTOR
 
 ```solidity
-bytes4 CALLBACK_SELECTOR
+bytes4 SWAP_SELECTOR
 ```
 
 ### WHALE
@@ -17,7 +17,7 @@ address WHALE
 ### executeSwap
 
 ```solidity
-function executeSwap(address srcToken, address, uint256 amountIn, uint256, bytes, bytes) external returns (uint256 amountOut)
+function executeSwap(address srcToken, address, uint256 amountIn, bytes, bytes) external returns (uint256 amountOut)
 ```
 
 ### supportsInterface

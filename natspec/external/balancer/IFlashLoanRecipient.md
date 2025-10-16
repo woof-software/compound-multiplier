@@ -5,7 +5,7 @@
 ### receiveFlashLoan
 
 ```solidity
-function receiveFlashLoan(contract IERC20[] tokens, uint256[] amounts, uint256[] feeAmounts, bytes userData) external returns (struct ICometFlashLoanPlugin.CallbackData _data)
+function receiveFlashLoan(contract IERC20[] tokens, uint256[] amounts, uint256[] feeAmounts, bytes userData) external returns (struct ICometFoundation.CallbackData _data)
 ```
 
 \_When `flashLoan` is called on the Vault, it invokes the `receiveFlashLoan` hook on the recipient.

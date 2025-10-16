@@ -2,45 +2,67 @@
 
 ## ICometFoundation
 
-### UnknownPlugin
+### Options
 
-```solidity
-error UnknownPlugin()
-```
-
-### InvalidOpts
-
-```solidity
-error InvalidOpts()
-```
-
-### InvalidWeth
-
-```solidity
-error InvalidWeth()
-```
-
-### InvalidAmountOut
-
-```solidity
-error InvalidAmountOut()
-```
-
-### PluginAdded
-
-```solidity
-event PluginAdded(address endpoint, bytes4 selector, bytes32 key)
-```
-
-Emitted when a new plugin is added to the registry
+Options for flash loan and swap operations
 
 #### Parameters
 
-| Name     | Type    | Description                                                   |
-| -------- | ------- | ------------------------------------------------------------- |
-| endpoint | address | The address of the plugin contract                            |
-| selector | bytes4  | The unique bytes4 selector for the plugin's callback function |
-| key      | bytes32 | The unique key derived from the endpoint and selector         |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+
+```solidity
+struct Options {
+  address comet;
+  address loanPlugin;
+  address swapPlugin;
+}
+```
+
+### SwapParams
+
+Parameters required to execute a collateral swap
+
+_Contains all necessary information for the swap including assets, amounts, slippage protection, and swap routing_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+
+```solidity
+struct SwapParams {
+  struct ICometFoundation.Options opts;
+  contract IERC20 fromAsset;
+  contract IERC20 toAsset;
+  uint256 fromAmount;
+  uint256 minAmountOut;
+  uint256 maxHealthFactorDropBps;
+  bytes swapCalldata;
+}
+```
+
+### CallbackData
+
+Data structure for flash loan callback parameters
+
+_This struct is used to pass necessary information during the flash loan callback
+and must be encoded/decoded appropriately._
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+
+```solidity
+struct CallbackData {
+  uint256 debt;
+  uint256 fee;
+  address flp;
+  contract IERC20 asset;
+  bytes swapData;
+}
+```
 
 ### Plugin
 
@@ -61,20 +83,38 @@ struct Plugin {
 }
 ```
 
-### Options
+### Pool
 
-Options for flash loan and swap operations
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
+Token to pool mapping entry for UniswapV3Plugin
 
 ```solidity
-struct Options {
-  address comet;
-  address flp;
-  address loanPlugin;
-  address swapPlugin;
+struct Pool {
+  address token;
+  address pool;
+}
+```
+
+### Mode
+
+Operation modes for the multiplier adapter
+
+```solidity
+enum Mode {
+  EXECUTE,
+  WITHDRAW
+}
+```
+
+### AllowParams
+
+Parameters for gasless approvals using EIP-2612 signatures
+
+```solidity
+struct AllowParams {
+  uint256 nonce;
+  uint256 expiry;
+  bytes32 r;
+  bytes32 s;
+  uint8 v;
 }
 ```

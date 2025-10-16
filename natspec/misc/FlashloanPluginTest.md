@@ -17,7 +17,7 @@ contract ICometFlashLoanPlugin endpoint
 ### lastCallbackData
 
 ```solidity
-struct ICometFlashLoanPlugin.CallbackData lastCallbackData
+struct ICometFoundation.CallbackData lastCallbackData
 ```
 
 ### amm
@@ -41,25 +41,25 @@ constructor(address _flp, address _endpoint) public
 ### flash
 
 ```solidity
-function flash(struct ICometFlashLoanPlugin.CallbackData data) external
+function flash(struct ICometFoundation.CallbackData data) external
 ```
 
 ### attackAAVE
 
 ```solidity
-function attackAAVE(struct ICometFlashLoanPlugin.CallbackData data, address asset, uint256 amount, uint256 premium, address initiator, bool toFailFlid) external
+function attackAAVE(struct ICometFoundation.CallbackData data, address asset, uint256 amount, uint256 premium, address initiator, bool toFailFlid) external
 ```
 
 ### attackBalancer
 
 ```solidity
-function attackBalancer(struct ICometFlashLoanPlugin.CallbackData data, contract IERC20[] tokens, uint256[] amounts, uint256[] feeAmounts, bool toFailFlid) external
+function attackBalancer(struct ICometFoundation.CallbackData data, contract IERC20[] tokens, uint256[] amounts, uint256[] feeAmounts, bool toFailFlid) external
 ```
 
 ### attackCallback
 
 ```solidity
-function attackCallback() public pure returns (struct ICometFlashLoanPlugin.CallbackData)
+function attackCallback() public pure returns (struct ICometFoundation.CallbackData)
 ```
 
 ### fallback

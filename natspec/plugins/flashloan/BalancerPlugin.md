@@ -26,7 +26,7 @@ Storage slot to store the flash loan ID
 ### takeFlashLoan
 
 ```solidity
-function takeFlashLoan(struct ICometFlashLoanPlugin.CallbackData data, bytes) external payable
+function takeFlashLoan(struct ICometFoundation.CallbackData data, bytes config) external payable
 ```
 
 Initiates a flash loan
@@ -35,15 +35,15 @@ _Stores flash loan ID in transient storage for callback validation_
 
 #### Parameters
 
-| Name | Type                                      | Description                                                              |
-| ---- | ----------------------------------------- | ------------------------------------------------------------------------ |
-| data | struct ICometFlashLoanPlugin.CallbackData | Flash loan parameters including debt amount, asset, and user information |
-|      | bytes                                     |                                                                          |
+| Name   | Type                                 | Description                                                              |
+| ------ | ------------------------------------ | ------------------------------------------------------------------------ |
+| data   | struct ICometFoundation.CallbackData | Flash loan parameters including debt amount, asset, and user information |
+| config | bytes                                |                                                                          |
 
 ### receiveFlashLoan
 
 ```solidity
-function receiveFlashLoan(contract IERC20[] tokens, uint256[] amounts, uint256[] feeAmounts, bytes userData) external returns (struct ICometFlashLoanPlugin.CallbackData _data)
+function receiveFlashLoan(contract IERC20[] tokens, uint256[] amounts, uint256[] feeAmounts, bytes userData) external returns (struct ICometFoundation.CallbackData _data)
 ```
 
 _This function is called by the Vault when a flash loan is received._
@@ -79,10 +79,9 @@ Repays the flash loan
 function supportsInterface(bytes4 interfaceId) external pure returns (bool)
 ```
 
-Checks if the contract implements a specific interface
+\_Returns true if this contract implements the interface defined by
+`interfaceId`. See the corresponding
+https://eips.ethereum.org/EIPS/eip-165#how-interfaces-are-identified[ERC section]
+to learn more about how these ids are created.
 
-#### Parameters
-
-| Name        | Type   | Description                                       |
-| ----------- | ------ | ------------------------------------------------- |
-| interfaceId | bytes4 | The interface identifier, as specified in ERC-165 |
+This function call must use less than 30 000 gas.\_

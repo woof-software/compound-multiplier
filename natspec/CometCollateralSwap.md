@@ -37,7 +37,7 @@ Temporary storage (tstore/tload) is used to pass swap parameters between functio
 ### executeSwap
 
 ```solidity
-function executeSwap(struct ICometCollateralSwap.SwapParams swapParams) external
+function executeSwap(struct ICometFoundation.SwapParams swapParams) external
 ```
 
 Executes a collateral swap using flash loans
@@ -47,14 +47,14 @@ This function: 1. Validates swap parameters and health factor impact 2. Initiate
 
 #### Parameters
 
-| Name       | Type                                   | Description                                                                                                                                                                                                                                                                                                                                                                                           |
-| ---------- | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| swapParams | struct ICometCollateralSwap.SwapParams | The complete parameter struct defining the swap operation Requirements: - Caller must have sufficient collateral balance of fromAsset - Caller must have granted allowance to this contract on the Comet - The swap must not violate health factor constraints - The callbackSelector must correspond to a registered plugin - The swap must produce enough toAsset to repay the flash loan plus fees |
+| Name       | Type                               | Description                                                                                                                                                                                                                                                                                                                                                                                           |
+| ---------- | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| swapParams | struct ICometFoundation.SwapParams | The complete parameter struct defining the swap operation Requirements: - Caller must have sufficient collateral balance of fromAsset - Caller must have granted allowance to this contract on the Comet - The swap must not violate health factor constraints - The callbackSelector must correspond to a registered plugin - The swap must produce enough toAsset to repay the flash loan plus fees |
 
 ### executeSwapBySig
 
 ```solidity
-function executeSwapBySig(struct ICometCollateralSwap.SwapParams swapParams, struct IAllowBySig.AllowParams allowParams) external
+function executeSwapBySig(struct ICometFoundation.SwapParams swapParams, struct ICometFoundation.AllowParams allowParams) external
 ```
 
 Executes a collateral swap with signature-based authorization in a single transaction
@@ -68,15 +68,15 @@ eliminating the need for a separate approve transaction.
 
 #### Parameters
 
-| Name        | Type                                   | Description                                                                                                                                                                                                                                                                                                                                                 |
-| ----------- | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| swapParams  | struct ICometCollateralSwap.SwapParams | The complete parameter struct defining the swap operation                                                                                                                                                                                                                                                                                                   |
-| allowParams | struct IAllowBySig.AllowParams         | The EIP-712 signature parameters for Comet authorization Requirements: - All requirements from swap() function - allowParams.owner must equal msg.sender - allowParams.manager must equal this contract address - allowParams.isAllowed must be true - The signature must be valid and not expired - The nonce must match the user's current nonce in Comet |
+| Name        | Type                                | Description                                                                                                                                                                                                                                                                                                                                                 |
+| ----------- | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| swapParams  | struct ICometFoundation.SwapParams  | The complete parameter struct defining the swap operation                                                                                                                                                                                                                                                                                                   |
+| allowParams | struct ICometFoundation.AllowParams | The EIP-712 signature parameters for Comet authorization Requirements: - All requirements from swap() function - allowParams.owner must equal msg.sender - allowParams.manager must equal this contract address - allowParams.isAllowed must be true - The signature must be valid and not expired - The nonce must match the user's current nonce in Comet |
 
 ### \_executeSwap
 
 ```solidity
-function _executeSwap(struct ICometCollateralSwap.SwapParams swapParams) internal
+function _executeSwap(struct ICometFoundation.SwapParams swapParams) internal
 ```
 
 ### \_checkCollateralization
@@ -103,7 +103,7 @@ Implementation: https://github.com/compound-finance/comet/blob/main/contracts/Co
 ### \_tstore
 
 ```solidity
-function _tstore(address loanPlugin, address swapPlugin, address comet, contract IERC20 collateral, uint256 amount) internal
+function _tstore(uint256 snapshot, address loanPlugin, address swapPlugin, address comet, contract IERC20 collateral, uint256 amount, address user) internal
 ```
 
 Stores operation parameters in transient storage for callback access
@@ -112,59 +112,63 @@ _Uses EIP-1153 transient storage for gas-efficient temporary data storage_
 
 #### Parameters
 
-| Name       | Type            | Description                       |
-| ---------- | --------------- | --------------------------------- |
-| loanPlugin | address         | Address of the flash loan plugin  |
-| swapPlugin | address         | Address of the swap plugin        |
-| comet      | address         | Address of the Comet comet        |
-| collateral | contract IERC20 | Address of the collateral token   |
-| amount     | uint256         | Collateral amount being processed |
+| Name       | Type            | Description                                  |
+| ---------- | --------------- | -------------------------------------------- |
+| snapshot   | uint256         | Base asset balance before flash loan         |
+| loanPlugin | address         | Address of the flash loan plugin             |
+| swapPlugin | address         | Address of the swap plugin                   |
+| comet      | address         | Address of the Comet comet                   |
+| collateral | contract IERC20 | Address of the collateral token              |
+| amount     | uint256         | Collateral amount being processed            |
+| user       | address         | Address of the user performing the operation |
 
 ### \_tload
 
 ```solidity
-function _tload() internal returns (address loanPlugin, address swapPlugin, contract IComet comet, contract IERC20 fromAsset, uint256 fromAmount)
+function _tload() internal returns (uint256 snapshot, address loanPlugin, address swapPlugin, contract IComet comet, contract IERC20 fromAsset, uint256 fromAmount, address user)
 ```
 
 _Loads and clears swap parameters from transient storage_
 
 #### Return Values
 
-| Name       | Type            | Description                   |
-| ---------- | --------------- | ----------------------------- |
-| loanPlugin | address         | The flash loan plugin address |
-| swapPlugin | address         | The swap plugin address       |
-| comet      | contract IComet | The Comet contract address    |
-| fromAsset  | contract IERC20 | The asset being swapped from  |
-| fromAmount | uint256         | The amount being swapped      |
+| Name       | Type            | Description                              |
+| ---------- | --------------- | ---------------------------------------- |
+| snapshot   | uint256         | The base asset balance before flash loan |
+| loanPlugin | address         | The flash loan plugin address            |
+| swapPlugin | address         | The swap plugin address                  |
+| comet      | contract IComet | The Comet contract address               |
+| fromAsset  | contract IERC20 | The asset being swapped from             |
+| fromAmount | uint256         | The amount being swapped                 |
+| user       | address         | The user performing the operation        |
 
-### \_validateExecParams
+### \_validateSwapParams
 
 ```solidity
-function _validateExecParams(struct ICometCollateralSwap.SwapParams swapParams) internal pure
+function _validateSwapParams(struct ICometFoundation.SwapParams swapParams) internal pure
 ```
 
 _Validates swap parameters for correctness and safety_
 
 #### Parameters
 
-| Name       | Type                                   | Description                     |
-| ---------- | -------------------------------------- | ------------------------------- |
-| swapParams | struct ICometCollateralSwap.SwapParams | The swap parameters to validate |
+| Name       | Type                               | Description                     |
+| ---------- | ---------------------------------- | ------------------------------- |
+| swapParams | struct ICometFoundation.SwapParams | The swap parameters to validate |
 
 ### \_supplyDust
 
 ```solidity
-function _supplyDust(address user, contract IERC20 asset, contract IComet comet, uint256 repayAmount) internal
+function _supplyDust(address user, contract IERC20 asset, contract IComet comet, uint256 amount) internal
 ```
 
 _Supplies any remaining asset balance back to user's Comet position_
 
 #### Parameters
 
-| Name        | Type            | Description                                        |
-| ----------- | --------------- | -------------------------------------------------- |
-| user        | address         | The user to supply dust to                         |
-| asset       | contract IERC20 | The asset to supply                                |
-| comet       | contract IComet | The Comet contract address                         |
-| repayAmount | uint256         | Amount reserved for repayment (excluded from dust) |
+| Name   | Type            | Description                  |
+| ------ | --------------- | ---------------------------- |
+| user   | address         | The user to supply dust to   |
+| asset  | contract IERC20 | The asset to supply          |
+| comet  | contract IComet | The Comet contract address   |
+| amount | uint256         | The amount of dust to supply |
