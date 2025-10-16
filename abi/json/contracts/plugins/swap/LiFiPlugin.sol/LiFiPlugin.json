@@ -1,17 +1,32 @@
 [
     {
         "inputs": [],
-        "name": "InvalidAmountOut",
-        "type": "error"
-    },
-    {
-        "inputs": [],
         "name": "InvalidAmountIn",
         "type": "error"
     },
     {
         "inputs": [],
+        "name": "InvalidAmountOut",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "InvalidReceiver",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "InvalidSelector",
+        "type": "error"
+    },
+    {
+        "inputs": [],
         "name": "InvalidSwapParameters",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "InvalidTokens",
         "type": "error"
     },
     {
@@ -23,16 +38,6 @@
             }
         ],
         "name": "SafeERC20FailedOperation",
-        "type": "error"
-    },
-    {
-        "inputs": [],
-        "name": "SwapFailed",
-        "type": "error"
-    },
-    {
-        "inputs": [],
-        "name": "ZeroAddress",
         "type": "error"
     },
     {
@@ -67,6 +72,19 @@
         "type": "event"
     },
     {
+        "inputs": [],
+        "name": "SWAP_SELECTOR",
+        "outputs": [
+            {
+                "internalType": "bytes4",
+                "name": "",
+                "type": "bytes4"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
         "inputs": [
             {
                 "internalType": "address",
@@ -81,11 +99,6 @@
             {
                 "internalType": "uint256",
                 "name": "amountIn",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "minAmountOut",
                 "type": "uint256"
             },
             {

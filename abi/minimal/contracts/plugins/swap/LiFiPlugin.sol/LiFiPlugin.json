@@ -1,11 +1,13 @@
 [
-    "error InvalidAmountOut()",
     "error InvalidAmountIn()",
+    "error InvalidAmountOut()",
+    "error InvalidReceiver()",
+    "error InvalidSelector()",
     "error InvalidSwapParameters()",
+    "error InvalidTokens()",
     "error SafeERC20FailedOperation(address)",
-    "error SwapFailed()",
-    "error ZeroAddress()",
     "event Swap(address indexed,address indexed,address indexed,uint256)",
-    "function executeSwap(address,address,uint256,uint256,bytes,bytes) returns (uint256)",
+    "function SWAP_SELECTOR() view returns (bytes4)",
+    "function executeSwap(address,address,uint256,bytes,bytes) returns (uint256)",
     "function supportsInterface(bytes4) pure returns (bool)"
 ]

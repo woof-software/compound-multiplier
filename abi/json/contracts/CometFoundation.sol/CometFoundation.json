@@ -24,21 +24,6 @@
     },
     {
         "inputs": [],
-        "name": "InvalidAmountOut",
-        "type": "error"
-    },
-    {
-        "inputs": [],
-        "name": "InvalidWeth",
-        "type": "error"
-    },
-    {
-        "inputs": [],
-        "name": "InvalidOpts",
-        "type": "error"
-    },
-    {
-        "inputs": [],
         "name": "UnknownPlugin",
         "type": "error"
     },

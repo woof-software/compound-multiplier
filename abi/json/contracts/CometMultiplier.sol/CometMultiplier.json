@@ -29,27 +29,12 @@
     },
     {
         "inputs": [],
-        "name": "AlreadyExists",
-        "type": "error"
-    },
-    {
-        "inputs": [],
-        "name": "CallbackFailed",
+        "name": "InvalidAmountIn",
         "type": "error"
     },
     {
         "inputs": [],
         "name": "InvalidAmountOut",
-        "type": "error"
-    },
-    {
-        "inputs": [],
-        "name": "InvalidWeth",
-        "type": "error"
-    },
-    {
-        "inputs": [],
-        "name": "InvalidAmountIn",
         "type": "error"
     },
     {
@@ -65,6 +50,11 @@
     {
         "inputs": [],
         "name": "InvalidOpts",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "InvalidWeth",
         "type": "error"
     },
     {
@@ -86,11 +76,6 @@
             }
         ],
         "name": "SafeERC20FailedOperation",
-        "type": "error"
-    },
-    {
-        "inputs": [],
-        "name": "UnknownMarket",
         "type": "error"
     },
     {
@@ -122,42 +107,17 @@
             {
                 "indexed": false,
                 "internalType": "uint256",
-                "name": "totalAmount",
+                "name": "multipliedAmount",
                 "type": "uint256"
             },
             {
                 "indexed": false,
                 "internalType": "uint256",
-                "name": "debtAmount",
+                "name": "debt",
                 "type": "uint256"
             }
         ],
-        "name": "Executed",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": true,
-                "internalType": "address",
-                "name": "endpoint",
-                "type": "address"
-            },
-            {
-                "indexed": true,
-                "internalType": "bytes4",
-                "name": "selector",
-                "type": "bytes4"
-            },
-            {
-                "indexed": false,
-                "internalType": "bytes32",
-                "name": "key",
-                "type": "bytes32"
-            }
-        ],
-        "name": "PluginAdded",
+        "name": "MultiplierExecuted",
         "type": "event"
     },
     {
@@ -190,11 +150,36 @@
             {
                 "indexed": false,
                 "internalType": "uint256",
-                "name": "baseReturned",
+                "name": "amountOut",
                 "type": "uint256"
             }
         ],
-        "name": "Withdrawn",
+        "name": "MultiplierWithdrawn",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "endpoint",
+                "type": "address"
+            },
+            {
+                "indexed": true,
+                "internalType": "bytes4",
+                "name": "selector",
+                "type": "bytes4"
+            },
+            {
+                "indexed": false,
+                "internalType": "bytes32",
+                "name": "key",
+                "type": "bytes32"
+            }
+        ],
+        "name": "PluginAdded",
         "type": "event"
     },
     {
@@ -238,11 +223,6 @@
                     },
                     {
                         "internalType": "address",
-                        "name": "flp",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "address",
                         "name": "loanPlugin",
                         "type": "address"
                     },
@@ -275,11 +255,6 @@
                 "internalType": "bytes",
                 "name": "swapData",
                 "type": "bytes"
-            },
-            {
-                "internalType": "uint256",
-                "name": "minAmountOut",
-                "type": "uint256"
             }
         ],
         "name": "executeMultiplier",
@@ -298,11 +273,6 @@
                     },
                     {
                         "internalType": "address",
-                        "name": "flp",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "address",
                         "name": "loanPlugin",
                         "type": "address"
                     },
@@ -335,11 +305,6 @@
                 "internalType": "bytes",
                 "name": "swapData",
                 "type": "bytes"
-            },
-            {
-                "internalType": "uint256",
-                "name": "minAmountOut",
-                "type": "uint256"
             },
             {
                 "components": [
@@ -369,7 +334,7 @@
                         "type": "uint8"
                     }
                 ],
-                "internalType": "struct IAllowBySig.AllowParams",
+                "internalType": "struct ICometFoundation.AllowParams",
                 "name": "allowParams",
                 "type": "tuple"
             }
@@ -422,11 +387,6 @@
                     },
                     {
                         "internalType": "address",
-                        "name": "flp",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "address",
                         "name": "loanPlugin",
                         "type": "address"
                     },
@@ -454,11 +414,6 @@
                 "internalType": "bytes",
                 "name": "swapData",
                 "type": "bytes"
-            },
-            {
-                "internalType": "uint256",
-                "name": "minAmountOut",
-                "type": "uint256"
             }
         ],
         "name": "withdrawMultiplier",
@@ -477,11 +432,6 @@
                     },
                     {
                         "internalType": "address",
-                        "name": "flp",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "address",
                         "name": "loanPlugin",
                         "type": "address"
                     },
@@ -509,11 +459,6 @@
                 "internalType": "bytes",
                 "name": "swapData",
                 "type": "bytes"
-            },
-            {
-                "internalType": "uint256",
-                "name": "minAmountOut",
-                "type": "uint256"
             },
             {
                 "components": [
@@ -543,7 +488,7 @@
                         "type": "uint8"
                     }
                 ],
-                "internalType": "struct IAllowBySig.AllowParams",
+                "internalType": "struct ICometFoundation.AllowParams",
                 "name": "allowParams",
                 "type": "tuple"
             }
