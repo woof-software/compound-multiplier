@@ -282,10 +282,9 @@ require(IERC20(asset).balanceOf(address(this)) == data.snapshot + debt, InvalidA
 
 The contract includes comprehensive error handling:
 
-- `UnauthorizedCallback`: Invalid flash loan provider
-- `ZeroAddress`: Zero address in configuration
+- `UnauthorizedCallback`: Invalid flash loan provider\
 - `UnknownPlugin`: Unregistered plugin selector
-- `NotSufficientLiquidity`: Insufficient collateralization
+- `InsufficientLiquidity`: Insufficient collateralization
 - `InvalidAmountOut`: Balance validation failure
 - `InvalidSwapParameters`: Invalid input parameters
 

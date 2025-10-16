@@ -1,7 +1,7 @@
 [
     "constructor(tuple(address,bytes)[])",
     "error InvalidAmountOut()",
-    "error InvalidAsset()",
+    "error InvalidWeth()",
     "error InvalidOpts()",
     "error UnknownPlugin()",
     "event PluginAdded(address indexed,bytes4 indexed,bytes32)",

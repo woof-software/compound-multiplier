@@ -6,6 +6,9 @@ import { IEVault } from "../../external/euler/IEVault.sol";
 import { ICometFlashLoanPlugin } from "../../interfaces/ICometFlashLoanPlugin.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import { ICometFoundation as ICF } from "../../interfaces/ICometFoundation.sol";
+import { ICometAlerts as ICA } from "../../interfaces/ICometAlerts.sol";
+import { ICometEvents as ICE } from "../../interfaces/ICometEvents.sol";
 
 /**
  * @title EulerV2Plugin
@@ -25,14 +28,14 @@ contract EulerV2Plugin is ICometFlashLoanPlugin {
     /**
      * @inheritdoc ICometFlashLoanPlugin
      */
-    function takeFlashLoan(CallbackData memory data, bytes memory) external payable {
+    function takeFlashLoan(ICF.CallbackData memory data, bytes memory config) external payable {
         bytes memory _data = abi.encode(data);
-        bytes32 flid = keccak256(_data);
+        address flp = abi.decode(config, (address));
         bytes32 slot = SLOT_PLUGIN;
         assembly {
-            tstore(slot, flid)
+            tstore(slot, flp)
         }
-        IEVault(data.flp).flashLoan(data.debt, _data);
+        IEVault(flp).flashLoan(data.debt, _data);
     }
 
     /**
@@ -48,16 +51,19 @@ contract EulerV2Plugin is ICometFlashLoanPlugin {
      * @return _data Decoded callback data for adapter processing
      * @dev Validates flash loan ID and sender authorization before processing
      */
-    function onFlashLoan(bytes calldata data) external returns (CallbackData memory _data) {
-        bytes32 flidExpected;
+    function onFlashLoan(bytes calldata data) external returns (ICF.CallbackData memory _data) {
+        address flp;
         bytes32 slot = SLOT_PLUGIN;
         assembly {
-            flidExpected := tload(slot)
+            flp := tload(slot)
             tstore(slot, 0)
         }
-        require(keccak256(data) == flidExpected, InvalidFlashLoanId());
-        _data = abi.decode(data, (CallbackData));
-        require(_data.flp == msg.sender, UnauthorizedCallback());
+
+        require(flp == msg.sender, ICA.UnauthorizedCallback());
+
+        _data = abi.decode(data, (ICF.CallbackData));
+        _data.flp = flp;
+        emit ICE.FlashLoan(flp, address(_data.asset), _data.debt, 0);
     }
 
     function supportsInterface(bytes4 interfaceId) external pure returns (bool) {

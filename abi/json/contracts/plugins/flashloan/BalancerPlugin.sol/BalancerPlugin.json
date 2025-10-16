@@ -11,7 +11,7 @@
     },
     {
         "inputs": [],
-        "name": "InvalidFlashLoanId",
+        "name": "InvalidFlashLoanProvider",
         "type": "error"
     },
     {

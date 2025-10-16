@@ -1,7 +1,7 @@
 [
     "error InvalidAmountOut()",
     "error InvalidFlashLoanData()",
-    "error InvalidFlashLoanId()",
+    "error InvalidFlashLoanProvider()",
     "error SafeERC20FailedOperation(address)",
     "error UnauthorizedCallback()",
     "function CALLBACK_SELECTOR() view returns (bytes4)",

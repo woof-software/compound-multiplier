@@ -1,9 +1,9 @@
 # Solidity API
 
-## InvalidAsset
+## InvalidWeth
 
 ```solidity
-error InvalidAsset()
+error InvalidWeth()
 ```
 
 ## ICometMultiplier
@@ -44,10 +44,10 @@ error AlreadyExists()
 error NothingToDeleverage()
 ```
 
-### InvalidCollateralAmount
+### InvalidAmountIn
 
 ```solidity
-error InvalidCollateralAmount()
+error InvalidAmountIn()
 ```
 
 ### Mode

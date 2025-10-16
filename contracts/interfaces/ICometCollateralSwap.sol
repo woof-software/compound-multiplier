@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity =0.8.30;
 
-import { IAllowBySig } from "./IAllowBySig.sol";
-import { ICometFoundation } from "./ICometFoundation.sol";
+import { ICometFoundation as ICF } from "./ICometFoundation.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
@@ -11,59 +10,7 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  * @dev This contract enables users to swap one collateral asset for another within their Compound V3 position
  *      using flash loans. The swap maintains the user's debt position while changing their collateral composition.
  */
-interface ICometCollateralSwap is ICometFoundation {
-    /*//////////////////////////////////////////////////////////////
-                                STRUCTS
-    //////////////////////////////////////////////////////////////*/
-    /**
-     * @notice Parameters required to execute a collateral swap
-     * @dev Contains all necessary information for the swap including assets, amounts, slippage protection, and swap routing
-     * @param comet The address of the Compound V3 Comet contract for this market
-     * @param flp The address of the flash loan provider contract to use for borrowing the target asset
-     * @param fromAsset The address of the collateral asset to swap from (must be a valid Comet collateral)
-     * @param toAsset The address of the collateral asset to swap to (must be a valid Comet collateral)
-     * @param fromAmount The amount of fromAsset to swap (must be <= user's collateral balance)
-     * @param minAmountOut The minimum amount of toAsset expected from the swap (slippage protection)
-     * @param maxHealthFactorDropBps Maximum allowed drop in health factor in basis points (10000 = 100%)
-     * @param callbackSelector The bytes4 selector identifying which flash loan plugin to use
-     * @param swapCalldata The encoded calldata for the swap router to execute the asset exchange
-     */
-    struct SwapParams {
-        Options opts;
-        IERC20 fromAsset;
-        IERC20 toAsset;
-        uint256 fromAmount;
-        uint256 minAmountOut;
-        uint256 maxHealthFactorDropBps;
-        bytes swapCalldata;
-    }
-
-    /*//////////////////////////////////////////////////////////////
-                                ERRORS
-    //////////////////////////////////////////////////////////////*/
-
-    /**
-     * @notice Thrown when the swap would result in insufficient collateralization
-     * @dev The health factor check fails, meaning the swap would make the position too risky
-     */
-    error NotSufficientLiquidity();
-
-    /**
-     * @notice Thrown when the actual swap output is less than the minimum required
-     * @dev Slippage protection - the swap didn't produce enough of the target asset
-     */
-    error InsufficientAmountOut();
-
-    /**
-     * @notice Thrown when SwapParams contain invalid values
-     * @dev Covers cases like zero addresses, zero amounts, or invalid health factor parameters
-     */
-    error InvalidSwapParameters();
-
-    /*//////////////////////////////////////////////////////////////
-                           EXTERNAL FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
-
+interface ICometCollateralSwap {
     /**
      * @notice Executes a collateral swap using flash loans
      * @dev The main entry point for swapping collateral assets in a Compound V3 position.
@@ -89,7 +36,7 @@ interface ICometCollateralSwap is ICometFoundation {
      * @custom:security Uses registered plugins only to prevent malicious callbacks
      * @custom:security Validates exact token balance requirements throughout execution
      */
-    function executeSwap(SwapParams calldata swapParams) external;
+    function executeSwap(ICF.SwapParams calldata swapParams) external;
 
     /**
      * @notice Executes a collateral swap with signature-based authorization in a single transaction
@@ -115,5 +62,5 @@ interface ICometCollateralSwap is ICometFoundation {
      * @custom:security Prevents replay attacks using nonce validation
      * @custom:security Ensures only the signer can use their own signature
      */
-    function executeSwapBySig(SwapParams calldata swapParams, IAllowBySig.AllowParams calldata allowParams) external;
+    function executeSwapBySig(ICF.SwapParams calldata swapParams, ICF.AllowParams calldata allowParams) external;
 }

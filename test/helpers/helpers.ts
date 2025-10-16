@@ -202,10 +202,12 @@ export async function getQuote(
         })
     ).data;
 
+    const swapCalldata = quoteData.transactionRequest.data;
+
     return {
         toAmountMin: BigInt(quoteData.estimate.toAmountMin),
         toAmount: BigInt(quoteData.estimate.toAmount),
-        swapCalldata: quoteData.transactionRequest.data
+        swapCalldata: swapCalldata
     };
 }
 
@@ -224,42 +226,6 @@ export function exp(value: number | bigint, decimals: number | bigint = 0, preci
 ///////////////////////////////////////////////////////////////
 //                               ADAPTER
 ///////////////////////////////////////////////////////////////
-export async function previewTake(
-    comet: IComet,
-    user: string,
-    collateral: string,
-    requestedCollateral: bigint,
-    blockTag?: number
-): Promise<bigint> {
-    const tag = blockTag ?? (await ethers.provider.getBlockNumber());
-
-    const [info, baseScale, userCol, repayAmount] = await Promise.all([
-        comet.getAssetInfoByAddress(collateral, { blockTag: tag }),
-        comet.baseScale({ blockTag: tag }),
-        comet.collateralBalanceOf(user, collateral, { blockTag: tag }),
-        comet.borrowBalanceOf(user, { blockTag: tag })
-    ]);
-
-    const price = await comet.getPrice(info.priceFeed, { blockTag: tag });
-    const priceFeed = await ethers.getContractAt("AggregatorV3Interface", info.priceFeed);
-    const decs = await priceFeed.decimals({ blockTag: tag });
-    const num = BigInt(price) * BigInt(baseScale) * BigInt(info.borrowCollateralFactor);
-    const den = 10n ** BigInt(decs) * BigInt(info.scale) * 10n ** 18n;
-
-    const req = requestedCollateral;
-    const debtFromRequested = req === ethers.MaxUint256 ? repayAmount : (req * num) / den;
-
-    const loanDebt = debtFromRequested < repayAmount ? debtFromRequested : repayAmount;
-
-    if (loanDebt === 0n) return 0n;
-
-    let unlocked = (loanDebt * den) / num;
-
-    const reqCap = req === ethers.MaxUint256 ? BigInt(userCol) : req < BigInt(userCol) ? req : BigInt(userCol);
-    const take = unlocked < reqCap ? unlocked : reqCap;
-
-    return take > 0n ? take : 0n;
-}
 
 export async function calculateLeveragedAmount(comet: IComet, collateralAmount: bigint, leverage: number) {
     const info = await comet.getAssetInfoByAddress(WETH_ADDRESS);
@@ -316,8 +282,7 @@ export async function executeMultiplier1Inch(
     adapter: CometMultiplier,
     signer: SignerWithAddress,
     collateralAmount: bigint,
-    leverage: number,
-    minAmountOut = 1n
+    leverage: number
 ) {
     await weth.connect(signer).approve(await adapter.getAddress(), collateralAmount);
 
@@ -331,39 +296,28 @@ export async function executeMultiplier1Inch(
             await adapter.getAddress()
         );
 
-        return adapter
-            .connect(signer)
-            .executeMultiplier(market, WETH_ADDRESS, collateralAmount, leverage, swapData, minAmountOut);
+        return adapter.connect(signer).executeMultiplier(market, WETH_ADDRESS, collateralAmount, leverage, swapData);
     });
 }
 
 export async function withdrawMultiplier1Inch(
     market: any,
-    comet: IComet,
     adapter: CometMultiplier,
     signer: SignerWithAddress,
-    requestedCollateral: bigint,
-    minAmountOut?: bigint
+    requestedCollateral: bigint
 ) {
-    const blockTag = await ethers.provider.getBlockNumber();
-    let take = await previewTake(comet, signer.address, WETH_ADDRESS, requestedCollateral, blockTag);
-    let quote = 0n;
-    if (take > 0n) {
-        quote =
-            minAmountOut ??
-            (await executeWithRetry(async () => {
-                const q = await get1inchQuote(WETH_ADDRESS, USDC_ADDRESS, take.toString());
-                return (BigInt(q) * 99n) / 100n;
-            }));
-    }
-
     return await executeWithRetry(async () => {
         const swapData =
-            take == 0n
+            requestedCollateral == 0n
                 ? "0x"
-                : await get1inchSwapData(WETH_ADDRESS, USDC_ADDRESS, take.toString(), await adapter.getAddress());
+                : await get1inchSwapData(
+                      WETH_ADDRESS,
+                      USDC_ADDRESS,
+                      requestedCollateral.toString(),
+                      await adapter.getAddress()
+                  );
 
-        return adapter.connect(signer).withdrawMultiplier(market, WETH_ADDRESS, requestedCollateral, swapData, quote);
+        return adapter.connect(signer).withdrawMultiplier(market, WETH_ADDRESS, requestedCollateral, swapData);
     });
 }
 
@@ -374,8 +328,7 @@ export async function executeMultiplierLiFi(
     adapter: CometMultiplier,
     signer: SignerWithAddress,
     collateralAmount: bigint,
-    leverage: number,
-    minAmountOut = 1n
+    leverage: number
 ) {
     await weth.connect(signer).approve(await adapter.getAddress(), collateralAmount);
 
@@ -391,53 +344,31 @@ export async function executeMultiplierLiFi(
             await adapter.getAddress()
         ).then((q) => q.swapCalldata);
 
-        return adapter
-            .connect(signer)
-            .executeMultiplier(market, WETH_ADDRESS, collateralAmount, leverage, swapData, minAmountOut);
+        return adapter.connect(signer).executeMultiplier(market, WETH_ADDRESS, collateralAmount, leverage, swapData);
     });
 }
 
 export async function withdrawMultiplierLiFi(
     market: any,
-    comet: IComet,
     adapter: CometMultiplier,
     signer: SignerWithAddress,
-    requestedCollateral: bigint,
-    minAmountOut?: bigint
+    requestedCollateral: bigint
 ) {
     const blockTag = await ethers.provider.getBlockNumber();
-    let take = await previewTake(comet, signer.address, WETH_ADDRESS, requestedCollateral, blockTag);
-    let quote = 0n;
-    if (take > 0n) {
-        quote =
-            minAmountOut ??
-            (await executeWithRetry(async () => {
-                const q = await getQuote(
-                    "1",
-                    "1",
-                    WETH_ADDRESS,
-                    USDC_ADDRESS,
-                    take.toString(),
-                    await adapter.getAddress()
-                ).then((q) => q.toAmountMin);
-                return (BigInt(q) * 99n) / 100n;
-            }));
-    }
-
     return await executeWithRetry(async () => {
         const swapData =
-            take == 0n
+            requestedCollateral == 0n
                 ? "0x"
                 : await getQuote(
                       "1",
                       "1",
                       WETH_ADDRESS,
                       USDC_ADDRESS,
-                      take.toString(),
+                      requestedCollateral.toString(),
                       await adapter.getAddress()
                   ).then((q) => q.swapCalldata);
 
-        return adapter.connect(signer).withdrawMultiplier(market, WETH_ADDRESS, requestedCollateral, swapData, quote);
+        return adapter.connect(signer).withdrawMultiplier(market, WETH_ADDRESS, requestedCollateral, swapData);
     });
 }
 
@@ -450,7 +381,6 @@ export async function calculateHealthFactor(
     const price = await comet.getPrice(info.priceFeed);
     const baseScale = await comet.baseScale();
     const collateralBalance = await comet.collateralBalanceOf(userAddress, collateralAddress);
-    const borrowBalance = await comet.borrowBalanceOf(userAddress);
 
     const collateralValue = (collateralBalance * price * baseScale) / (info.scale * 100_000_000n);
     const healthRatio = (collateralValue * BigInt(info.borrowCollateralFactor)) / ethers.parseEther("1");
@@ -465,9 +395,6 @@ export async function getUserNonce(comet: any, userAddress: string): Promise<big
     return await comet.userNonce(userAddress);
 }
 
-/**
- * Generates an EIP-712 signature for allowBySig
- */
 /**
  * Generates an EIP-712 signature for allowBySig using TypedData signing
  */

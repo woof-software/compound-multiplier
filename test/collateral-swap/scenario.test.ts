@@ -21,6 +21,7 @@ import {
 import { expect } from "chai";
 import { CometCollateralSwap } from "../../typechain-types";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
+import { ICometFoundation } from "../../typechain-types/contracts/CometCollateralSwap";
 
 describe("Collateral Swap Scenarios", function () {
     let snapshot: SnapshotRestorer;
@@ -71,11 +72,11 @@ describe("Collateral Swap Scenarios", function () {
 
         balancerPluginA = {
             endpoint: await balancerPlugin.endpoint.getAddress(),
-            config: "0x"
+            config: ethers.AbiCoder.defaultAbiCoder().encode(["address"], [BALANCER_VAULT])
         };
         aavePluginA = {
             endpoint: await aavePlugin.endpoint.getAddress(),
-            config: "0x"
+            config: ethers.AbiCoder.defaultAbiCoder().encode(["address"], [AAVE_POOL])
         };
 
         ({ lifiPlugin } = await getSwapPlugins());
@@ -119,12 +120,11 @@ describe("Collateral Swap Scenarios", function () {
         const supplyAmountCollateralA = SUPPLY_AMOUNT;
         const fromAmount = (supplyAmountCollateralA * 9995n) / 2n / 10000n;
 
-        let swapParams: ICometCollateralSwap.SwapParamsStruct = {
+        let swapParams: ICometFoundation.SwapParamsStruct = {
             opts: {
                 loanPlugin: await aavePl.getAddress(),
                 swapPlugin: lifiPlugin.endpoint,
-                comet: await comet.getAddress(),
-                flp: aaveFLP
+                comet: await comet.getAddress()
             },
             fromAsset: await collateralA.getAddress(),
             fromAmount: fromAmount,
@@ -199,12 +199,11 @@ describe("Collateral Swap Scenarios", function () {
         const supplyAmountCollateralB = SUPPLY_AMOUNT;
         const fromAmount = (supplyAmountCollateralB * 9995n) / 2n / 10000n;
 
-        let swapParams: ICometCollateralSwap.SwapParamsStruct = {
+        let swapParams: ICometFoundation.SwapParamsStruct = {
             opts: {
                 loanPlugin: await aavePl.getAddress(),
                 swapPlugin: lifiPlugin.endpoint,
-                comet: await comet.getAddress(),
-                flp: aaveFLP
+                comet: await comet.getAddress()
             },
             fromAsset: await collateralB.getAddress(),
             fromAmount: fromAmount,
@@ -292,12 +291,11 @@ describe("Collateral Swap Scenarios", function () {
         const supplyAmountCollateralB = SUPPLY_AMOUNT;
         const fromAmount = (supplyAmountCollateralB * 9995n) / 2n / 10000n;
 
-        let swapParams: ICometCollateralSwap.SwapParamsStruct = {
+        let swapParams: ICometFoundation.SwapParamsStruct = {
             opts: {
                 loanPlugin: await aavePl.getAddress(),
                 swapPlugin: lifiPlugin.endpoint,
-                comet: await comet.getAddress(),
-                flp: aaveFLP
+                comet: await comet.getAddress()
             },
             fromAsset: await collateralB.getAddress(),
             fromAmount: fromAmount,
@@ -387,12 +385,11 @@ describe("Collateral Swap Scenarios", function () {
         const supplyAmountCollateralC = exp(0.001, 8);
         const fromAmount = (supplyAmountCollateralB * 9995n) / 2n / 10000n;
 
-        let swapParams: ICometCollateralSwap.SwapParamsStruct = {
+        let swapParams: ICometFoundation.SwapParamsStruct = {
             opts: {
                 loanPlugin: await aavePl.getAddress(),
                 swapPlugin: lifiPlugin.endpoint,
-                comet: await comet.getAddress(),
-                flp: aaveFLP
+                comet: await comet.getAddress()
             },
             fromAsset: await collateralB.getAddress(),
             fromAmount: fromAmount,
@@ -478,8 +475,8 @@ describe("Collateral Swap Scenarios", function () {
          *  This tests that the same swap calldata works with different flash loan providers
          */
 
-        let swapParamsA: ICometCollateralSwap.SwapParamsStruct;
-        let swapParamsB: ICometCollateralSwap.SwapParamsStruct;
+        let swapParamsA: ICometFoundation.SwapParamsStruct;
+        let swapParamsB: ICometFoundation.SwapParamsStruct;
 
         // Prepare data
         const collateralA = wbtc; // WBTC
@@ -518,8 +515,7 @@ describe("Collateral Swap Scenarios", function () {
                 opts: {
                     loanPlugin: await aavePl.getAddress(),
                     swapPlugin: lifiPlugin.endpoint,
-                    comet: await comet.getAddress(),
-                    flp: aaveFLP
+                    comet: await comet.getAddress()
                 },
                 fromAsset: await collateralA.getAddress(),
                 fromAmount: fromAmountA,
@@ -554,8 +550,7 @@ describe("Collateral Swap Scenarios", function () {
                 opts: {
                     loanPlugin: await balancerPl.getAddress(),
                     swapPlugin: lifiPlugin.endpoint,
-                    comet: await comet.getAddress(),
-                    flp: balancerFLP
+                    comet: await comet.getAddress()
                 },
                 fromAsset: await collateralB.getAddress(), // wstETH
                 fromAmount: fromAmountB,
@@ -624,12 +619,11 @@ describe("Collateral Swap Scenarios", function () {
             String(collateralSwap.target)
         );
 
-        let swapParamsB: ICometCollateralSwap.SwapParamsStruct = {
+        let swapParamsB: ICometFoundation.SwapParamsStruct = {
             opts: {
                 loanPlugin: await aavePl.getAddress(),
                 swapPlugin: lifiPlugin.endpoint,
-                comet: await comet.getAddress(),
-                flp: aaveFLP
+                comet: await comet.getAddress()
             },
             fromAsset: await collateralA.getAddress(),
             fromAmount: fromAmount,
@@ -649,12 +643,11 @@ describe("Collateral Swap Scenarios", function () {
             String(collateralSwap.target)
         );
 
-        let swapParamsC: ICometCollateralSwap.SwapParamsStruct = {
+        let swapParamsC: ICometFoundation.SwapParamsStruct = {
             opts: {
                 loanPlugin: await aavePl.getAddress(),
                 swapPlugin: lifiPlugin.endpoint,
-                comet: await comet.getAddress(),
-                flp: aaveFLP
+                comet: await comet.getAddress()
             },
             fromAsset: await collateralA.getAddress(),
             fromAmount: fromAmount,
@@ -745,12 +738,11 @@ describe("Collateral Swap Scenarios", function () {
         const supplyAmountCollateralA = SUPPLY_AMOUNT;
         const fromAmount = (supplyAmountCollateralA * 9995n) / 2n / 10000n;
 
-        let swapParams: ICometCollateralSwap.SwapParamsStruct = {
+        let swapParams: ICometFoundation.SwapParamsStruct = {
             opts: {
                 loanPlugin: await balancerPl.getAddress(),
                 swapPlugin: lifiPlugin.endpoint,
-                comet: await comet.getAddress(),
-                flp: balancerFLP
+                comet: await comet.getAddress()
             },
             fromAsset: await collateralA.getAddress(),
             fromAmount: fromAmount,

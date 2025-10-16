@@ -4,10 +4,13 @@ pragma solidity =0.8.30;
 import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import { ICometFoundation } from "./interfaces/ICometFoundation.sol";
 import { ICometSwapPlugin } from "./interfaces/ICometSwapPlugin.sol";
 import { ICometFlashLoanPlugin } from "./interfaces/ICometFlashLoanPlugin.sol";
 import { IComet } from "./external/compound/IComet.sol";
+
+import { ICometFoundation as ICF } from "./interfaces/ICometFoundation.sol";
+import { ICometAlerts as ICA } from "./interfaces/ICometAlerts.sol";
+import { ICometEvents as ICE } from "./interfaces/ICometEvents.sol";
 
 /**
  * @title CometFoundation
@@ -17,7 +20,7 @@ import { IComet } from "./external/compound/IComet.sol";
  * It maintains a registry of supported plugins, each identified by a unique key derived from the plugin's address and callback selector.
  * The contract provides internal functions to validate and interact with these plugins, ensuring secure and modular integration with various DeFi protocols.
  */
-contract CometFoundation is ICometFoundation {
+contract CometFoundation {
     /// @dev The scale for factors
     uint64 public constant FACTOR_SCALE = 1e18;
     uint16 public constant PRECISION = 1e4;
@@ -26,16 +29,16 @@ contract CometFoundation is ICometFoundation {
     bytes1 constant PLUGIN_MAGIC = 0x01;
 
     /// @notice Offset constants for transient storage slots
-    uint8 internal constant LOAN_PLUGIN_OFFSET = 0x20;
-    uint8 internal constant SWAP_PLUGIN_OFFSET = 0x40;
-    uint8 internal constant MARKET_OFFSET = 0x60;
-    uint8 internal constant ASSET_OFFSET = 0x80;
-    uint8 internal constant AMOUNT_OFFSET = 0xA0;
+    uint8 internal constant SNAPSHOT_OFFSET = 0x20;
+    uint8 internal constant LOAN_PLUGIN_OFFSET = 0x40;
+    uint8 internal constant SWAP_PLUGIN_OFFSET = 0x60;
+    uint8 internal constant MARKET_OFFSET = 0x80;
+    uint8 internal constant ASSET_OFFSET = 0xA0;
+    uint8 internal constant AMOUNT_OFFSET = 0xC0;
+    uint8 internal constant USER_OFFSET = 0xE0;
 
     /// @notice Storage slot for transient data, derived from contract name hash
     bytes32 internal constant SLOT_FOUNDATION = bytes32(uint256(keccak256("CometFoundation.storage")) - 1);
-
-    bytes4 internal constant NULL_SELECTOR = bytes4(0);
 
     /// @notice Mapping of function selectors to their corresponding plugin configurations
     /// @dev Key is the callback selector, value contains plugin endpoint and configuration
@@ -48,7 +51,7 @@ contract CometFoundation is ICometFoundation {
     receive() external payable {}
 
     /// @notice Modifier to handle Comet's allowBySig for gasless approvals
-    modifier allow(address comet, AllowParams calldata allowParams) {
+    modifier allow(address comet, ICF.AllowParams calldata allowParams) {
         IComet(comet).allowBySig(
             msg.sender,
             address(this),
@@ -67,24 +70,24 @@ contract CometFoundation is ICometFoundation {
      * @param _plugins Array of plugin configurations containing endpoints and their callback selectors
      * @dev Each plugin must have a valid non-zero callback selector
      */
-    constructor(Plugin[] memory _plugins) {
+    constructor(ICF.Plugin[] memory _plugins) {
         bytes4 pluginSelector;
 
         for (uint256 i = 0; i < _plugins.length; i++) {
-            Plugin memory plugin = _plugins[i];
+            ICF.Plugin memory plugin = _plugins[i];
 
             if (IERC165(plugin.endpoint).supportsInterface(type(ICometFlashLoanPlugin).interfaceId)) {
                 pluginSelector = ICometFlashLoanPlugin(plugin.endpoint).CALLBACK_SELECTOR();
             } else if (IERC165(plugin.endpoint).supportsInterface(type(ICometSwapPlugin).interfaceId)) {
-                pluginSelector = NULL_SELECTOR;
+                pluginSelector = ICometSwapPlugin(plugin.endpoint).SWAP_SELECTOR();
             } else {
-                revert UnknownPlugin();
+                revert ICA.UnknownPlugin();
             }
 
             bytes32 key = keccak256(abi.encodePacked(plugin.endpoint, pluginSelector));
             plugins[key] = abi.encodePacked(PLUGIN_MAGIC, plugin.config);
 
-            emit PluginAdded(plugin.endpoint, pluginSelector, key);
+            emit ICE.PluginAdded(plugin.endpoint, pluginSelector, key);
         }
     }
 
@@ -93,7 +96,6 @@ contract CometFoundation is ICometFoundation {
      * @param srcToken Address of the source token to swap from
      * @param dstToken Address of the destination token to swap to
      * @param amount Amount of source tokens to swap
-     * @param minAmountOut Minimum amount of destination tokens expected
      * @param swapData Encoded parameters for the swap execution
      * @return amountOut Actual amount of destination tokens received
      * @dev Uses delegatecall to execute swap in the context of this contract
@@ -103,7 +105,6 @@ contract CometFoundation is ICometFoundation {
         IERC20 srcToken,
         IERC20 dstToken,
         uint256 amount,
-        uint256 minAmountOut,
         bytes memory swapData
     ) internal returns (uint256 amountOut) {
         (bool ok, bytes memory data) = address(swapPlugin).delegatecall(
@@ -112,16 +113,13 @@ contract CometFoundation is ICometFoundation {
                 srcToken,
                 dstToken,
                 amount,
-                minAmountOut,
                 _validateSwap(swapPlugin),
                 swapData
             )
         );
         _catch(ok);
 
-        amountOut = abi.decode(data, (uint256));
-
-        require(amountOut >= minAmountOut, InvalidAmountOut());
+        (amountOut) = abi.decode(data, (uint256));
     }
 
     /**
@@ -131,7 +129,7 @@ contract CometFoundation is ICometFoundation {
      * @param config Plugin-specific configuration data
      * @dev Uses delegatecall to execute the flash loan in this contract's context
      */
-    function _loan(address endpoint, ICometFlashLoanPlugin.CallbackData memory data, bytes memory config) internal {
+    function _loan(address endpoint, ICF.CallbackData memory data, bytes memory config) internal {
         (bool ok, ) = endpoint.delegatecall(
             abi.encodeWithSelector(ICometFlashLoanPlugin.takeFlashLoan.selector, data, config)
         );
@@ -158,8 +156,8 @@ contract CometFoundation is ICometFoundation {
      * @return config Plugin configuration without magic byte
      * @dev Reverts if plugin is not registered or magic byte is invalid
      */
-    function _validateLoan(Options calldata opts) internal view returns (bytes memory config) {
-        require(opts.loanPlugin != address(0) && opts.comet != address(0) && opts.flp != address(0), InvalidOpts());
+    function _validateLoan(ICF.Options calldata opts) internal view returns (bytes memory config) {
+        require(opts.loanPlugin != address(0) && opts.comet != address(0), ICA.InvalidOpts());
         config = _config(opts.loanPlugin, ICometFlashLoanPlugin(opts.loanPlugin).CALLBACK_SELECTOR());
     }
 
@@ -170,8 +168,8 @@ contract CometFoundation is ICometFoundation {
      * @dev Reverts if plugin is not registered or magic byte is invalid
      */
     function _validateSwap(address swapPlugin) internal view returns (bytes memory config) {
-        require(swapPlugin != address(0), InvalidOpts());
-        config = _config(swapPlugin, NULL_SELECTOR);
+        require(swapPlugin != address(0), ICA.InvalidOpts());
+        config = _config(swapPlugin, ICometSwapPlugin(swapPlugin).SWAP_SELECTOR());
     }
 
     /**
@@ -183,8 +181,8 @@ contract CometFoundation is ICometFoundation {
      */
     function _config(address plugin, bytes4 selector) internal view returns (bytes memory config) {
         bytes memory configWithMagic = plugins[keccak256(abi.encodePacked(plugin, selector))];
-        require(configWithMagic.length > 0, UnknownPlugin());
-        require(configWithMagic[0] == PLUGIN_MAGIC, UnknownPlugin());
+        require(configWithMagic.length > 0, ICA.UnknownPlugin());
+        require(configWithMagic[0] == PLUGIN_MAGIC, ICA.UnknownPlugin());
         assembly {
             let len := mload(configWithMagic)
             config := add(configWithMagic, 1)

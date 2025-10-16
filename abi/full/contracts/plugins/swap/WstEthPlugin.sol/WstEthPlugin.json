@@ -1,11 +1,11 @@
 [
     "error InvalidAmountOut()",
-    "error InvalidInput()",
+    "error InvalidAmountIn()",
     "error InvalidSwapParameters()",
     "error SafeERC20FailedOperation(address token)",
     "error SwapFailed()",
     "error ZeroAddress()",
-    "event SwapExecuted(address indexed router, address indexed srcToken, address indexed dstToken, uint256 amountOut)",
+    "event Swap(address indexed router, address indexed srcToken, address indexed dstToken, uint256 amountOut)",
     "function STETH_ADDRESS() view returns (address)",
     "function WSTETH_ADDRESS() view returns (address)",
     "function executeSwap(address srcToken, address dstToken, uint256 amountIn, uint256 minAmountOut, bytes, bytes) returns (uint256 amountOut)",

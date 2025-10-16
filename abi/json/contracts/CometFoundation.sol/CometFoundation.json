@@ -29,7 +29,7 @@
     },
     {
         "inputs": [],
-        "name": "InvalidAsset",
+        "name": "InvalidWeth",
         "type": "error"
     },
     {

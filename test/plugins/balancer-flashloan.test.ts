@@ -23,7 +23,7 @@ describe("Balancer Flash Loan Plugin", function () {
     const premium = 0n;
 
     let flp: string;
-    let data: ICometFlashLoanPlugin.CallbackDataStruct;
+    let data: any;
 
     before(async () => {
         [alice] = await ethers.getSigners();
@@ -63,7 +63,6 @@ describe("Balancer Flash Loan Plugin", function () {
             const lastCallbackDataBefore = await flash.lastCallbackData();
             expect(lastCallbackDataBefore.debt).to.be.equal(0);
             expect(lastCallbackDataBefore.fee).to.be.equal(0);
-            expect(lastCallbackDataBefore.user).to.be.equal(ethers.ZeroAddress);
             expect(lastCallbackDataBefore.flp).to.be.equal(ethers.ZeroAddress);
             expect(lastCallbackDataBefore.asset).to.be.equal(ethers.ZeroAddress);
             expect(lastCallbackDataBefore.swapData).to.be.equal("0x");
@@ -74,7 +73,6 @@ describe("Balancer Flash Loan Plugin", function () {
             const lastCallbackDataAfter = await flash.lastCallbackData();
             expect(lastCallbackDataAfter.debt).to.be.equal(data.debt);
             expect(lastCallbackDataAfter.fee).to.be.equal(premium);
-            expect(lastCallbackDataAfter.user).to.be.equal(data.user);
             expect(lastCallbackDataAfter.flp).to.be.equal(data.flp);
             expect(lastCallbackDataAfter.asset).to.be.equal(data.asset);
             expect(lastCallbackDataAfter.swapData).to.be.equal(data.swapData);
@@ -108,7 +106,7 @@ describe("Balancer Flash Loan Plugin", function () {
 
             await expect(
                 flash.connect(alice).attackBalancer(data, tokens as any, amounts, feeAmounts, true)
-            ).to.be.revertedWithCustomError(plugin, "InvalidFlashLoanId");
+            ).to.be.revertedWithCustomError(plugin, "InvalidFlashLoanProvider");
         });
 
         it("reverts when callback caller is not authorized", async () => {

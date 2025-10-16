@@ -30,10 +30,10 @@ struct SwapParams {
 }
 ```
 
-### NotSufficientLiquidity
+### InsufficientLiquidity
 
 ```solidity
-error NotSufficientLiquidity()
+error InsufficientLiquidity()
 ```
 
 Thrown when the swap would result in insufficient collateralization

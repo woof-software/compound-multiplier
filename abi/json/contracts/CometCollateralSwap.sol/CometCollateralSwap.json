@@ -34,7 +34,7 @@
     },
     {
         "inputs": [],
-        "name": "InvalidAsset",
+        "name": "InvalidWeth",
         "type": "error"
     },
     {
@@ -49,7 +49,7 @@
     },
     {
         "inputs": [],
-        "name": "NotSufficientLiquidity",
+        "name": "InsufficientLiquidity",
         "type": "error"
     },
     {

@@ -12,7 +12,6 @@ import {
     calculateExpectedCollateral,
     calculateHealthFactor,
     calculateMaxSafeWithdrawal,
-    previewTake,
     getQuote,
     getUserNonce,
     getFutureExpiry,
@@ -44,8 +43,7 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
         return {
             comet: COMET_USDC_MARKET,
             loanPlugin: await loanPlugin.getAddress(),
-            swapPlugin: await swapPlugin.getAddress(),
-            flp: UNI_V3_USDC_WETH_005
+            swapPlugin: await swapPlugin.getAddress()
         };
     }
 
@@ -67,7 +65,10 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
         const plugins = [
             {
                 endpoint: await loanPlugin.getAddress(),
-                config: "0x"
+                config: ethers.AbiCoder.defaultAbiCoder().encode(
+                    ["tuple(address token, address pool)[]"],
+                    [[{ token: USDC_ADDRESS, pool: UNI_V3_USDC_WETH_005 }]]
+                )
             },
             {
                 endpoint: await swapPlugin.getAddress(),
@@ -216,9 +217,8 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
             const leverage = 20_000;
             const comet = await getMarketOptions();
 
-            await expect(
-                adapter.connect(user2).executeMultiplier(comet, WETH_ADDRESS, initialAmount, leverage, "0x", 1n)
-            ).to.be.reverted;
+            await expect(adapter.connect(user2).executeMultiplier(comet, WETH_ADDRESS, initialAmount, leverage, "0x"))
+                .to.be.reverted;
         });
 
         it("should revert with zero collateral amount", async function () {
@@ -226,9 +226,8 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
             const leverage = 20_000;
             const comet = await getMarketOptions();
 
-            await expect(
-                adapter.connect(user).executeMultiplier(comet, WETH_ADDRESS, initialAmount, leverage, "0x", 1n)
-            ).to.be.reverted;
+            await expect(adapter.connect(user).executeMultiplier(comet, WETH_ADDRESS, initialAmount, leverage, "0x")).to
+                .be.reverted;
         });
 
         it("should revert with leverage below 1x", async function () {
@@ -236,9 +235,8 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
             const leverage = 9_000;
             const comet = await getMarketOptions();
 
-            await expect(
-                adapter.connect(user).executeMultiplier(comet, WETH_ADDRESS, initialAmount, leverage, "0x", 1n)
-            ).to.be.reverted;
+            await expect(adapter.connect(user).executeMultiplier(comet, WETH_ADDRESS, initialAmount, leverage, "0x")).to
+                .be.reverted;
         });
 
         it("should revert with leverage above maximum", async function () {
@@ -246,9 +244,8 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
             const leverage = 60_000;
             const comet = await getMarketOptions();
 
-            await expect(
-                adapter.connect(user).executeMultiplier(comet, WETH_ADDRESS, initialAmount, leverage, "0x", 1n)
-            ).to.be.reverted;
+            await expect(adapter.connect(user).executeMultiplier(comet, WETH_ADDRESS, initialAmount, leverage, "0x")).to
+                .be.reverted;
         });
         it("should execute with msg.value (native ETH) and 1.5x leverage", async function () {
             const initialAmount = ethers.parseEther("0.1");
@@ -276,7 +273,7 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
 
             const tx = await adapter
                 .connect(user)
-                .executeMultiplier(market, WETH_ADDRESS, 0, leverage, quote.swapCalldata, minAmountOut, {
+                .executeMultiplier(market, WETH_ADDRESS, 0, leverage, quote.swapCalldata, {
                     ...opts,
                     value: initialAmount
                 });
@@ -319,12 +316,10 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
             });
             const minAmountOut = (BigInt(quote.toAmountMin) * 90n) / 100n;
 
-            await adapter
-                .connect(user2)
-                .executeMultiplier(market, WETH_ADDRESS, 0, leverage, quote.swapCalldata, minAmountOut, {
-                    ...opts,
-                    value: initialAmount
-                });
+            await adapter.connect(user2).executeMultiplier(market, WETH_ADDRESS, 0, leverage, quote.swapCalldata, {
+                ...opts,
+                value: initialAmount
+            });
 
             const finalCol = await comet.collateralBalanceOf(user2.address, WETH_ADDRESS);
             const borrowBalance = await comet.borrowBalanceOf(user2.address);
@@ -355,12 +350,10 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
             });
             const minAmountOut = (BigInt(quote.toAmountMin) * 90n) / 100n;
 
-            await adapter
-                .connect(user)
-                .executeMultiplier(market, WETH_ADDRESS, 0, maxLeverage, quote.swapCalldata, minAmountOut, {
-                    ...opts,
-                    value: initialAmount
-                });
+            await adapter.connect(user).executeMultiplier(market, WETH_ADDRESS, 0, maxLeverage, quote.swapCalldata, {
+                ...opts,
+                value: initialAmount
+            });
 
             const collateralBalance = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
             const borrowBalance = await comet.borrowBalanceOf(user.address);
@@ -378,8 +371,8 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
             await expect(
                 adapter
                     .connect(user)
-                    .executeMultiplier(comet, fakeToken, 0, leverage, "0x", 1n, { ...opts, value: initialAmount })
-            ).to.be.revertedWithCustomError(adapter, "InvalidAsset");
+                    .executeMultiplier(comet, fakeToken, 0, leverage, "0x", { ...opts, value: initialAmount })
+            ).to.be.revertedWithCustomError(adapter, "InvalidWeth");
         });
     });
 
@@ -399,7 +392,7 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
 
             const collateralToWithdraw = initialCol / 10n;
 
-            await withdrawMultiplier(await getMarketOptions(), comet, adapter, user, collateralToWithdraw);
+            await withdrawMultiplier(await getMarketOptions(), adapter, user, collateralToWithdraw);
 
             const finalCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
             const finalDebt = await comet.borrowBalanceOf(user.address);
@@ -425,7 +418,7 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
             const conservativeWithdrawal = maxSafeWithdrawal / 2n;
 
             if (conservativeWithdrawal > ethers.parseEther("0.001")) {
-                await withdrawMultiplier(await getMarketOptions(), comet, adapter, user, conservativeWithdrawal);
+                await withdrawMultiplier(await getMarketOptions(), adapter, user, conservativeWithdrawal);
 
                 const finalDebt = await comet.borrowBalanceOf(user.address);
                 expect(finalDebt).to.be.lt(accruedDebt);
@@ -476,7 +469,7 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
 
             const collateralToWithdraw = initialCol / 4n;
 
-            await withdrawMultiplier(await getMarketOptions(), comet, adapter, user, collateralToWithdraw);
+            await withdrawMultiplier(await getMarketOptions(), adapter, user, collateralToWithdraw);
 
             const finalCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
             const finalDebt = await comet.borrowBalanceOf(user.address);
@@ -497,7 +490,7 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
 
             const collateralToWithdraw = initialCol / 2n;
 
-            await withdrawMultiplier(await getMarketOptions(), comet, adapter, user, collateralToWithdraw);
+            await withdrawMultiplier(await getMarketOptions(), adapter, user, collateralToWithdraw);
 
             const finalCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
             const finalDebt = await comet.borrowBalanceOf(user.address);
@@ -517,7 +510,7 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
 
             const collateralToWithdraw = (initialCol * 3n) / 4n;
 
-            await withdrawMultiplier(await getMarketOptions(), comet, adapter, user, collateralToWithdraw);
+            await withdrawMultiplier(await getMarketOptions(), adapter, user, collateralToWithdraw);
 
             const finalCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
             const finalDebt = await comet.borrowBalanceOf(user.address);
@@ -537,7 +530,7 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
 
             const exactAmount = ethers.parseEther("0.05");
 
-            await withdrawMultiplier(await getMarketOptions(), comet, adapter, user, exactAmount);
+            await withdrawMultiplier(await getMarketOptions(), adapter, user, exactAmount);
 
             const finalCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
             const finalDebt = await comet.borrowBalanceOf(user.address);
@@ -563,7 +556,7 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
             const debtInCollateralTerms = (initialDebt * info.scale * 100_000_000n) / (price * baseScale);
             const expectedExcessCollateral = initialCol - debtInCollateralTerms;
 
-            await withdrawMultiplier(await getMarketOptions(), comet, adapter, user, ethers.MaxUint256);
+            await withdrawMultiplier(await getMarketOptions(), adapter, user, ethers.MaxUint256);
 
             const finalDebt = await comet.borrowBalanceOf(user.address);
             const finalCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
@@ -581,8 +574,8 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
             const excessiveAmount = initialCol + ethers.parseEther("1.0");
 
             await expect(
-                withdrawMultiplier(await getMarketOptions(), comet, adapter, user, excessiveAmount)
-            ).to.be.revertedWithCustomError(adapter, "InvalidCollateralAmount");
+                withdrawMultiplier(await getMarketOptions(), adapter, user, excessiveAmount)
+            ).to.be.revertedWithCustomError(adapter, "InvalidAmountIn");
         });
 
         it("should transfer base asset to user after withdrawal", async function () {
@@ -591,7 +584,7 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
 
             const collateralToWithdraw = ethers.parseEther("0.03");
 
-            await withdrawMultiplier(await getMarketOptions(), comet, adapter, user, collateralToWithdraw);
+            await withdrawMultiplier(await getMarketOptions(), adapter, user, collateralToWithdraw);
 
             const finalCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
             const finalUsdc = await usdc.balanceOf(user.address);
@@ -606,20 +599,7 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
             const smallAmount = ethers.parseEther("0.001");
             const initialCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
             const initialUsdc = await usdc.balanceOf(user.address);
-
-            const blockTag = await ethers.provider.getBlockNumber();
-            const take = await previewTake(comet, user.address, WETH_ADDRESS, smallAmount, blockTag);
-            await withdrawMultiplier(
-                await getMarketOptions(),
-                comet,
-                adapter,
-                user,
-                smallAmount,
-                await executeWithRetry(async () => {
-                    const q = await getQuote("1", "1", WETH_ADDRESS, USDC_ADDRESS, take.toString(), user.address);
-                    return (BigInt(q.toAmountMin) * 85n) / 100n;
-                })
-            );
+            await withdrawMultiplier(await getMarketOptions(), adapter, user, smallAmount);
 
             const finalCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
             const finalUsdc = await usdc.balanceOf(user.address);
@@ -645,7 +625,7 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
                 const withdrawAmount = currentCol / 10n;
                 if (withdrawAmount === 0n) break;
 
-                await withdrawMultiplier(await getMarketOptions(), comet, adapter, user, withdrawAmount);
+                await withdrawMultiplier(await getMarketOptions(), adapter, user, withdrawAmount);
                 currentCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
             }
 
@@ -663,7 +643,7 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
             const initialCol = await comet.collateralBalanceOf(user2.address, WETH_ADDRESS);
             const initialUsdc = await usdc.balanceOf(user2.address);
 
-            await withdrawMultiplier(await getMarketOptions(), comet, adapter, user2, initialCol / 3n);
+            await withdrawMultiplier(await getMarketOptions(), adapter, user2, initialCol / 3n);
 
             const usdcAfterWithdraw = await usdc.balanceOf(user2.address);
 
@@ -726,7 +706,7 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
             const collateralBalance = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
             const withdrawAmount = collateralBalance / 10n;
 
-            const tx = await withdrawMultiplier(await getMarketOptions(), comet, adapter, user, withdrawAmount);
+            const tx = await withdrawMultiplier(await getMarketOptions(), adapter, user, withdrawAmount);
             const receipt = await tx.wait();
 
             const withdrawnEvents = receipt.logs.filter((log: any) => {
@@ -800,16 +780,7 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
 
             await adapter
                 .connect(user3)
-                .executeMultiplierBySig(
-                    market,
-                    WETH_ADDRESS,
-                    initialAmount,
-                    leverage,
-                    swapData,
-                    quote.toAmountMin,
-                    allowParams,
-                    opts
-                );
+                .executeMultiplierBySig(market, WETH_ADDRESS, initialAmount, leverage, swapData, allowParams, opts);
 
             const finalCol = await comet.collateralBalanceOf(user3.address, WETH_ADDRESS);
             const finalDebt = await comet.borrowBalanceOf(user3.address);
@@ -872,15 +843,7 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
 
             await adapter
                 .connect(user3)
-                .withdrawMultiplierBySig(
-                    market,
-                    WETH_ADDRESS,
-                    collateralToWithdraw,
-                    swapData,
-                    quote.toAmountMin,
-                    allowParams,
-                    opts
-                );
+                .withdrawMultiplierBySig(market, WETH_ADDRESS, collateralToWithdraw, swapData, allowParams, opts);
             const finalCol = await comet.collateralBalanceOf(user3.address, WETH_ADDRESS);
             const finalDebt = await comet.borrowBalanceOf(user3.address);
             const finalUsdc = await usdc.balanceOf(user3.address);

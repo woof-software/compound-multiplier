@@ -2,36 +2,9 @@
 pragma solidity =0.8.30;
 
 import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { ICometFoundation as ICF } from "./ICometFoundation.sol";
 
 interface ICometFlashLoanPlugin is IERC165 {
-    error UnauthorizedCallback();
-    error InvalidFlashLoanId();
-    error InvalidFlashLoanData();
-    error InvalidAmountOut();
-
-    /**
-     * @notice Data structure for flash loan callback parameters
-     * @param debt The amount of debt to be repaid
-     * @param fee The fee associated with the flash loan
-     * @param snapshot A unique identifier for the flash loan operation
-     * @param user The address of the user initiating the flash loan
-     * @param flp The address of the flash loan provider
-     * @param asset The address of the asset being borrowed
-     * @param swapData Encoded data for executing a swap if needed
-     * @dev This struct is used to pass necessary information during the flash loan callback
-     *      and must be encoded/decoded appropriately.
-     */
-    struct CallbackData {
-        uint256 debt;
-        uint256 fee;
-        uint256 snapshot;
-        address user;
-        address flp;
-        IERC20 asset;
-        bytes swapData;
-    }
-
     /// @notice The selector of the callback function
     function CALLBACK_SELECTOR() external view returns (bytes4);
 
@@ -43,7 +16,7 @@ interface ICometFlashLoanPlugin is IERC165 {
      * @param data Flash loan parameters including debt amount, asset, and user information
      * @dev Stores flash loan ID in transient storage for callback validation
      */
-    function takeFlashLoan(CallbackData memory data, bytes memory) external payable;
+    function takeFlashLoan(ICF.CallbackData memory data, bytes memory) external payable;
 
     /**
      * @notice Repays the flash loan

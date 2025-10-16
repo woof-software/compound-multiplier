@@ -7,10 +7,10 @@ import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.s
 
 import { CometFoundation } from "./CometFoundation.sol";
 import { IComet } from "./external/compound/IComet.sol";
-import { ICometFlashLoanPlugin } from "./interfaces/ICometFlashLoanPlugin.sol";
 import { ICometCollateralSwap } from "./interfaces/ICometCollateralSwap.sol";
-import { ICometSwapPlugin } from "./interfaces/ICometSwapPlugin.sol";
-import { IAllowBySig } from "./interfaces/IAllowBySig.sol";
+import { ICometFoundation as ICF } from "./interfaces/ICometFoundation.sol";
+import { ICometAlerts as ICA } from "./interfaces/ICometAlerts.sol";
+import { ICometEvents as ICE } from "./interfaces/ICometEvents.sol";
 
 /**
  * @title CometCollateralSwap
@@ -56,7 +56,7 @@ import { IAllowBySig } from "./interfaces/IAllowBySig.sol";
 contract CometCollateralSwap is CometFoundation, ICometCollateralSwap {
     using SafeERC20 for IERC20;
 
-    constructor(Plugin[] memory _plugins) payable CometFoundation(_plugins) {}
+    constructor(ICF.Plugin[] memory _plugins) payable CometFoundation(_plugins) {}
 
     /**
      * @notice Handles flash loan callbacks from registered plugins to execute collateral swaps
@@ -91,19 +91,26 @@ contract CometCollateralSwap is CometFoundation, ICometCollateralSwap {
      * - May revert with plugin-specific errors if delegate calls fail
      */
     fallback() external {
-        (address loanPlugin, address swapPlugin, IComet comet, IERC20 fromAsset, uint256 fromAmount) = _tload();
+        (
+            uint256 snapshot,
+            address loanPlugin,
+            address swapPlugin,
+            IComet comet,
+            IERC20 fromAsset,
+            uint256 fromAmount,
+            address user
+        ) = _tload();
 
-        require(loanPlugin != address(0) && swapPlugin != address(0), UnknownPlugin());
+        require(loanPlugin != address(0) && swapPlugin != address(0), ICA.UnknownPlugin());
 
         (bool success, bytes memory payload) = loanPlugin.delegatecall(msg.data);
         _catch(success);
 
-        ICometFlashLoanPlugin.CallbackData memory data = abi.decode(payload, (ICometFlashLoanPlugin.CallbackData));
+        ICF.CallbackData memory data = abi.decode(payload, (ICF.CallbackData));
         IERC20 asset = IERC20(data.asset);
-        address user = data.user;
         uint256 debt = data.debt;
 
-        require(asset.balanceOf(address(this)) == data.snapshot + debt, InvalidAmountOut());
+        require(asset.balanceOf(address(this)) == snapshot + debt, ICA.InvalidAmountOut());
 
         asset.safeIncreaseAllowance(address(comet), debt);
         comet.supplyTo(user, asset, debt);
@@ -111,12 +118,15 @@ contract CometCollateralSwap is CometFoundation, ICometCollateralSwap {
 
         uint256 repayAmount = debt + data.fee;
 
-        _swap(swapPlugin, fromAsset, data.asset, fromAmount, repayAmount, data.swapData);
+        uint256 amountOut = _swap(swapPlugin, fromAsset, data.asset, fromAmount, data.swapData);
 
-        _supplyDust(user, fromAsset, comet, 0);
-        _supplyDust(user, asset, comet, repayAmount);
+        require(amountOut >= repayAmount, ICA.InvalidAmountOut());
+
+        _supplyDust(user, asset, comet, amountOut - repayAmount);
 
         _repay(loanPlugin, data.flp, data.asset, repayAmount);
+
+        emit ICE.SwapExecuted(address(comet), address(fromAsset), address(data.asset), fromAmount, amountOut);
 
         // Note Return 1 to the caller to signal success (required by AAVE)
         assembly {
@@ -130,14 +140,14 @@ contract CometCollateralSwap is CometFoundation, ICometCollateralSwap {
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc ICometCollateralSwap
-    function executeSwap(SwapParams calldata swapParams) external {
+    function executeSwap(ICF.SwapParams calldata swapParams) external {
         _executeSwap(swapParams);
     }
 
     /// @inheritdoc ICometCollateralSwap
     function executeSwapBySig(
-        SwapParams calldata swapParams,
-        AllowParams calldata allowParams
+        ICF.SwapParams calldata swapParams,
+        ICF.AllowParams calldata allowParams
     ) external allow(swapParams.opts.comet, allowParams) {
         _executeSwap(swapParams);
     }
@@ -146,7 +156,7 @@ contract CometCollateralSwap is CometFoundation, ICometCollateralSwap {
                                 INTERNAL
     //////////////////////////////////////////////////////////////*/
 
-    function _executeSwap(SwapParams calldata swapParams) internal {
+    function _executeSwap(ICF.SwapParams calldata swapParams) internal {
         address loanPlugin = swapParams.opts.loanPlugin;
         address swapPlugin = swapParams.opts.swapPlugin;
         address comet = swapParams.opts.comet;
@@ -155,7 +165,7 @@ contract CometCollateralSwap is CometFoundation, ICometCollateralSwap {
         uint256 minAmountOut = swapParams.minAmountOut;
         uint256 fromAmount = swapParams.fromAmount;
 
-        _validateExecParams(swapParams);
+        _validateSwapParams(swapParams);
 
         require(
             _checkCollateralization(
@@ -166,19 +176,17 @@ contract CometCollateralSwap is CometFoundation, ICometCollateralSwap {
                 minAmountOut,
                 swapParams.maxHealthFactorDropBps
             ),
-            NotSufficientLiquidity()
+            ICA.InsufficientLiquidity()
         );
 
-        _tstore(loanPlugin, swapPlugin, comet, fromAsset, fromAmount);
+        _tstore(toAsset.balanceOf(address(this)), loanPlugin, swapPlugin, comet, fromAsset, fromAmount, msg.sender);
 
         _loan(
             loanPlugin,
-            ICometFlashLoanPlugin.CallbackData({
+            ICF.CallbackData({
                 debt: minAmountOut,
                 fee: 0, // to be handled by plugin
-                snapshot: toAsset.balanceOf(address(this)),
-                user: msg.sender,
-                flp: swapParams.opts.flp,
+                flp: address(0),
                 asset: toAsset,
                 swapData: swapParams.swapCalldata
             }),
@@ -226,54 +234,74 @@ contract CometCollateralSwap is CometFoundation, ICometCollateralSwap {
 
     /**
      * @notice Stores operation parameters in transient storage for callback access
+     * @param snapshot Base asset balance before flash loan
      * @param loanPlugin Address of the flash loan plugin
      * @param swapPlugin Address of the swap plugin
      * @param comet Address of the Comet comet
      * @param collateral Address of the collateral token
      * @param amount Collateral amount being processed
+     * @param user Address of the user performing the operation
      * @dev Uses EIP-1153 transient storage for gas-efficient temporary data storage
      */
     function _tstore(
+        uint256 snapshot,
         address loanPlugin,
         address swapPlugin,
         address comet,
         IERC20 collateral,
-        uint256 amount
+        uint256 amount,
+        address user
     ) internal {
         bytes32 slot = SLOT_FOUNDATION;
         assembly {
+            tstore(add(slot, SNAPSHOT_OFFSET), snapshot)
             tstore(add(slot, LOAN_PLUGIN_OFFSET), loanPlugin)
             tstore(add(slot, SWAP_PLUGIN_OFFSET), swapPlugin)
             tstore(add(slot, MARKET_OFFSET), comet)
             tstore(add(slot, ASSET_OFFSET), collateral)
             tstore(add(slot, AMOUNT_OFFSET), amount)
+            tstore(add(slot, USER_OFFSET), user)
         }
     }
 
     /**
      * @dev Loads and clears swap parameters from transient storage
+     * @return snapshot The base asset balance before flash loan
      * @return loanPlugin The flash loan plugin address
      * @return swapPlugin The swap plugin address
      * @return comet The Comet contract address
      * @return fromAsset The asset being swapped from
      * @return fromAmount The amount being swapped
+     * @return user The user performing the operation
      */
     function _tload()
         internal
-        returns (address loanPlugin, address swapPlugin, IComet comet, IERC20 fromAsset, uint256 fromAmount)
+        returns (
+            uint256 snapshot,
+            address loanPlugin,
+            address swapPlugin,
+            IComet comet,
+            IERC20 fromAsset,
+            uint256 fromAmount,
+            address user
+        )
     {
         bytes32 slot = SLOT_FOUNDATION;
         assembly {
+            snapshot := tload(add(slot, SNAPSHOT_OFFSET))
             loanPlugin := tload(add(slot, LOAN_PLUGIN_OFFSET))
             swapPlugin := tload(add(slot, SWAP_PLUGIN_OFFSET))
             comet := tload(add(slot, MARKET_OFFSET))
             fromAsset := tload(add(slot, ASSET_OFFSET))
             fromAmount := tload(add(slot, AMOUNT_OFFSET))
+            user := tload(add(slot, USER_OFFSET))
+            tstore(add(slot, SNAPSHOT_OFFSET), 0)
             tstore(add(slot, LOAN_PLUGIN_OFFSET), 0)
             tstore(add(slot, SWAP_PLUGIN_OFFSET), 0)
             tstore(add(slot, MARKET_OFFSET), 0)
             tstore(add(slot, ASSET_OFFSET), 0)
             tstore(add(slot, AMOUNT_OFFSET), 0)
+            tstore(add(slot, USER_OFFSET), 0)
         }
     }
 
@@ -281,14 +309,14 @@ contract CometCollateralSwap is CometFoundation, ICometCollateralSwap {
      * @dev Validates swap parameters for correctness and safety
      * @param swapParams The swap parameters to validate
      */
-    function _validateExecParams(SwapParams calldata swapParams) internal pure {
+    function _validateSwapParams(ICF.SwapParams calldata swapParams) internal pure {
         require(
             address(swapParams.fromAsset) != address(0) &&
                 address(swapParams.toAsset) != address(0) &&
                 swapParams.fromAsset != swapParams.toAsset &&
                 swapParams.minAmountOut > 0 &&
                 swapParams.maxHealthFactorDropBps < PRECISION,
-            InvalidSwapParameters()
+            ICA.InvalidSwapParameters()
         );
     }
 
@@ -297,13 +325,12 @@ contract CometCollateralSwap is CometFoundation, ICometCollateralSwap {
      * @param user The user to supply dust to
      * @param asset The asset to supply
      * @param comet The Comet contract address
-     * @param repayAmount Amount reserved for repayment (excluded from dust)
+     * @param amount The amount of dust to supply
      */
-    function _supplyDust(address user, IERC20 asset, IComet comet, uint256 repayAmount) internal {
-        uint256 balance = asset.balanceOf(address(this)) - repayAmount;
-        if (balance != 0) {
-            asset.safeIncreaseAllowance(address(comet), balance);
-            comet.supplyTo(user, asset, balance);
+    function _supplyDust(address user, IERC20 asset, IComet comet, uint256 amount) internal {
+        if (amount != 0) {
+            asset.safeIncreaseAllowance(address(comet), amount);
+            comet.supplyTo(user, asset, amount);
         }
     }
 }

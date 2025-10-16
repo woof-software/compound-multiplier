@@ -5,6 +5,9 @@ import { IPool } from "contracts/external/aave/IPool.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { ICometFlashLoanPlugin } from "contracts/interfaces/ICometFlashLoanPlugin.sol";
+import { ICometFoundation as ICF } from "contracts/interfaces/ICometFoundation.sol";
+import { ICometAlerts as ICA } from "contracts/interfaces/ICometAlerts.sol";
+import { ICometEvents as ICE } from "contracts/interfaces/ICometEvents.sol";
 
 /**
  * @title AAVE Flash Loan Plugin
@@ -26,16 +29,16 @@ contract AAVEPlugin is ICometFlashLoanPlugin {
     uint16 private constant REFERAL_CODE = 0;
 
     /// @inheritdoc ICometFlashLoanPlugin
-    function takeFlashLoan(CallbackData memory data, bytes memory) external payable {
+    function takeFlashLoan(ICF.CallbackData memory data, bytes memory config) external payable {
         bytes memory _data = abi.encode(data);
-        bytes32 flid = keccak256(_data);
         bytes32 slot = SLOT_PLUGIN;
+        address flp = abi.decode(config, (address));
 
         assembly {
-            tstore(slot, flid)
+            tstore(slot, flp)
         }
 
-        IPool(data.flp).flashLoanSimple(address(this), data.asset, data.debt, _data, REFERAL_CODE);
+        IPool(flp).flashLoanSimple(address(this), data.asset, data.debt, _data, REFERAL_CODE);
     }
 
     /**
@@ -52,24 +55,27 @@ contract AAVEPlugin is ICometFlashLoanPlugin {
         uint256 premium,
         address initiator,
         bytes calldata params
-    ) external returns (CallbackData memory _data) {
-        bytes32 flidExpected;
+    ) external returns (ICF.CallbackData memory _data) {
+        address flp;
         bytes32 slot = SLOT_PLUGIN;
         assembly {
-            flidExpected := tload(slot)
+            flp := tload(slot)
             tstore(slot, 0)
         }
-        require(keccak256(params) == flidExpected, InvalidFlashLoanId());
 
-        _data = abi.decode(params, (CallbackData));
+        _data = abi.decode(params, (ICF.CallbackData));
 
-        require(_data.flp == msg.sender, UnauthorizedCallback());
+        require(flp == msg.sender, ICA.UnauthorizedCallback());
+
         require(
             _data.debt == amount && address(_data.asset) == asset && initiator == address(this),
-            InvalidFlashLoanData()
+            ICA.InvalidFlashLoanData()
         );
 
         _data.fee = premium;
+        _data.flp = flp;
+
+        emit ICE.FlashLoan(flp, asset, amount, premium);
     }
 
     /// @inheritdoc ICometFlashLoanPlugin

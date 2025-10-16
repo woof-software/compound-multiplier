@@ -109,7 +109,7 @@ describe("Comet Multiplier Adapter / Misc", function () {
             await weth.connect(user).approve(await adapter.getAddress(), ethers.parseEther("1"));
 
             await expect(
-                adapter.connect(user).executeMultiplier(comet, WETH_ADDRESS, ethers.parseEther("1"), 20000, "0x", 1n)
+                adapter.connect(user).executeMultiplier(comet, WETH_ADDRESS, ethers.parseEther("1"), 20000, "0x")
             ).to.be.revertedWithCustomError(adapter, "UnknownPlugin");
         });
 
@@ -119,7 +119,7 @@ describe("Comet Multiplier Adapter / Misc", function () {
             await weth.connect(user).approve(await adapter.getAddress(), ethers.parseEther("1"));
             await usdc.connect(whale2).approve(await adapter.getAddress(), ethers.parseEther("0.0000001"));
             await expect(
-                adapter.connect(user).executeMultiplier(comet, WETH_ADDRESS, ethers.parseEther("1"), 20000, "0x", 1n)
+                adapter.connect(user).executeMultiplier(comet, WETH_ADDRESS, ethers.parseEther("1"), 20000, "0x")
             ).to.be.revertedWithCustomError(adapter, "UnknownPlugin");
         });
 
@@ -129,7 +129,7 @@ describe("Comet Multiplier Adapter / Misc", function () {
             await weth.connect(user2).approve(await adapter.getAddress(), ethers.parseEther("20"));
 
             await expect(
-                adapter.connect(user2).executeMultiplier(comet, WETH_ADDRESS, ethers.parseEther("1"), 20000, "0x", 1n)
+                adapter.connect(user2).executeMultiplier(comet, WETH_ADDRESS, ethers.parseEther("1"), 20000, "0x")
             ).to.be.revertedWithCustomError(adapter, "InvalidAmountOut");
         });
 
@@ -174,10 +174,10 @@ describe("Comet Multiplier Adapter / Misc", function () {
             );
             await adapter2
                 .connect(user2)
-                .executeMultiplier(market0, WETH_ADDRESS, ethers.parseEther("0.1"), 15000, swapForOpen, 1n);
+                .executeMultiplier(market0, WETH_ADDRESS, ethers.parseEther("0.1"), 15000, swapForOpen);
 
             await expect(
-                adapter2.connect(user2).withdrawMultiplier(market1, WETH_ADDRESS, ethers.parseEther("0.01"), "0x", 0n)
+                adapter2.connect(user2).withdrawMultiplier(market1, WETH_ADDRESS, ethers.parseEther("0.01"), "0x")
             ).to.be.revertedWithCustomError(adapter2, "InvalidAmountOut");
         });
 
@@ -216,7 +216,7 @@ describe("Comet Multiplier Adapter / Misc", function () {
 
             await expect(Adapter.deploy(plugins, ethers.ZeroAddress, opts)).to.be.revertedWithCustomError(
                 Adapter,
-                "InvalidAsset"
+                "InvalidWeth"
             );
         });
     });

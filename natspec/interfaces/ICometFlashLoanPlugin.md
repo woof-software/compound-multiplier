@@ -8,10 +8,10 @@
 error UnauthorizedCallback()
 ```
 
-### InvalidFlashLoanId
+### InvalidFlashLoanProvider
 
 ```solidity
-error InvalidFlashLoanId()
+error InvalidFlashLoanProvider()
 ```
 
 ### InvalidFlashLoanData

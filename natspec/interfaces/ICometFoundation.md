@@ -14,10 +14,10 @@ error UnknownPlugin()
 error InvalidOpts()
 ```
 
-### InvalidAsset
+### InvalidWeth
 
 ```solidity
-error InvalidAsset()
+error InvalidWeth()
 ```
 
 ### InvalidAmountOut

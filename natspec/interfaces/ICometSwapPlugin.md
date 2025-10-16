@@ -8,10 +8,10 @@
 error InvalidAmountOut()
 ```
 
-### InvalidInput
+### InvalidAmountIn
 
 ```solidity
-error InvalidInput()
+error InvalidAmountIn()
 ```
 
 ### ZeroAddress
@@ -32,10 +32,10 @@ error InvalidSwapParameters()
 error SwapFailed()
 ```
 
-### SwapExecuted
+### Swap
 
 ```solidity
-event SwapExecuted(address router, address srcToken, address dstToken, uint256 amountOut)
+event Swap(address router, address srcToken, address dstToken, uint256 amountOut)
 ```
 
 Emitted when a token swap is successfully executed

@@ -21,7 +21,7 @@ All swap plugins implement the `ICometSwapPlugin` interface, which provides a st
 
 ```solidity
 interface ICometSwapPlugin {
-  event SwapExecuted(
+  event Swap(
     address indexed router,
     address indexed srcToken,
     address indexed dstToken,
@@ -29,7 +29,7 @@ interface ICometSwapPlugin {
   );
 
   error InvalidAmountOut();
-  error InvalidInput();
+  error InvalidAmountIn();
   error ZeroAddress();
   error InvalidSwapParameters();
   error SwapFailed();
@@ -65,7 +65,7 @@ interface ICometSwapPlugin {
 
 #### Events
 
-- **`SwapExecuted`**: Emitted when a swap is successfully completed, providing transparency about the swap execution
+- **`Swap`**: Emitted when a swap is successfully completed, providing transparency about the swap execution
 
 ## Validation Logic
 
@@ -114,7 +114,7 @@ function executeSwap(
   amountOut = _extractAmountOut(result); // Plugin-specific extraction
   require(amountOut >= minAmountOut, InvalidAmountOut());
 
-  emit SwapExecuted(router, srcToken, dstToken, amountOut);
+  emit Swap(router, srcToken, dstToken, amountOut);
 }
 ```
 
@@ -210,7 +210,7 @@ Swap plugins are integrated into main contracts like `CometCollateralSwap` and `
 Plugins implement comprehensive error handling with custom errors for different failure scenarios:
 
 - **`InvalidAmountOut`**: Output amount below minimum threshold
-- **`InvalidInput`**: Invalid input parameters or token addresses
+- **`InvalidAmountIn`**: Invalid input parameters or token addresses
 - **`ZeroAddress`**: Zero address provided where valid address required
 - **`InvalidSwapParameters`**: General parameter validation failures
 - **`SwapFailed`**: External swap call execution failures

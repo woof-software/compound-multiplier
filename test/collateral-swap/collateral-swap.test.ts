@@ -23,6 +23,7 @@ import {
 import { expect } from "chai";
 import { CometCollateralSwap } from "../../typechain-types";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
+import { ICometFoundation } from "../../typechain-types/contracts/CometCollateralSwap";
 
 describe("CometCollateralSwap", function () {
     let snapshot: SnapshotRestorer;
@@ -72,11 +73,11 @@ describe("CometCollateralSwap", function () {
 
         balancerPluginA = {
             endpoint: await balancerPlugin.endpoint.getAddress(),
-            config: "0x"
+            config: ethers.AbiCoder.defaultAbiCoder().encode(["address"], [BALANCER_VAULT])
         };
         aavePluginA = {
             endpoint: await aavePlugin.endpoint.getAddress(),
-            config: "0x"
+            config: ethers.AbiCoder.defaultAbiCoder().encode(["address"], [AAVE_POOL])
         };
 
         ({ lifiPlugin } = await getSwapPlugins());
@@ -157,15 +158,14 @@ describe("CometCollateralSwap", function () {
     });
 
     describe("swap params validation", function () {
-        let swapParams: ICometCollateralSwap.SwapParamsStruct;
+        let swapParams: ICometFoundation.SwapParamsStruct;
 
         beforeEach(async () => {
             swapParams = {
                 opts: {
                     loanPlugin: await balancerPl.getAddress(),
                     swapPlugin: lifiPlugin.endpoint,
-                    comet: await comet.getAddress(),
-                    flp: balancerFLP
+                    comet: await comet.getAddress()
                 },
                 fromAsset: await wstETH.getAddress(),
                 fromAmount: exp(1, 18),
@@ -236,16 +236,11 @@ describe("CometCollateralSwap", function () {
             swapParams.opts.loanPlugin = ZERO_ADDRESS;
             await expect(collateralSwap.connect(alice).executeSwap(swapParams)).to.be.reverted;
         });
-
-        it("reverts when flp is zero address", async () => {
-            swapParams.opts.flp = ZERO_ADDRESS;
-            await expect(collateralSwap.connect(alice).executeSwap(swapParams)).to.be.reverted;
-        });
     });
 
     describe("swap", function () {
         describe("happy cases", function () {
-            let swapParams: ICometCollateralSwap.SwapParamsStruct;
+            let swapParams: ICometFoundation.SwapParamsStruct;
 
             it("allows to make a swap with 0 fee on flashloan", async () => {
                 expect(await comet.hasPermission(alice, collateralSwap)).to.be.true;
@@ -256,8 +251,7 @@ describe("CometCollateralSwap", function () {
                             opts: {
                                 loanPlugin: await balancerPl.getAddress(),
                                 swapPlugin: lifiPlugin.endpoint,
-                                comet: await comet.getAddress(),
-                                flp: balancerFLP
+                                comet: await comet.getAddress()
                             },
                             fromAsset: await wstETH.getAddress(),
                             fromAmount: exp(0.2, 18),
@@ -291,8 +285,7 @@ describe("CometCollateralSwap", function () {
                             opts: {
                                 loanPlugin: await aavePl.getAddress(),
                                 swapPlugin: lifiPlugin.endpoint,
-                                comet: await comet.getAddress(),
-                                flp: aaveFLP
+                                comet: await comet.getAddress()
                             },
                             fromAsset: await wstETH.getAddress(),
                             fromAmount: exp(0.2, 18),
@@ -364,8 +357,7 @@ describe("CometCollateralSwap", function () {
                         opts: {
                             loanPlugin: await balancerPl.getAddress(),
                             swapPlugin: lifiPlugin.endpoint,
-                            comet: await comet.getAddress(),
-                            flp: balancerFLP
+                            comet: await comet.getAddress()
                         },
                         fromAsset: await wstETH.getAddress(),
                         fromAmount: exp(0.2, 18),
@@ -398,8 +390,7 @@ describe("CometCollateralSwap", function () {
                         opts: {
                             loanPlugin: await balancerPl.getAddress(),
                             swapPlugin: lifiPlugin.endpoint,
-                            comet: await comet.getAddress(),
-                            flp: balancerFLP
+                            comet: await comet.getAddress()
                         },
                         fromAsset: await wstETH.getAddress(),
                         fromAmount: exp(0.2, 18),
@@ -437,8 +428,7 @@ describe("CometCollateralSwap", function () {
                         opts: {
                             loanPlugin: await balancerPl.getAddress(),
                             swapPlugin: lifiPlugin.endpoint,
-                            comet: await comet.getAddress(),
-                            flp: balancerFLP
+                            comet: await comet.getAddress()
                         },
                         fromAsset: await wstETH.getAddress(),
                         fromAmount: exp(0.2, 18),
@@ -480,12 +470,11 @@ describe("CometCollateralSwap", function () {
 
         describe("revert cases", function () {
             it("reverts when loanPlugin is unregistered", async () => {
-                const swapParams: ICometCollateralSwap.SwapParamsStruct = {
+                const swapParams: ICometFoundation.SwapParamsStruct = {
                     opts: {
                         loanPlugin: alice.address, // Unregistered plugin
                         swapPlugin: lifiPlugin.endpoint,
-                        comet: await comet.getAddress(),
-                        flp: balancerFLP
+                        comet: await comet.getAddress()
                     },
                     fromAsset: await wstETH.getAddress(),
                     fromAmount: exp(1, 18),
@@ -502,12 +491,11 @@ describe("CometCollateralSwap", function () {
             });
 
             it("reverts when swapPlugin is unregistered", async () => {
-                const swapParams: ICometCollateralSwap.SwapParamsStruct = {
+                const swapParams: ICometFoundation.SwapParamsStruct = {
                     opts: {
                         loanPlugin: await balancerPl.getAddress(),
                         swapPlugin: alice.address, // Unregistered plugin
-                        comet: await comet.getAddress(),
-                        flp: balancerFLP
+                        comet: await comet.getAddress()
                     },
                     fromAsset: await wstETH.getAddress(),
                     fromAmount: exp(1, 18),

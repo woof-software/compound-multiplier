@@ -3,8 +3,11 @@ pragma solidity =0.8.30;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IUniswapV3Pool } from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
-import { ICometFlashLoanPlugin } from "../../interfaces/ICometFlashLoanPlugin.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { ICometFlashLoanPlugin } from "../../interfaces/ICometFlashLoanPlugin.sol";
+import { ICometFoundation as ICF } from "../../interfaces/ICometFoundation.sol";
+import { ICometAlerts as ICA } from "../../interfaces/ICometAlerts.sol";
+import { ICometEvents as ICE } from "../../interfaces/ICometEvents.sol";
 
 /**
  * @title UniswapV3Plugin
@@ -15,6 +18,7 @@ import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.s
  */
 contract UniswapV3Plugin is ICometFlashLoanPlugin {
     using SafeERC20 for IERC20;
+
     /// @notice Callback function selector for Uniswap V3 flash loans
     bytes4 public constant CALLBACK_SELECTOR = UniswapV3Plugin.uniswapV3FlashCallback.selector;
 
@@ -23,25 +27,51 @@ contract UniswapV3Plugin is ICometFlashLoanPlugin {
 
     /**
      * @inheritdoc ICometFlashLoanPlugin
+     * @dev config encodes UniswapV3Config with token->pool pools
      */
-    function takeFlashLoan(CallbackData memory data, bytes memory) external payable {
-        bytes memory _data = abi.encode(data);
-        bytes32 flid = keccak256(_data);
+    function takeFlashLoan(ICF.CallbackData memory data, bytes memory config) external payable {
+        ICF.Pool[] memory pools = abi.decode(config, (ICF.Pool[]));
+
+        address asset = address(data.asset);
+        address flp = _findPool(pools, asset);
+
+        require(flp != address(0), ICA.InvalidFlashLoanProvider());
+
         bytes32 slot = SLOT_PLUGIN;
+
         assembly {
-            tstore(slot, flid)
+            tstore(slot, flp)
         }
 
-        IUniswapV3Pool pool = IUniswapV3Pool(data.flp);
+        IUniswapV3Pool pool = IUniswapV3Pool(flp);
         address token0 = pool.token0();
         address token1 = pool.token1();
-        address asset = address(data.asset);
-        require(token0 == asset || token1 == asset, UnauthorizedCallback());
 
-        uint256 amount0 = token0 == asset ? data.debt : 0;
-        uint256 amount1 = token1 == asset ? data.debt : 0;
+        require(token0 == asset || token1 == asset, ICA.UnauthorizedCallback());
 
-        pool.flash(address(this), amount0, amount1, _data);
+        uint256 amount0 = (token0 == asset) ? data.debt : 0;
+        uint256 amount1 = (token1 == asset) ? data.debt : 0;
+
+        pool.flash(address(this), amount0, amount1, abi.encode(data));
+    }
+
+    /**
+     * @notice Finds pool address for given asset
+     * @param pools Array of token-to-pool pools
+     * @param asset Asset address to find pool for
+     * @return pool Pool address, or address(0) if not found
+     */
+    function _findPool(ICF.Pool[] memory pools, address asset) internal pure returns (address pool) {
+        uint256 length = pools.length;
+        for (uint256 i = 0; i < length; ) {
+            if (pools[i].token == asset) {
+                return pools[i].pool;
+            }
+            unchecked {
+                ++i;
+            }
+        }
+        return address(0);
     }
 
     /**
@@ -63,26 +93,31 @@ contract UniswapV3Plugin is ICometFlashLoanPlugin {
         uint256 fee0,
         uint256 fee1,
         bytes calldata data
-    ) external returns (CallbackData memory _data) {
-        bytes32 flid = keccak256(data);
-        bytes32 flidExpected;
+    ) external returns (ICF.CallbackData memory _data) {
+        address flp;
+
         bytes32 slot = SLOT_PLUGIN;
+
         assembly {
-            flidExpected := tload(slot)
+            flp := tload(slot)
             tstore(slot, 0)
         }
-        require(flid == flidExpected, InvalidFlashLoanId());
-        _data = abi.decode(data, (CallbackData));
-        require(_data.flp == msg.sender, UnauthorizedCallback());
 
-        IUniswapV3Pool pool = IUniswapV3Pool(_data.flp);
+        _data = abi.decode(data, (ICF.CallbackData));
+
+        require(flp == msg.sender, ICA.UnauthorizedCallback());
+
+        IUniswapV3Pool pool = IUniswapV3Pool(flp);
         address token0 = pool.token0();
         address token1 = pool.token1();
         address asset = address(_data.asset);
-        uint256 fee = token0 == asset ? fee0 : (token1 == asset ? fee1 : type(uint256).max);
-        require(fee != type(uint256).max, UnauthorizedCallback());
+
+        uint256 fee = (token0 == asset) ? fee0 : ((token1 == asset) ? fee1 : type(uint256).max);
+        require(fee != type(uint256).max && fee != 0, ICA.InvalidFlashLoanData());
 
         _data.fee = fee;
+        _data.flp = flp;
+        emit ICE.FlashLoan(flp, asset, _data.debt, fee);
     }
 
     function supportsInterface(bytes4 interfaceId) external pure returns (bool) {

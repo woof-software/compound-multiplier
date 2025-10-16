@@ -44,12 +44,12 @@
     },
     {
         "inputs": [],
-        "name": "InvalidAsset",
+        "name": "InvalidWeth",
         "type": "error"
     },
     {
         "inputs": [],
-        "name": "InvalidCollateralAmount",
+        "name": "InvalidAmountIn",
         "type": "error"
     },
     {

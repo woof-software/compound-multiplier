@@ -1,7 +1,7 @@
 [
     "constructor(tuple(address endpoint, bytes config)[] _plugins)",
     "error InvalidAmountOut()",
-    "error InvalidAsset()",
+    "error InvalidWeth()",
     "error InvalidOpts()",
     "error UnknownPlugin()",
     "event PluginAdded(address indexed endpoint, bytes4 indexed selector, bytes32 key)",

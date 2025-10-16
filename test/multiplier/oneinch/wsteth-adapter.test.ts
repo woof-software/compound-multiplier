@@ -57,9 +57,7 @@ describe.skip("Comet Multiplier Adapter / 1inch / wstETH", function () {
 
         const market = await getMarketOptions(true);
 
-        return adapter
-            .connect(signer)
-            .executeMultiplier(market, WSTETH_ADDRESS, collateralAmount, leverageBps, "0x", minAmountOut);
+        return adapter.connect(signer).executeMultiplier(market, WSTETH_ADDRESS, collateralAmount, leverageBps, "0x");
     }
 
     async function withdrawMultiplier(signer: SignerWithAddress, collateralAmount: bigint, minAmountOut: bigint = 1n) {
@@ -75,9 +73,7 @@ describe.skip("Comet Multiplier Adapter / 1inch / wstETH", function () {
                 await adapter.getAddress()
             );
 
-            return adapter
-                .connect(signer)
-                .withdrawMultiplier(market, WSTETH_ADDRESS, collateralAmount, swapData, minAmountOut);
+            return adapter.connect(signer).withdrawMultiplier(market, WSTETH_ADDRESS, collateralAmount, swapData);
         });
     }
 
