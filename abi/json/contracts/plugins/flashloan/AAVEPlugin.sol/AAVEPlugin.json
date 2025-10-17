@@ -135,7 +135,7 @@
                         "type": "bytes"
                     }
                 ],
-                "internalType": "struct ICometFoundation.CallbackData",
+                "internalType": "struct ICometStructs.CallbackData",
                 "name": "_data",
                 "type": "tuple"
             }
@@ -215,7 +215,7 @@
                         "type": "bytes"
                     }
                 ],
-                "internalType": "struct ICometFoundation.CallbackData",
+                "internalType": "struct ICometStructs.CallbackData",
                 "name": "data",
                 "type": "tuple"
             },

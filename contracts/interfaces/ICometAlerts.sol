@@ -5,6 +5,11 @@ interface ICometAlerts {
     //FOUNDATION
 
     /**
+     * @notice Emitted if comet address is invalid
+     */
+    error InvalidComet();
+
+    /**
      * @notice Emitted when a plugin is not recognized
      */
     error UnknownPlugin();

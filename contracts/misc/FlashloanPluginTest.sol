@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import { ICometFoundation as ICF } from "../interfaces/ICometFoundation.sol";
+import { ICometStructs as ICS } from "../interfaces/ICometStructs.sol";
 import { ICometFlashLoanPlugin } from "../interfaces/ICometFlashLoanPlugin.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -9,7 +9,7 @@ contract FlashloanPluginTest {
     address public flp;
     ICometFlashLoanPlugin public endpoint;
 
-    ICF.CallbackData public lastCallbackData;
+    ICS.CallbackData public lastCallbackData;
 
     uint256 public amm;
 
@@ -20,7 +20,7 @@ contract FlashloanPluginTest {
         endpoint = ICometFlashLoanPlugin(_endpoint);
     }
 
-    function flash(ICF.CallbackData memory data) external {
+    function flash(ICS.CallbackData memory data) external {
         (bool success, ) = address(endpoint).delegatecall(
             abi.encodeWithSelector(
                 ICometFlashLoanPlugin.takeFlashLoan.selector,
@@ -32,7 +32,7 @@ contract FlashloanPluginTest {
     }
 
     function attackAAVE(
-        ICF.CallbackData memory data,
+        ICS.CallbackData memory data,
         address asset,
         uint256 amount,
         uint256 premium,
@@ -55,7 +55,7 @@ contract FlashloanPluginTest {
     }
 
     function attackBalancer(
-        ICF.CallbackData memory data,
+        ICS.CallbackData memory data,
         IERC20[] memory tokens,
         uint256[] memory amounts,
         uint256[] memory feeAmounts,
@@ -75,9 +75,9 @@ contract FlashloanPluginTest {
         _catch(ok);
     }
 
-    function attackCallback() public pure returns (ICF.CallbackData memory) {
+    function attackCallback() public pure returns (ICS.CallbackData memory) {
         return
-            ICF.CallbackData({
+            ICS.CallbackData({
                 debt: 1000,
                 fee: 0,
                 flp: address(0),
@@ -89,7 +89,7 @@ contract FlashloanPluginTest {
     fallback() external payable {
         (, bytes memory payload) = address(endpoint).delegatecall(msg.data);
 
-        ICF.CallbackData memory data = abi.decode(payload, (ICF.CallbackData));
+        ICS.CallbackData memory data = abi.decode(payload, (ICS.CallbackData));
 
         lastCallbackData = data;
 

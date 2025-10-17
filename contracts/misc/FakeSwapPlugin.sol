@@ -9,7 +9,7 @@ contract FakeSwapPlugin is ICometSwapPlugin {
 
     address constant WHALE = 0x37305B1cD40574E4C5Ce33f8e8306Be057fD7341;
 
-    function executeSwap(
+    function swap(
         address srcToken,
         address,
         uint256 amountIn,

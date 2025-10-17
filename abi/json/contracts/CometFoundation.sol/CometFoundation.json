@@ -14,18 +14,158 @@
                         "type": "bytes"
                     }
                 ],
-                "internalType": "struct ICometFoundation.Plugin[]",
+                "internalType": "struct ICometStructs.Plugin[]",
                 "name": "_plugins",
                 "type": "tuple[]"
+            },
+            {
+                "internalType": "address",
+                "name": "_wEth",
+                "type": "address"
             }
         ],
-        "stateMutability": "nonpayable",
+        "stateMutability": "payable",
         "type": "constructor"
+    },
+    {
+        "inputs": [],
+        "name": "InsufficientLiquidity",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "InvalidAmountIn",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "InvalidAmountOut",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "InvalidComet",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "InvalidLeverage",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "InvalidMode",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "InvalidSwapParameters",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "InvalidWeth",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "NothingToDeleverage",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "ReentrancyGuardReentrantCall",
+        "type": "error"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            }
+        ],
+        "name": "SafeERC20FailedOperation",
+        "type": "error"
     },
     {
         "inputs": [],
         "name": "UnknownPlugin",
         "type": "error"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "user",
+                "type": "address"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "comet",
+                "type": "address"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "collateral",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "withdrawnAmount",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "amountOut",
+                "type": "uint256"
+            }
+        ],
+        "name": "Covered",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "user",
+                "type": "address"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "comet",
+                "type": "address"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "collateral",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "multipliedAmount",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "debt",
+                "type": "uint256"
+            }
+        ],
+        "name": "Multiplied",
+        "type": "event"
     },
     {
         "anonymous": false,
@@ -51,6 +191,10 @@
         ],
         "name": "PluginAdded",
         "type": "event"
+    },
+    {
+        "stateMutability": "payable",
+        "type": "fallback"
     },
     {
         "inputs": [],
@@ -81,6 +225,412 @@
     {
         "inputs": [
             {
+                "components": [
+                    {
+                        "internalType": "contract IComet",
+                        "name": "comet",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "loanPlugin",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "swapPlugin",
+                        "type": "address"
+                    }
+                ],
+                "internalType": "struct ICometStructs.Options",
+                "name": "opts",
+                "type": "tuple"
+            },
+            {
+                "internalType": "contract IERC20",
+                "name": "collateral",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "collateralAmount",
+                "type": "uint256"
+            },
+            {
+                "internalType": "bytes",
+                "name": "swapData",
+                "type": "bytes"
+            },
+            {
+                "components": [
+                    {
+                        "internalType": "uint256",
+                        "name": "nonce",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "expiry",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "bytes32",
+                        "name": "r",
+                        "type": "bytes32"
+                    },
+                    {
+                        "internalType": "bytes32",
+                        "name": "s",
+                        "type": "bytes32"
+                    },
+                    {
+                        "internalType": "uint8",
+                        "name": "v",
+                        "type": "uint8"
+                    }
+                ],
+                "internalType": "struct ICometStructs.AllowParams",
+                "name": "allowParams",
+                "type": "tuple"
+            }
+        ],
+        "name": "cover",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "contract IComet",
+                        "name": "comet",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "loanPlugin",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "swapPlugin",
+                        "type": "address"
+                    }
+                ],
+                "internalType": "struct ICometStructs.Options",
+                "name": "opts",
+                "type": "tuple"
+            },
+            {
+                "internalType": "contract IERC20",
+                "name": "collateral",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "collateralAmount",
+                "type": "uint256"
+            },
+            {
+                "internalType": "bytes",
+                "name": "swapData",
+                "type": "bytes"
+            }
+        ],
+        "name": "cover",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "contract IComet",
+                        "name": "comet",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "loanPlugin",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "swapPlugin",
+                        "type": "address"
+                    }
+                ],
+                "internalType": "struct ICometStructs.Options",
+                "name": "opts",
+                "type": "tuple"
+            },
+            {
+                "internalType": "contract IERC20",
+                "name": "fromAsset",
+                "type": "address"
+            },
+            {
+                "internalType": "contract IERC20",
+                "name": "toAsset",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "fromAmount",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "minAmountOut",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "maxHealthFactorDrop",
+                "type": "uint256"
+            },
+            {
+                "internalType": "bytes",
+                "name": "swapData",
+                "type": "bytes"
+            }
+        ],
+        "name": "exchange",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "contract IComet",
+                        "name": "comet",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "loanPlugin",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "swapPlugin",
+                        "type": "address"
+                    }
+                ],
+                "internalType": "struct ICometStructs.Options",
+                "name": "opts",
+                "type": "tuple"
+            },
+            {
+                "internalType": "contract IERC20",
+                "name": "fromAsset",
+                "type": "address"
+            },
+            {
+                "internalType": "contract IERC20",
+                "name": "toAsset",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "fromAmount",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "minAmountOut",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "maxHealthFactorDrop",
+                "type": "uint256"
+            },
+            {
+                "internalType": "bytes",
+                "name": "swapData",
+                "type": "bytes"
+            },
+            {
+                "components": [
+                    {
+                        "internalType": "uint256",
+                        "name": "nonce",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "expiry",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "bytes32",
+                        "name": "r",
+                        "type": "bytes32"
+                    },
+                    {
+                        "internalType": "bytes32",
+                        "name": "s",
+                        "type": "bytes32"
+                    },
+                    {
+                        "internalType": "uint8",
+                        "name": "v",
+                        "type": "uint8"
+                    }
+                ],
+                "internalType": "struct ICometStructs.AllowParams",
+                "name": "allowParams",
+                "type": "tuple"
+            }
+        ],
+        "name": "exchange",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "contract IComet",
+                        "name": "comet",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "loanPlugin",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "swapPlugin",
+                        "type": "address"
+                    }
+                ],
+                "internalType": "struct ICometStructs.Options",
+                "name": "opts",
+                "type": "tuple"
+            },
+            {
+                "internalType": "contract IERC20",
+                "name": "collateral",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "collateralAmount",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "leverage",
+                "type": "uint256"
+            },
+            {
+                "internalType": "bytes",
+                "name": "swapData",
+                "type": "bytes"
+            }
+        ],
+        "name": "multiply",
+        "outputs": [],
+        "stateMutability": "payable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "contract IComet",
+                        "name": "comet",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "loanPlugin",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "swapPlugin",
+                        "type": "address"
+                    }
+                ],
+                "internalType": "struct ICometStructs.Options",
+                "name": "opts",
+                "type": "tuple"
+            },
+            {
+                "internalType": "contract IERC20",
+                "name": "collateral",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "collateralAmount",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "leverage",
+                "type": "uint256"
+            },
+            {
+                "internalType": "bytes",
+                "name": "swapData",
+                "type": "bytes"
+            },
+            {
+                "components": [
+                    {
+                        "internalType": "uint256",
+                        "name": "nonce",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "expiry",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "bytes32",
+                        "name": "r",
+                        "type": "bytes32"
+                    },
+                    {
+                        "internalType": "bytes32",
+                        "name": "s",
+                        "type": "bytes32"
+                    },
+                    {
+                        "internalType": "uint8",
+                        "name": "v",
+                        "type": "uint8"
+                    }
+                ],
+                "internalType": "struct ICometStructs.AllowParams",
+                "name": "allowParams",
+                "type": "tuple"
+            }
+        ],
+        "name": "multiply",
+        "outputs": [],
+        "stateMutability": "payable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
                 "internalType": "bytes32",
                 "name": "",
                 "type": "bytes32"
@@ -92,6 +642,19 @@
                 "internalType": "bytes",
                 "name": "",
                 "type": "bytes"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "wEth",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
             }
         ],
         "stateMutability": "view",

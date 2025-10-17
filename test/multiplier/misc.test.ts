@@ -1,6 +1,6 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
-import { CometMultiplier, OneInchV6SwapPlugin, IComet, IERC20, FakeFlashLoanPlugin } from "../../typechain-types";
+import { CometFoundation, OneInchV6SwapPlugin, IComet, IERC20, FakeFlashLoanPlugin } from "../../typechain-types";
 import { get1inchSwapData, calculateLeveragedAmount } from "../helpers/helpers";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 
@@ -15,7 +15,7 @@ const USDC_WHALE = "0xEe7aE85f2Fe2239E27D9c1E23fFFe168D63b4055";
 const opts = { maxFeePerGas: 4_000_000_000 };
 
 describe("Comet Multiplier Adapter / Misc", function () {
-    let adapter: CometMultiplier;
+    let adapter: CometFoundation;
     let loanPlugin: FakeFlashLoanPlugin;
     let swapPlugin: OneInchV6SwapPlugin;
     let comet: IComet;
@@ -62,7 +62,7 @@ describe("Comet Multiplier Adapter / Misc", function () {
             }
         ];
 
-        const Adapter = await ethers.getContractFactory("CometMultiplier", owner);
+        const Adapter = await ethers.getContractFactory("CometFoundation", owner);
 
         weth = await ethers.getContractAt("IERC20", WETH_ADDRESS);
         usdc = await ethers.getContractAt("IERC20", USDC_ADDRESS);
@@ -97,7 +97,7 @@ describe("Comet Multiplier Adapter / Misc", function () {
             const data = ethers.AbiCoder.defaultAbiCoder().encode(["uint256"], [123]);
             await expect(owner.sendTransaction({ to: await adapter.getAddress(), data })).to.be.revertedWithCustomError(
                 adapter,
-                "UnknownPlugin"
+                "InvalidComet"
             );
         });
     });
@@ -109,7 +109,11 @@ describe("Comet Multiplier Adapter / Misc", function () {
             await weth.connect(user).approve(await adapter.getAddress(), ethers.parseEther("1"));
 
             await expect(
-                adapter.connect(user).executeMultiplier(comet, WETH_ADDRESS, ethers.parseEther("1"), 20000, "0x")
+                adapter
+                    .connect(user)
+                    [
+                        "multiply((address,address,address),address,uint256,uint256,bytes)"
+                    ](comet, WETH_ADDRESS, ethers.parseEther("1"), 20000, "0x")
             ).to.be.revertedWithCustomError(adapter, "UnknownPlugin");
         });
 
@@ -119,7 +123,11 @@ describe("Comet Multiplier Adapter / Misc", function () {
             await weth.connect(user).approve(await adapter.getAddress(), ethers.parseEther("1"));
             await usdc.connect(whale2).approve(await adapter.getAddress(), ethers.parseEther("0.0000001"));
             await expect(
-                adapter.connect(user).executeMultiplier(comet, WETH_ADDRESS, ethers.parseEther("1"), 20000, "0x")
+                adapter
+                    .connect(user)
+                    [
+                        "multiply((address,address,address),address,uint256,uint256,bytes)"
+                    ](comet, WETH_ADDRESS, ethers.parseEther("1"), 20000, "0x")
             ).to.be.revertedWithCustomError(adapter, "UnknownPlugin");
         });
 
@@ -129,7 +137,11 @@ describe("Comet Multiplier Adapter / Misc", function () {
             await weth.connect(user2).approve(await adapter.getAddress(), ethers.parseEther("20"));
 
             await expect(
-                adapter.connect(user2).executeMultiplier(comet, WETH_ADDRESS, ethers.parseEther("1"), 20000, "0x")
+                adapter
+                    .connect(user2)
+                    [
+                        "multiply((address,address,address),address,uint256,uint256,bytes)"
+                    ](comet, WETH_ADDRESS, ethers.parseEther("1"), 20000, "0x")
             ).to.be.revertedWithCustomError(adapter, "InvalidAmountOut");
         });
 
@@ -145,7 +157,7 @@ describe("Comet Multiplier Adapter / Misc", function () {
             const plugins = [
                 {
                     endpoint: await eulerPlugin.getAddress(),
-                    config: "0x"
+                    config: ethers.AbiCoder.defaultAbiCoder().encode(["address"], [USDC_EVAULT])
                 },
                 {
                     endpoint: await swapPlugin.getAddress(),
@@ -157,7 +169,7 @@ describe("Comet Multiplier Adapter / Misc", function () {
                 }
             ];
 
-            const Adapter = await ethers.getContractFactory("CometMultiplier", owner);
+            const Adapter = await ethers.getContractFactory("CometFoundation", owner);
             const adapter2 = await Adapter.deploy(plugins, await weth.getAddress(), opts);
 
             await weth.connect(user2).approve(await adapter2.getAddress(), ethers.parseEther("20"));
@@ -172,32 +184,22 @@ describe("Comet Multiplier Adapter / Misc", function () {
                 baseAmount.toString(),
                 await adapter2.getAddress()
             );
+
+            //@ts-ignore
             await adapter2
                 .connect(user2)
-                .executeMultiplier(market0, WETH_ADDRESS, ethers.parseEther("0.1"), 15000, swapForOpen);
+                [
+                    "multiply((address,address,address),address,uint256,uint256,bytes)"
+                ](market0, WETH_ADDRESS, ethers.parseEther("0.1"), 15000, swapForOpen);
 
             await expect(
-                adapter2.connect(user2).withdrawMultiplier(market1, WETH_ADDRESS, ethers.parseEther("0.01"), "0x")
+                //@ts-ignore
+                adapter2
+                    .connect(user2)
+                    [
+                        "cover((address,address,address),address,uint256,bytes)"
+                    ](market1, WETH_ADDRESS, ethers.parseEther("0.01"), "0x")
             ).to.be.revertedWithCustomError(adapter2, "InvalidAmountOut");
-        });
-
-        it("should revert when plugin has invalid selector (bytes4(0))", async function () {
-            const FakeInvalidPlugin = await ethers.getContractFactory("FakeInvalidPlugin", owner);
-            const invalidPlugin = await FakeInvalidPlugin.deploy(opts);
-
-            const plugins = [
-                {
-                    endpoint: await invalidPlugin.getAddress(),
-                    config: "0x"
-                }
-            ];
-
-            const Adapter = await ethers.getContractFactory("CometMultiplier", owner);
-
-            await expect(Adapter.deploy(plugins, await weth.getAddress(), opts)).to.be.revertedWithCustomError(
-                Adapter,
-                "UnknownPlugin"
-            );
         });
 
         it("Should revert if invalid weth address", async function () {
@@ -212,7 +214,7 @@ describe("Comet Multiplier Adapter / Misc", function () {
                 }
             ];
 
-            const Adapter = await ethers.getContractFactory("CometMultiplier", owner);
+            const Adapter = await ethers.getContractFactory("CometFoundation", owner);
 
             await expect(Adapter.deploy(plugins, ethers.ZeroAddress, opts)).to.be.revertedWithCustomError(
                 Adapter,

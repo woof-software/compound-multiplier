@@ -4,7 +4,7 @@ pragma solidity 0.8.30;
 import { IBalancerVault, IERC20, IFlashLoanRecipient } from "contracts/external/balancer/IBalancerVault.sol";
 import { ICometFlashLoanPlugin } from "contracts/interfaces/ICometFlashLoanPlugin.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import { ICometFoundation as ICF } from "contracts/interfaces/ICometFoundation.sol";
+import { ICometStructs as ICS } from "contracts/interfaces/ICometStructs.sol";
 import { ICometAlerts as ICA } from "contracts/interfaces/ICometAlerts.sol";
 import { ICometEvents as ICE } from "contracts/interfaces/ICometEvents.sol";
 
@@ -17,6 +17,7 @@ import { ICometEvents as ICE } from "contracts/interfaces/ICometEvents.sol";
  * The contract uses a unique identifier to securely track each flash loan operation and ensures that only authorized callbacks are
  * processed. It is designed to be used as part of a larger system that supports composable flash loan plugins.
  */
+// aderyn-fp-next-line(locked-ether)
 contract BalancerPlugin is IFlashLoanRecipient, ICometFlashLoanPlugin {
     using SafeERC20 for IERC20;
     /// @inheritdoc ICometFlashLoanPlugin
@@ -25,7 +26,7 @@ contract BalancerPlugin is IFlashLoanRecipient, ICometFlashLoanPlugin {
     bytes32 public constant SLOT_PLUGIN = bytes32(uint256(keccak256("BalancerPlugin.plugin")) - 1);
 
     /// @inheritdoc ICometFlashLoanPlugin
-    function takeFlashLoan(ICF.CallbackData memory data, bytes memory config) external payable {
+    function takeFlashLoan(ICS.CallbackData memory data, bytes memory config) external payable {
         bytes memory _data = abi.encode(data);
         address flp = abi.decode(config, (address));
         bytes32 slot = SLOT_PLUGIN;
@@ -54,7 +55,7 @@ contract BalancerPlugin is IFlashLoanRecipient, ICometFlashLoanPlugin {
         uint256[] memory amounts,
         uint256[] memory feeAmounts,
         bytes memory userData
-    ) external returns (ICF.CallbackData memory _data) {
+    ) external returns (ICS.CallbackData memory _data) {
         address flp;
         bytes32 slot = SLOT_PLUGIN;
         assembly {
@@ -62,7 +63,7 @@ contract BalancerPlugin is IFlashLoanRecipient, ICometFlashLoanPlugin {
             tstore(slot, 0)
         }
 
-        _data = abi.decode(userData, (ICF.CallbackData));
+        _data = abi.decode(userData, (ICS.CallbackData));
 
         require(flp == msg.sender, ICA.UnauthorizedCallback());
 

@@ -2,7 +2,7 @@
 pragma solidity =0.8.30;
 
 import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import { ICometFoundation as ICF } from "./ICometFoundation.sol";
+import { ICometStructs as ICS } from "./ICometStructs.sol";
 
 interface ICometFlashLoanPlugin is IERC165 {
     /// @notice The selector of the callback function
@@ -16,7 +16,7 @@ interface ICometFlashLoanPlugin is IERC165 {
      * @param data Flash loan parameters including debt amount, asset, and user information
      * @dev Stores flash loan ID in transient storage for callback validation
      */
-    function takeFlashLoan(ICF.CallbackData memory data, bytes memory) external payable;
+    function takeFlashLoan(ICS.CallbackData memory data, bytes memory) external payable;
 
     /**
      * @notice Repays the flash loan

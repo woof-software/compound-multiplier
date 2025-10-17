@@ -5,7 +5,7 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import { ICometSwapPlugin } from "../../interfaces/ICometSwapPlugin.sol";
-import { ICometMultiplier } from "../../interfaces/ICometMultiplier.sol";
+import { ICometFoundation } from "../../interfaces/ICometFoundation.sol";
 
 import { IWstEth } from "../../external/lido/IWstEth.sol";
 import { IStEth } from "../../external/lido/IStEth.sol";
@@ -24,7 +24,7 @@ import { ICometEvents as ICE } from "../../interfaces/ICometEvents.sol";
 contract WstEthPlugin is ICometSwapPlugin {
     using SafeERC20 for IERC20;
 
-    bytes4 public constant SWAP_SELECTOR = bytes4(0);
+    bytes4 public constant SWAP_SELECTOR = IWstEth.wrap.selector;
 
     /// @notice Address of the wstETH token contract
     address public constant WSTETH_ADDRESS = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
@@ -35,15 +35,15 @@ contract WstEthPlugin is ICometSwapPlugin {
     /**
      * @inheritdoc ICometSwapPlugin
      */
-    function executeSwap(
+    function swap(
         address srcToken,
         address dstToken,
         uint256 amountIn,
-        bytes calldata config,
-        bytes calldata
+        bytes calldata,
+        bytes calldata swapData
     ) external returns (uint256 amountOut) {
-        uint256 minAmountOut = abi.decode(config, (uint256));
-        address wEth = ICometMultiplier(address(this)).wEth();
+        uint256 minAmountOut = abi.decode(swapData, (uint256));
+        address wEth = ICometFoundation(address(this)).wEth();
         require(
             srcToken != dstToken && amountIn > 0 && srcToken == wEth && minAmountOut > 0 && dstToken == WSTETH_ADDRESS,
             ICA.InvalidAmountIn()

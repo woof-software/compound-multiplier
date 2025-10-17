@@ -26,7 +26,7 @@ interface ICometEvents {
      * @param multipliedAmount The total amount of collateral supplied or withdrawn
      * @param debt The amount of debt borrowed or repaid
      */
-    event MultiplierExecuted(
+    event Multiplied(
         address indexed user,
         address indexed comet,
         address indexed collateral,
@@ -42,7 +42,7 @@ interface ICometEvents {
      * @param withdrawnAmount The amount of collateral tokens withdrawn
      * @param amountOut The amount of base asset returned to the user after repaying debt
      */
-    event MultiplierWithdrawn(
+    event Covered(
         address indexed user,
         address indexed comet,
         address indexed collateral,
@@ -60,7 +60,7 @@ interface ICometEvents {
      * @param fromAmount The amount of fromAsset used in the swap
      * @param amountOut The amount of toAsset received from the swap
      */
-    event SwapExecuted(
+    event Swapped(
         address indexed comet,
         address indexed fromAsset,
         address indexed toAsset,

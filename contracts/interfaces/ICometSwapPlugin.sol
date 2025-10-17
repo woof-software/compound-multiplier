@@ -15,7 +15,7 @@ interface ICometSwapPlugin is IERC165 {
      * @param swapData Encoded data required by the underlying swap mechanism
      * @return amountOut The actual amount of destination tokens received from the swap
      */
-    function executeSwap(
+    function swap(
         address srcToken,
         address dstToken,
         uint256 amountIn,

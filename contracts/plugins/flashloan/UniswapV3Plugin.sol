@@ -5,7 +5,7 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IUniswapV3Pool } from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { ICometFlashLoanPlugin } from "../../interfaces/ICometFlashLoanPlugin.sol";
-import { ICometFoundation as ICF } from "../../interfaces/ICometFoundation.sol";
+import { ICometStructs as ICS } from "../../interfaces/ICometStructs.sol";
 import { ICometAlerts as ICA } from "../../interfaces/ICometAlerts.sol";
 import { ICometEvents as ICE } from "../../interfaces/ICometEvents.sol";
 
@@ -16,6 +16,7 @@ import { ICometEvents as ICE } from "../../interfaces/ICometEvents.sol";
  * @notice Flash loan plugin for integrating Uniswap V3 pools with CometMultiplier
  * @dev Implements ICometFlashLoanPlugin interface to provide standardized flash loan functionality
  */
+// aderyn-fp-next-line(locked-ether)
 contract UniswapV3Plugin is ICometFlashLoanPlugin {
     using SafeERC20 for IERC20;
 
@@ -29,8 +30,8 @@ contract UniswapV3Plugin is ICometFlashLoanPlugin {
      * @inheritdoc ICometFlashLoanPlugin
      * @dev config encodes UniswapV3Config with token->pool pools
      */
-    function takeFlashLoan(ICF.CallbackData memory data, bytes memory config) external payable {
-        ICF.Pool[] memory pools = abi.decode(config, (ICF.Pool[]));
+    function takeFlashLoan(ICS.CallbackData memory data, bytes memory config) external payable {
+        ICS.Pool[] memory pools = abi.decode(config, (ICS.Pool[]));
 
         address asset = address(data.asset);
         address flp = _findPool(pools, asset);
@@ -61,7 +62,7 @@ contract UniswapV3Plugin is ICometFlashLoanPlugin {
      * @param asset Asset address to find pool for
      * @return pool Pool address, or address(0) if not found
      */
-    function _findPool(ICF.Pool[] memory pools, address asset) internal pure returns (address pool) {
+    function _findPool(ICS.Pool[] memory pools, address asset) internal pure returns (address pool) {
         uint256 length = pools.length;
         for (uint256 i = 0; i < length; ) {
             if (pools[i].token == asset) {
@@ -93,7 +94,7 @@ contract UniswapV3Plugin is ICometFlashLoanPlugin {
         uint256 fee0,
         uint256 fee1,
         bytes calldata data
-    ) external returns (ICF.CallbackData memory _data) {
+    ) external returns (ICS.CallbackData memory _data) {
         address flp;
 
         bytes32 slot = SLOT_PLUGIN;
@@ -103,7 +104,7 @@ contract UniswapV3Plugin is ICometFlashLoanPlugin {
             tstore(slot, 0)
         }
 
-        _data = abi.decode(data, (ICF.CallbackData));
+        _data = abi.decode(data, (ICS.CallbackData));
 
         require(flp == msg.sender, ICA.UnauthorizedCallback());
 

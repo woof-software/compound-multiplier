@@ -8,6 +8,6 @@
     "error SafeERC20FailedOperation(address token)",
     "event Swap(address indexed router, address indexed srcToken, address indexed dstToken, uint256 amountOut)",
     "function SWAP_SELECTOR() view returns (bytes4)",
-    "function executeSwap(address srcToken, address dstToken, uint256 amountIn, bytes config, bytes swapData) returns (uint256 amountOut)",
-    "function supportsInterface(bytes4 interfaceId) pure returns (bool)"
+    "function supportsInterface(bytes4 interfaceId) pure returns (bool)",
+    "function swap(address srcToken, address dstToken, uint256 amountIn, bytes config, bytes swapData) returns (uint256 amountOut)"
 ]

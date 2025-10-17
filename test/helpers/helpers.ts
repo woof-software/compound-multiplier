@@ -1,11 +1,10 @@
 import axios from "axios";
 
 import { impersonateAccount, setBalance } from "@nomicfoundation/hardhat-network-helpers";
-import { Addressable, Signer } from "ethers";
+import { Addressable, MaxUint256, Signer } from "ethers";
 import { ethers } from "hardhat";
-import { CometMultiplier, IComet, IERC20 } from "../../typechain-types";
+import { CometFoundation, IComet, ICometCover, ICometMultiplier, IERC20 } from "../../typechain-types";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
-import { $CometCollateralSwap } from "../../typechain-types/contracts-exposed/CometCollateralSwap.sol/$CometCollateralSwap";
 export { SnapshotRestorer, takeSnapshot, time } from "@nomicfoundation/hardhat-network-helpers";
 
 export interface Plugin {
@@ -101,14 +100,18 @@ export async function getComet() {
     return await ethers.getContractAt("IComet", COMET);
 }
 
+export async function getCometByAddress(cometAddress: string) {
+    return await ethers.getContractAt("IComet", cometAddress);
+}
+
 export async function getSwapPlugins() {
     return {
-        lifiPlugin: { endpoint: await ethers.deployContract("LiFiPlugin", []), router: SWAP_ROUTER }
+        lifiPlugin: { endpoint: await ethers.deployContract("LiFiPlugin", []), config: "0x" }
     };
 }
 
-export async function deployCollateralSwap(flashLoanPlugins: Plugin[]): Promise<$CometCollateralSwap> {
-    return (await ethers.deployContract("$CometCollateralSwap", [flashLoanPlugins])) as unknown as $CometCollateralSwap;
+export async function deployCollateralSwap(flashLoanPlugins: Plugin[]): Promise<any> {
+    return (await ethers.deployContract("$CometFoundation", [flashLoanPlugins, WETH_ADDRESS])) as any;
 }
 
 export async function calcMinAmountOut(
@@ -197,7 +200,10 @@ export async function getQuote(
                 fromToken,
                 toToken,
                 fromAmount,
-                fromAddress
+                fromAddress,
+                options: {
+                    slippage: 1
+                }
             }
         })
     ).data;
@@ -279,7 +285,7 @@ export async function executeMultiplier1Inch(
     weth: IERC20,
     market: any,
     comet: IComet,
-    adapter: CometMultiplier,
+    adapter: ICometMultiplier,
     signer: SignerWithAddress,
     collateralAmount: bigint,
     leverage: number
@@ -296,13 +302,17 @@ export async function executeMultiplier1Inch(
             await adapter.getAddress()
         );
 
-        return adapter.connect(signer).executeMultiplier(market, WETH_ADDRESS, collateralAmount, leverage, swapData);
+        return adapter
+            .connect(signer)
+            [
+                "multiply((address,address,address),address,uint256,uint256,bytes)"
+            ](market, WETH_ADDRESS, collateralAmount, leverage, swapData);
     });
 }
 
-export async function withdrawMultiplier1Inch(
+export async function cover1Inch(
     market: any,
-    adapter: CometMultiplier,
+    adapter: ICometCover,
     signer: SignerWithAddress,
     requestedCollateral: bigint
 ) {
@@ -317,7 +327,11 @@ export async function withdrawMultiplier1Inch(
                       await adapter.getAddress()
                   );
 
-        return adapter.connect(signer).withdrawMultiplier(market, WETH_ADDRESS, requestedCollateral, swapData);
+        return adapter
+            .connect(signer)
+            [
+                "cover((address,address,address),address,uint256,bytes)"
+            ](market, WETH_ADDRESS, requestedCollateral, swapData);
     });
 }
 
@@ -325,7 +339,7 @@ export async function executeMultiplierLiFi(
     weth: IERC20,
     market: any,
     comet: IComet,
-    adapter: CometMultiplier,
+    adapter: CometFoundation,
     signer: SignerWithAddress,
     collateralAmount: bigint,
     leverage: number
@@ -344,17 +358,21 @@ export async function executeMultiplierLiFi(
             await adapter.getAddress()
         ).then((q) => q.swapCalldata);
 
-        return adapter.connect(signer).executeMultiplier(market, WETH_ADDRESS, collateralAmount, leverage, swapData);
+        return adapter
+            .connect(signer)
+            [
+                "multiply((address,address,address),address,uint256,uint256,bytes)"
+            ](market, WETH_ADDRESS, collateralAmount, leverage, swapData);
     });
 }
 
-export async function withdrawMultiplierLiFi(
+export async function coverLiFi(
     market: any,
-    adapter: CometMultiplier,
+    adapter: CometFoundation,
     signer: SignerWithAddress,
     requestedCollateral: bigint
 ) {
-    const blockTag = await ethers.provider.getBlockNumber();
+    const comet = await getCometByAddress(market.comet);
     return await executeWithRetry(async () => {
         const swapData =
             requestedCollateral == 0n
@@ -364,11 +382,17 @@ export async function withdrawMultiplierLiFi(
                       "1",
                       WETH_ADDRESS,
                       USDC_ADDRESS,
-                      requestedCollateral.toString(),
+                      requestedCollateral == MaxUint256
+                          ? (await comet.collateralBalanceOf(await signer.getAddress(), WETH_ADDRESS)).toString()
+                          : requestedCollateral.toString(),
                       await adapter.getAddress()
                   ).then((q) => q.swapCalldata);
 
-        return adapter.connect(signer).withdrawMultiplier(market, WETH_ADDRESS, requestedCollateral, swapData);
+        return adapter
+            .connect(signer)
+            [
+                "cover((address,address,address),address,uint256,bytes)"
+            ](market, WETH_ADDRESS, requestedCollateral, swapData);
     });
 }
 

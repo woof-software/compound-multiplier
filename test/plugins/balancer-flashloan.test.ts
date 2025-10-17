@@ -99,16 +99,6 @@ describe("Balancer Flash Loan Plugin", function () {
             };
         });
 
-        it("reverts when flid is not valid", async () => {
-            const tokens = [usdc.target];
-            const amounts = [data.debt];
-            const feeAmounts = [premium];
-
-            await expect(
-                flash.connect(alice).attackBalancer(data, tokens as any, amounts, feeAmounts, true)
-            ).to.be.revertedWithCustomError(plugin, "InvalidFlashLoanProvider");
-        });
-
         it("reverts when callback caller is not authorized", async () => {
             data.flp = flp;
             expect(data.flp).to.not.be.eq(alice);
@@ -129,7 +119,7 @@ describe("Balancer Flash Loan Plugin", function () {
 
             await expect(
                 flash.connect(alice).attackBalancer(data, tokens as any, amounts, feeAmounts, false)
-            ).to.be.revertedWithCustomError(plugin, "InvalidFlashLoanData");
+            ).to.be.revertedWithCustomError(plugin, "UnauthorizedCallback");
         });
 
         it("reverts when data.asset != tokens[0]", async () => {
@@ -139,7 +129,7 @@ describe("Balancer Flash Loan Plugin", function () {
 
             await expect(
                 flash.connect(alice).attackBalancer(data, tokens as any, amounts, feeAmounts, false)
-            ).to.be.revertedWithCustomError(plugin, "InvalidFlashLoanData");
+            ).to.be.revertedWithCustomError(plugin, "UnauthorizedCallback");
         });
     });
 

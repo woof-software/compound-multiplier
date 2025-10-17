@@ -152,7 +152,15 @@ const config: HardhatUserConfig = {
     },
     docgen: {
         pages: "files",
-        exclude: ["mocks/", "vendor/", "contracts-exposed/", "test/"]
+        exclude: [
+            "mocks/",
+            "vendor/",
+            "contracts-exposed/",
+            "test/",
+            "contracts/misc",
+            "contracts/interfaces",
+            "contracts/external"
+        ]
     },
     contractSizer: {
         except: ["mocks/", "vendor/", "contracts-exposed/", "test/"]

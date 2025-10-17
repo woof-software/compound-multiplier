@@ -3,9 +3,8 @@ import { takeSnapshot } from "@nomicfoundation/hardhat-network-helpers";
 
 import { expect } from "chai";
 import type { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
-import { AAVEPlugin, FlashloanPluginTest, ICometFlashLoanPlugin, IERC20 } from "../../typechain-types";
+import { AAVEPlugin, FlashloanPluginTest, IERC20 } from "../../typechain-types";
 import { exp, getPlugins, getWhales, tokensInstances, ethers, AAVE_POOL } from "../helpers/helpers";
-import { ICometFoundation } from "../../typechain-types/contracts/CometCollateralSwap";
 
 describe("AAVE Flash Loan Plugin", function () {
     let snapshot: SnapshotRestorer;
@@ -99,11 +98,6 @@ describe("AAVE Flash Loan Plugin", function () {
                 swapData: "0x"
             };
         });
-        it("reverts when flid is not valid", async () => {
-            await expect(
-                flash.connect(alice).attackAAVE(data, data.asset, data.debt, premium, flash.target, true)
-            ).to.be.revertedWithCustomError(plugin, "InvalidFlashLoanProvider");
-        });
 
         it("reverts when callback caller is not authorized", async () => {
             data.flp = AAVE_POOL;
@@ -124,7 +118,7 @@ describe("AAVE Flash Loan Plugin", function () {
                     flash.target,
                     false
                 )
-            ).to.be.revertedWithCustomError(plugin, "InvalidFlashLoanData");
+            ).to.be.revertedWithCustomError(plugin, "UnauthorizedCallback");
         });
 
         it("reverts when data.asset != asset", async () => {
@@ -137,7 +131,7 @@ describe("AAVE Flash Loan Plugin", function () {
                     flash.target,
                     false
                 )
-            ).to.be.revertedWithCustomError(plugin, "InvalidFlashLoanData");
+            ).to.be.revertedWithCustomError(plugin, "UnauthorizedCallback");
         });
 
         it("reverts when initiator != address(this)", async () => {
@@ -150,7 +144,7 @@ describe("AAVE Flash Loan Plugin", function () {
                     alice, // wrong initiator
                     false
                 )
-            ).to.be.revertedWithCustomError(plugin, "InvalidFlashLoanData");
+            ).to.be.revertedWithCustomError(plugin, "UnauthorizedCallback");
         });
     });
 
