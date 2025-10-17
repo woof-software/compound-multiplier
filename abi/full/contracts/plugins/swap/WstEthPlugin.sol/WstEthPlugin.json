@@ -1,6 +1,6 @@
 [
-    "error InvalidAmountIn()",
     "error InvalidAmountOut()",
+    "error InvalidSwapParameters()",
     "error SafeERC20FailedOperation(address token)",
     "event Swap(address indexed router, address indexed srcToken, address indexed dstToken, uint256 amountOut)",
     "function STETH_ADDRESS() view returns (address)",

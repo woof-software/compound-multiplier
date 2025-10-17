@@ -1,4 +1,5 @@
 [
+    "error InvalidFlashLoanProvider()",
     "error SafeERC20FailedOperation(address)",
     "error UnauthorizedCallback()",
     "event FlashLoan(address indexed,address indexed,uint256,uint256)",

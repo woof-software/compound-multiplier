@@ -1,12 +1,12 @@
 [
     {
         "inputs": [],
-        "name": "InvalidAmountIn",
+        "name": "InvalidAmountOut",
         "type": "error"
     },
     {
         "inputs": [],
-        "name": "InvalidAmountOut",
+        "name": "InvalidSwapParameters",
         "type": "error"
     },
     {

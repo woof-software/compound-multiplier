@@ -1,5 +1,10 @@
 [
     {
+        "inputs": [],
+        "name": "InvalidFlashLoanProvider",
+        "type": "error"
+    },
+    {
         "inputs": [
             {
                 "internalType": "address",
