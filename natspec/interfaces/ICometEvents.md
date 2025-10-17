@@ -56,10 +56,10 @@ Emitted when collateral is withdrawn from a leveraged position
 | withdrawnAmount | uint256 | The amount of collateral tokens withdrawn                         |
 | amountOut       | uint256 | The amount of base asset returned to the user after repaying debt |
 
-### Swapped
+### Exchanged
 
 ```solidity
-event Swapped(address comet, address fromAsset, address toAsset, uint256 fromAmount, uint256 amountOut)
+event Exchanged(address user, address comet, address fromAsset, address toAsset, uint256 fromAmount, uint256 amountOut)
 ```
 
 Emitted when a collateral swap is executed
@@ -68,6 +68,7 @@ Emitted when a collateral swap is executed
 
 | Name       | Type    | Description                                      |
 | ---------- | ------- | ------------------------------------------------ |
+| user       | address |                                                  |
 | comet      | address | The address of the Compound V3 Comet market      |
 | fromAsset  | address | The address of the collateral asset swapped from |
 | toAsset    | address | The address of the collateral asset swapped to   |

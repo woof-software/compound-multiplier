@@ -30,7 +30,7 @@ function takeFlashLoan(struct ICometStructs.CallbackData data, bytes config) ext
 
 Initiates a flash loan
 
-_Stores flash loan ID in transient storage for callback validation_
+_config encodes Pool[] with token->vault mappings_
 
 #### Parameters
 
@@ -38,6 +38,27 @@ _Stores flash loan ID in transient storage for callback validation_
 | ------ | --------------------------------- | ------------------------------------------------------------------------ |
 | data   | struct ICometStructs.CallbackData | Flash loan parameters including debt amount, asset, and user information |
 | config | bytes                             |                                                                          |
+
+### \_findVault
+
+```solidity
+function _findVault(struct ICometStructs.Pool[] vaults, address asset) internal pure returns (address vault)
+```
+
+Finds vault address for given asset
+
+#### Parameters
+
+| Name   | Type                        | Description                      |
+| ------ | --------------------------- | -------------------------------- |
+| vaults | struct ICometStructs.Pool[] | Array of token-to-vault mappings |
+| asset  | address                     | Asset address to find vault for  |
+
+#### Return Values
+
+| Name  | Type    | Description                               |
+| ----- | ------- | ----------------------------------------- |
+| vault | address | Vault address, or address(0) if not found |
 
 ### repayFlashLoan
 

@@ -142,7 +142,7 @@ _Each plugin must have a valid non-zero callback selector_
 | Name      | Type                          | Description                                                                      |
 | --------- | ----------------------------- | -------------------------------------------------------------------------------- |
 | \_plugins | struct ICometStructs.Plugin[] | Array of plugin configurations containing endpoints and their callback selectors |
-| \_wEth    | address                       |                                                                                  |
+| \_wEth    | address                       | Address of the Wrapped ETH (WETH) token                                          |
 
 ### exchange
 
@@ -331,6 +331,24 @@ It uses transient storage to maintain state across the flash loan callback._
 | loanPlugin | address                            | Address of the flash loan plugin to use                          |
 | swapPlugin | address                            | Address of the swap plugin to use                                |
 | mode       | enum ICometStructs.Mode            | Operation mode, either MULTIPLY (supply) or COVER                |
+
+### \_supplyWithdraw
+
+```solidity
+function _supplyWithdraw(contract IComet comet, address user, struct ICometStructs.ProcessParams params) internal
+```
+
+Supplies and withdraws assets from the Comet market on behalf of a user
+
+_This function handles the actual supply and withdrawal of assets in the Comet market._
+
+#### Parameters
+
+| Name   | Type                               | Description                                         |
+| ------ | ---------------------------------- | --------------------------------------------------- |
+| comet  | contract IComet                    | The Comet market instance                           |
+| user   | address                            | The address of the user performing the operation    |
+| params | struct ICometStructs.ProcessParams | Parameters for supplying and withdrawing collateral |
 
 ### \_swap
 
