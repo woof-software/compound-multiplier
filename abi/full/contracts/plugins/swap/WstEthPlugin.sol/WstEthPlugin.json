@@ -7,5 +7,5 @@
     "function SWAP_SELECTOR() view returns (bytes4)",
     "function WSTETH_ADDRESS() view returns (address)",
     "function supportsInterface(bytes4 interfaceId) pure returns (bool)",
-    "function swap(address srcToken, address dstToken, uint256 amountIn, bytes config, bytes) returns (uint256 amountOut)"
+    "function swap(address srcToken, address dstToken, uint256 amountIn, bytes, bytes swapData) returns (uint256 amountOut)"
 ]
