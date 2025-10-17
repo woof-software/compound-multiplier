@@ -98,8 +98,9 @@ interface ICometStructs {
 
     /// @notice Operation modes for the multiplier adapter
     enum Mode {
-        EXECUTE,
-        WITHDRAW
+        MULTIPLY,
+        COVER,
+        EXCHANGE
     }
 
     /// @notice Parameters for gasless approvals using EIP-2612 signatures

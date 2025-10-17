@@ -62,7 +62,10 @@ describe.skip("Comet Multiplier Adapter / 1inch / Euler", function () {
         const plugins = [
             {
                 endpoint: await loanPlugin.getAddress(),
-                config: "0x"
+                config: ethers.AbiCoder.defaultAbiCoder().encode(
+                    ["tuple(address token, address pool)[]"],
+                    [[{ token: USDC_ADDRESS, pool: USDC_EVAULT }]]
+                )
             },
             {
                 endpoint: await swapPlugin.getAddress(),

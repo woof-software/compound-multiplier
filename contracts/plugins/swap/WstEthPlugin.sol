@@ -46,7 +46,7 @@ contract WstEthPlugin is ICometSwapPlugin {
         address wEth = ICometFoundation(address(this)).wEth();
         require(
             srcToken != dstToken && amountIn > 0 && srcToken == wEth && minAmountOut > 0 && dstToken == WSTETH_ADDRESS,
-            ICA.InvalidAmountIn()
+            ICA.InvalidSwapParameters()
         );
 
         return _lidoSwap(wEth, WSTETH_ADDRESS, STETH_ADDRESS, amountIn, minAmountOut);

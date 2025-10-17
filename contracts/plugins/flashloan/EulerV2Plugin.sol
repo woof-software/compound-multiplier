@@ -20,6 +20,7 @@ import { ICometEvents as ICE } from "../../interfaces/ICometEvents.sol";
 // aderyn-fp-next-line(locked-ether)
 contract EulerV2Plugin is ICometFlashLoanPlugin {
     using SafeERC20 for IERC20;
+
     /// @notice Callback function selector for Euler V2 flash loans
     bytes4 public constant CALLBACK_SELECTOR = EulerV2Plugin.onFlashLoan.selector;
 
@@ -28,15 +29,43 @@ contract EulerV2Plugin is ICometFlashLoanPlugin {
 
     /**
      * @inheritdoc ICometFlashLoanPlugin
+     * @dev config encodes Pool[] with token->vault mappings
      */
     function takeFlashLoan(ICS.CallbackData memory data, bytes memory config) external payable {
-        bytes memory _data = abi.encode(data);
-        address flp = abi.decode(config, (address));
+        ICS.Pool[] memory vaults = abi.decode(config, (ICS.Pool[]));
+
+        address asset = address(data.asset);
+        address flp = _findVault(vaults, asset);
+
+        require(flp != address(0), ICA.InvalidFlashLoanProvider());
+
         bytes32 slot = SLOT_PLUGIN;
+
         assembly {
             tstore(slot, flp)
         }
+
+        bytes memory _data = abi.encode(data);
         IEVault(flp).flashLoan(data.debt, _data);
+    }
+
+    /**
+     * @notice Finds vault address for given asset
+     * @param vaults Array of token-to-vault mappings
+     * @param asset Asset address to find vault for
+     * @return vault Vault address, or address(0) if not found
+     */
+    function _findVault(ICS.Pool[] memory vaults, address asset) internal pure returns (address vault) {
+        uint256 length = vaults.length;
+        for (uint256 i = 0; i < length; ) {
+            if (vaults[i].token == asset) {
+                return vaults[i].pool;
+            }
+            unchecked {
+                ++i;
+            }
+        }
+        return address(0);
     }
 
     /**
@@ -54,7 +83,9 @@ contract EulerV2Plugin is ICometFlashLoanPlugin {
      */
     function onFlashLoan(bytes calldata data) external returns (ICS.CallbackData memory _data) {
         address flp;
+
         bytes32 slot = SLOT_PLUGIN;
+
         assembly {
             flp := tload(slot)
             tstore(slot, 0)
@@ -64,6 +95,7 @@ contract EulerV2Plugin is ICometFlashLoanPlugin {
 
         _data = abi.decode(data, (ICS.CallbackData));
         _data.flp = flp;
+
         emit ICE.FlashLoan(flp, address(_data.asset), _data.debt, 0);
     }
 

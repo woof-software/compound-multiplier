@@ -6,11 +6,11 @@ import { verify } from "../../utils/verify";
 async function main() {
     const [deployer] = await ethers.getSigners();
 
-    const endpoint = await ethers.deployContract("AAVEPlugin", [], deployer);
+    const endpoint = await ethers.deployContract("EulerPlugin", [], deployer);
     await endpoint.waitForDeployment();
 
     const networkName = (await ethers.provider.getNetwork()).name;
-    console.log(`\nDeployed AAVE Plugin on ${networkName} to:`, endpoint.target);
+    console.log(`\nDeployed Euler V2 Plugin on ${networkName} to:`, endpoint.target);
 
     await verify(endpoint.target, []);
 
@@ -31,7 +31,7 @@ async function main() {
         deployments.loanPlugins = {};
     }
 
-    deployments.loanPlugins.aave = {
+    deployments.loanPlugins.euler = {
         endpoint: endpoint.target
     };
 

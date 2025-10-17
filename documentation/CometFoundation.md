@@ -842,8 +842,7 @@ pnpm test:vvv
 
 For issues and questions:
 
-- GitHub: [Repository Link]
-- Documentation: Review `/contracts/interfaces`
+- Documentation: Review `/documentation`
 - Tests: Check `/test` directory for examples
 
 ---

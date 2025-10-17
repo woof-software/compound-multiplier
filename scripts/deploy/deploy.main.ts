@@ -8,7 +8,7 @@ function encodePluginConfig(address: string): string {
     return ethers.AbiCoder.defaultAbiCoder().encode(["address"], [address]);
 }
 
-function encodeUniswapV3Config(pools: { token: string; pool: string }[]): string {
+function encodeBatchConfig(pools: { token: string; pool: string }[]): string {
     return ethers.AbiCoder.defaultAbiCoder().encode(["tuple(address token, address pool)[]"], [pools]);
 }
 
@@ -50,12 +50,17 @@ async function main() {
     }
 
     if (deploymentData.loanPlugins.euler) {
-        const eulerConfig = encodePluginConfig(config.plugins.loanPlugins.euler);
+        if (!config.plugins.loanPlugins.euler || config.plugins.loanPlugins.euler.length === 0) {
+            throw new Error("Euler V2 vaults configuration is required in deploy.config.ts");
+        }
+
+        const eulerConfig = encodeBatchConfig(config.plugins.loanPlugins.euler);
         pluginArray.push({
             endpoint: deploymentData.loanPlugins.euler.endpoint,
             config: eulerConfig
         });
         console.log("Added Euler V2 plugin:", deploymentData.loanPlugins.euler.endpoint);
+        console.log("Vaults configured:", config.plugins.loanPlugins.euler.length);
     }
 
     if (deploymentData.loanPlugins.uniswapV3) {
@@ -63,7 +68,7 @@ async function main() {
             throw new Error("UniswapV3 pools configuration is required in deploy.config.ts");
         }
 
-        const uniswapV3Config = encodeUniswapV3Config(config.plugins.loanPlugins.uniswapV3Pools);
+        const uniswapV3Config = encodeBatchConfig(config.plugins.loanPlugins.uniswapV3Pools);
         pluginArray.push({
             endpoint: deploymentData.loanPlugins.uniswapV3.endpoint,
             config: uniswapV3Config

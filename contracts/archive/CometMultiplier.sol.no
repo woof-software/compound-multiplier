@@ -70,7 +70,7 @@ contract CometMultiplier is CometFoundation, ReentrancyGuard, ICometMultiplier {
         require(data.asset.balanceOf(address(this)) >= snapshot + data.debt, ICA.InvalidAmountOut());
 
         ICS.ProcessParams memory params;
-        if (mode == ICS.Mode.EXECUTE) {
+        if (mode == ICS.Mode.MULTIPLY) {
             params = ICS.ProcessParams({
                 supplyAsset: collateral,
                 supplyAmount: amount,
@@ -178,7 +178,7 @@ contract CometMultiplier is CometFoundation, ReentrancyGuard, ICometMultiplier {
             collateral,
             collateralAmount,
             msg.sender,
-            ICS.Mode.EXECUTE
+            ICS.Mode.MULTIPLY
         );
 
         _loan(
@@ -228,7 +228,7 @@ contract CometMultiplier is CometFoundation, ReentrancyGuard, ICometMultiplier {
             collateral,
             collateralAmount,
             msg.sender,
-            ICS.Mode.WITHDRAW
+            ICS.Mode.COVER
         );
 
         _loan(

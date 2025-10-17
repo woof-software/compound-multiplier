@@ -159,7 +159,7 @@ contract CometCollateralSwap is CometFoundation, ICometExchange {
             swapParams.fromAsset,
             swapParams.fromAmount,
             msg.sender,
-            ICS.Mode.WITHDRAW
+            ICS.Mode.COVER
         );
 
         _loan(

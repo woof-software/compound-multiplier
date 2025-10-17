@@ -737,7 +737,7 @@ describe("Comet Multiplier Adapter / LiFi / Morpho", function () {
             const executedEvents = receipt.logs.filter((log: any) => {
                 try {
                     const parsed = adapter.interface.parseLog(log);
-                    return parsed && parsed.name === "MultiploerMultiplied";
+                    return parsed && parsed.name === "Multiplied";
                 } catch {
                     return false;
                 }

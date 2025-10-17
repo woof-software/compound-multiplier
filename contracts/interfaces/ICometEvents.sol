@@ -45,7 +45,7 @@ interface ICometEvents {
     event Covered(
         address indexed user,
         address indexed comet,
-        address indexed collateral,
+        address collateral,
         uint256 withdrawnAmount,
         uint256 amountOut
     );
@@ -60,10 +60,11 @@ interface ICometEvents {
      * @param fromAmount The amount of fromAsset used in the swap
      * @param amountOut The amount of toAsset received from the swap
      */
-    event Swapped(
+    event Exchanged(
+        address indexed user,
         address indexed comet,
-        address indexed fromAsset,
-        address indexed toAsset,
+        address fromAsset,
+        address toAsset,
         uint256 fromAmount,
         uint256 amountOut
     );

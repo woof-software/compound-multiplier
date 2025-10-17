@@ -3,7 +3,10 @@ export interface DeployConfig {
     plugins: {
         loanPlugins: {
             morpho: string;
-            euler: string;
+            euler: Array<{
+                token: string;
+                pool: string;
+            }>;
             uniswapV3Pools: Array<{
                 token: string;
                 pool: string;
@@ -24,7 +27,12 @@ export const deployConfig: Record<string, DeployConfig> = {
         plugins: {
             loanPlugins: {
                 morpho: "0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb", // Morpho Blue
-                euler: "0xD8b27CF359b7D15710a5BE299AF6e7Bf904984C2", // WETH EVault
+                euler: [
+                    {
+                        token: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", // USDC
+                        pool: "0x27182842E098f60e3D576794A5bFFb0777E025d3" // Euler V2 USDC eVault
+                    }
+                ],
                 uniswapV3Pools: [
                     {
                         token: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", // USDC
@@ -57,8 +65,8 @@ export function validateConfig(config: DeployConfig): void {
     if (!config.plugins.loanPlugins.morpho) {
         throw new Error("Morpho Blue address is required");
     }
-    if (!config.plugins.loanPlugins.euler) {
-        throw new Error("Euler V2 EVault address is required");
+    if (!config.plugins.loanPlugins.euler || config.plugins.loanPlugins.euler.length === 0) {
+        throw new Error("At least one Euler V2 vault mapping is required");
     }
     if (!config.plugins.loanPlugins.uniswapV3Pools || config.plugins.loanPlugins.uniswapV3Pools.length === 0) {
         throw new Error("At least one Uniswap V3 pool mapping is required");
@@ -69,6 +77,5 @@ export function validateConfig(config: DeployConfig): void {
     if (!config.plugins.swapPlugins.oneInch) {
         throw new Error("1inch aggregator address is required");
     }
-
     console.log("Configuration validated successfully");
 }

@@ -121,8 +121,9 @@ Operation modes for the multiplier adapter
 
 ```solidity
 enum Mode {
-  EXECUTE,
-  WITHDRAW
+  MULTIPLY,
+  COVER,
+  EXCHANGE
 }
 ```
 

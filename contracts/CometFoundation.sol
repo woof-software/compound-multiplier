@@ -92,25 +92,19 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
         ICS.CallbackData memory data = abi.decode(payload, (ICS.CallbackData));
         require(data.asset.balanceOf(address(this)) >= snapshot + data.debt, ICA.InvalidAmountOut());
 
-        ICS.ProcessParams memory params;
-
-        if (mode == ICS.Mode.EXECUTE) {
-            params = ICS.ProcessParams({
+        ICS.ProcessParams memory params = mode == ICS.Mode.MULTIPLY
+            ? ICS.ProcessParams({
                 supplyAsset: collateral,
                 supplyAmount: amount,
                 withdrawAsset: data.asset,
                 withdrawAmount: data.debt + data.fee
-            });
-        } else if (mode == ICS.Mode.WITHDRAW) {
-            params = ICS.ProcessParams({
+            })
+            : ICS.ProcessParams({
                 supplyAsset: data.asset,
                 supplyAmount: data.debt,
                 withdrawAsset: collateral,
                 withdrawAmount: amount
             });
-        } else {
-            revert ICA.InvalidMode();
-        }
 
         _process(comet, user, params, data, loanPlugin, swapPlugin, mode);
         // aderyn-ignore-next-line(yul-block-return)
@@ -138,6 +132,7 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
     /**
      * @notice Initializes the adapter with flash loan and swap plugins
      * @param _plugins Array of plugin configurations containing endpoints and their callback selectors
+     * @param _wEth Address of the Wrapped ETH (WETH) token
      * @dev Each plugin must have a valid non-zero callback selector
      */
     constructor(ICS.Plugin[] memory _plugins, address _wEth) payable {
@@ -284,7 +279,7 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
             fromAsset,
             fromAmount,
             msg.sender,
-            ICS.Mode.WITHDRAW
+            ICS.Mode.EXCHANGE
         );
 
         _loan(
@@ -325,7 +320,7 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
             collateral,
             collateralAmount,
             msg.sender,
-            ICS.Mode.EXECUTE
+            ICS.Mode.MULTIPLY
         );
 
         _loan(
@@ -375,7 +370,7 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
             collateral,
             collateralAmount,
             msg.sender,
-            ICS.Mode.WITHDRAW
+            ICS.Mode.COVER
         );
 
         _loan(
@@ -398,7 +393,7 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
      * @param data Callback data containing flash loan details and swap information
      * @param loanPlugin Address of the flash loan plugin to use
      * @param swapPlugin Address of the swap plugin to use
-     * @param mode Operation mode, either EXECUTE (supply) or WITHDRAW
+     * @param mode Operation mode, either MULTIPLY (supply) or COVER
      * @dev This function orchestrates the entire flash loan _process, including taking the loan,
      * performing swaps, supplying/withdrawing collateral, and repaying the loan.
      * It uses transient storage to maintain state across the flash loan callback.
@@ -415,9 +410,12 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
         uint256 repaymentAmount = data.debt + data.fee;
         uint256 amountOut;
 
-        if (mode == ICS.Mode.EXECUTE) {
+        if (mode == ICS.Mode.MULTIPLY) {
             amountOut = _swap(swapPlugin, data.asset, params.supplyAsset, data.debt, data.swapData);
             params.supplyAmount += amountOut;
+
+            _supplyWithdraw(comet, user, params);
+
             emit ICE.Multiplied(
                 user,
                 address(comet),
@@ -425,13 +423,9 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
                 params.supplyAmount + amountOut,
                 data.debt
             );
-        }
+        } else {
+            _supplyWithdraw(comet, user, params);
 
-        params.supplyAsset.safeIncreaseAllowance(address(comet), params.supplyAmount);
-        comet.supplyTo(user, params.supplyAsset, params.supplyAmount);
-        comet.withdrawFrom(user, address(this), params.withdrawAsset, params.withdrawAmount);
-
-        if (mode == ICS.Mode.WITHDRAW) {
             amountOut = _swap(swapPlugin, params.withdrawAsset, data.asset, params.withdrawAmount, data.swapData);
 
             require(amountOut >= repaymentAmount, ICA.InvalidAmountOut());
@@ -440,16 +434,42 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
                 _dust(user, data.asset, comet, amountOut - repaymentAmount);
             }
 
-            emit ICE.Covered(
-                user,
-                address(comet),
-                address(params.withdrawAsset),
-                params.withdrawAmount,
-                amountOut - (data.debt + data.fee)
-            );
+            if (mode == ICS.Mode.COVER) {
+                emit ICE.Covered(
+                    user,
+                    address(comet),
+                    address(params.withdrawAsset),
+                    params.withdrawAmount,
+                    amountOut - (data.debt + data.fee)
+                );
+            } else if (mode == ICS.Mode.EXCHANGE) {
+                emit ICE.Exchanged(
+                    user,
+                    address(comet),
+                    address(params.withdrawAsset),
+                    address(data.asset),
+                    params.withdrawAmount,
+                    amountOut
+                );
+            } else {
+                revert ICA.InvalidMode();
+            }
         }
 
         _repay(loanPlugin, data.flp, data.asset, repaymentAmount);
+    }
+
+    /**
+     * @notice Supplies and withdraws assets from the Comet market on behalf of a user
+     * @param comet The Comet market instance
+     * @param user The address of the user performing the operation
+     * @param params Parameters for supplying and withdrawing collateral
+     * @dev This function handles the actual supply and withdrawal of assets in the Comet market.
+     */
+    function _supplyWithdraw(IComet comet, address user, ICS.ProcessParams memory params) internal {
+        params.supplyAsset.safeIncreaseAllowance(address(comet), params.supplyAmount);
+        comet.supplyTo(user, params.supplyAsset, params.supplyAmount);
+        comet.withdrawFrom(user, address(this), params.withdrawAsset, params.withdrawAmount);
     }
 
     /**
@@ -565,25 +585,34 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
             ICA.InvalidSwapParameters()
         );
 
-        IComet.AssetInfo memory assetInfoFrom = comet.getAssetInfoByAddress(fromAsset);
-        IComet.AssetInfo memory assetInfoTo = comet.getAssetInfoByAddress(toAsset);
-
-        uint256 assetFromLiquidity = Math.mulDiv(
-            Math.mulDiv(fromAmount, comet.getPrice(assetInfoFrom.priceFeed), assetInfoFrom.scale),
-            assetInfoFrom.borrowCollateralFactor,
-            FACTOR_SCALE
-        );
-
-        uint256 assetInLiquidity = Math.mulDiv(
-            Math.mulDiv(minAmountOut, comet.getPrice(assetInfoTo.priceFeed), assetInfoTo.scale),
-            assetInfoTo.borrowCollateralFactor,
-            FACTOR_SCALE
-        );
-
         require(
-            Math.mulDiv(assetFromLiquidity, (PRECISION - maxHealthFactorDrop), PRECISION) < assetInLiquidity,
+            Math.mulDiv(
+                _calculateLiquidity(comet, fromAmount, comet.getAssetInfoByAddress(fromAsset)),
+                (PRECISION - maxHealthFactorDrop),
+                PRECISION
+            ) < _calculateLiquidity(comet, minAmountOut, comet.getAssetInfoByAddress(toAsset)),
             ICA.InsufficientLiquidity()
         );
+    }
+
+    /**
+     * @notice Calculates the liquidity contribution of a given asset amount in the Comet market
+     * @param comet The Comet comet interface
+     * @param amount Amount of the asset to evaluate
+     * @param assetInfo Asset information struct from Comet
+     * @return Liquidity value of the asset amount in base asset terms
+     */
+    function _calculateLiquidity(
+        IComet comet,
+        uint256 amount,
+        IComet.AssetInfo memory assetInfo
+    ) private view returns (uint256) {
+        return
+            Math.mulDiv(
+                Math.mulDiv(amount, comet.getPrice(assetInfo.priceFeed), assetInfo.scale),
+                assetInfo.borrowCollateralFactor,
+                FACTOR_SCALE
+            );
     }
 
     /**
@@ -692,7 +721,7 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
      * @param collateral Address of the collateral token
      * @param amount Collateral amount being processed
      * @param user Address of the user performing the operation
-     * @param mode Operation mode (EXECUTE or WITHDRAW)
+     * @param mode Operation mode (MULTIPLY or COVER)
      * @dev Uses EIP-1153 transient storage for gas-efficient temporary data storage
      */
     function _tstore(
@@ -727,7 +756,7 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
      * @return collateral Address of the collateral token
      * @return amount Collateral amount being processed
      * @return user Address of the user performing the operation
-     * @return mode Operation mode (EXECUTE or WITHDRAW)
+     * @return mode Operation mode (MULTIPLY or COVER)
      * @dev Automatically clears the storage slots after reading to prevent reuse
      */
     function _tload()

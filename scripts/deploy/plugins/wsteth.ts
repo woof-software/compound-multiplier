@@ -6,11 +6,11 @@ import { verify } from "../../utils/verify";
 async function main() {
     const [deployer] = await ethers.getSigners();
 
-    const endpoint = await ethers.deployContract("AAVEPlugin", [], deployer);
+    const endpoint = await ethers.deployContract("WstETHPlugin", [], deployer);
     await endpoint.waitForDeployment();
 
     const networkName = (await ethers.provider.getNetwork()).name;
-    console.log(`\nDeployed AAVE Plugin on ${networkName} to:`, endpoint.target);
+    console.log(`\nDeployed WstETH Plugin on ${networkName} to:`, endpoint.target);
 
     await verify(endpoint.target, []);
 
@@ -27,11 +27,11 @@ async function main() {
         deployments = JSON.parse(existingData);
     }
 
-    if (!deployments.loanPlugins) {
-        deployments.loanPlugins = {};
+    if (!deployments.swapPlugins) {
+        deployments.swapPlugins = {};
     }
 
-    deployments.loanPlugins.aave = {
+    deployments.swapPlugins.wsteth = {
         endpoint: endpoint.target
     };
 

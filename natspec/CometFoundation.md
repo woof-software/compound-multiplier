@@ -330,7 +330,7 @@ It uses transient storage to maintain state across the flash loan callback._
 | data       | struct ICometStructs.CallbackData  | Callback data containing flash loan details and swap information |
 | loanPlugin | address                            | Address of the flash loan plugin to use                          |
 | swapPlugin | address                            | Address of the swap plugin to use                                |
-| mode       | enum ICometStructs.Mode            | Operation mode, either EXECUTE (supply) or WITHDRAW              |
+| mode       | enum ICometStructs.Mode            | Operation mode, either MULTIPLY (supply) or COVER                |
 
 ### \_swap
 
@@ -494,7 +494,7 @@ _Uses EIP-1153 transient storage for gas-efficient temporary data storage_
 | collateral | contract IERC20         | Address of the collateral token              |
 | amount     | uint256                 | Collateral amount being processed            |
 | user       | address                 | Address of the user performing the operation |
-| mode       | enum ICometStructs.Mode | Operation mode (EXECUTE or WITHDRAW)         |
+| mode       | enum ICometStructs.Mode | Operation mode (MULTIPLY or COVER)           |
 
 ### \_tload
 
@@ -517,4 +517,4 @@ _Automatically clears the storage slots after reading to prevent reuse_
 | collateral | contract IERC20         | Address of the collateral token              |
 | amount     | uint256                 | Collateral amount being processed            |
 | user       | address                 | Address of the user performing the operation |
-| mode       | enum ICometStructs.Mode | Operation mode (EXECUTE or WITHDRAW)         |
+| mode       | enum ICometStructs.Mode | Operation mode (MULTIPLY or COVER)           |

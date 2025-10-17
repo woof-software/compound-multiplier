@@ -1,7 +1,7 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
 import { CometFoundation, EulerV2Plugin, IComet, IERC20, WstEthPlugin } from "../../../typechain-types";
-import { executeWithRetry, getQuote, LIFI_ROUTER } from "../../helpers/helpers";
+import { executeWithRetry, getQuote, LIFI_ROUTER, USDC_ADDRESS, USDC_EVAULT } from "../../helpers/helpers";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 
 import { LiFiPlugin } from "../../../typechain-types";
@@ -50,7 +50,20 @@ describe("Comet Multiplier Adapter / LiFI / wstETH", function () {
             .connect(signer)
             [
                 "multiply((address,address,address),address,uint256,uint256,bytes)"
-            ](market, WSTETH_ADDRESS, collateralAmount, leverageBps, ethers.AbiCoder.defaultAbiCoder().encode(["uint256"], [1]));
+            ](market, WETH_ADDRESS, collateralAmount, leverageBps, ethers.AbiCoder.defaultAbiCoder().encode(["uint256"], [1]));
+    }
+
+    async function multiplyFake(signer: SignerWithAddress, collateralAmount: bigint, leverageBps: number) {
+        await wsteth.connect(signer).approve(await adapter.getAddress(), collateralAmount);
+
+        const market = await getMarketOptions(true);
+
+        // @ts-ignore
+        return adapter
+            .connect(signer)
+            [
+                "multiply((address,address,address),address,uint256,uint256,bytes)"
+            ](market, USDC_ADDRESS, collateralAmount, leverageBps, ethers.AbiCoder.defaultAbiCoder().encode(["uint256"], [1]));
     }
 
     async function cover(signer: SignerWithAddress, collateralAmount: bigint, minAmountOut: bigint = 1n) {
@@ -96,10 +109,15 @@ describe("Comet Multiplier Adapter / LiFI / wstETH", function () {
         swapPlugin = await SwapFactory.deploy(opts);
 
         const lifiCfg = ethers.AbiCoder.defaultAbiCoder().encode(["address"], [LIFI_ROUTER]);
-        const eulerCfg = ethers.AbiCoder.defaultAbiCoder().encode(["address"], [WETH_EVAULT]);
 
         const plugins = [
-            { endpoint: await loanPlugin.getAddress(), config: eulerCfg },
+            {
+                endpoint: await loanPlugin.getAddress(),
+                config: ethers.AbiCoder.defaultAbiCoder().encode(
+                    ["tuple(address token, address pool)[]"],
+                    [[{ token: USDC_ADDRESS, pool: USDC_EVAULT }]]
+                )
+            },
             { endpoint: await swapPlugin.getAddress(), config: "0x" },
             { endpoint: await lifiPlugin.getAddress(), config: lifiCfg }
         ];
@@ -112,11 +130,13 @@ describe("Comet Multiplier Adapter / LiFI / wstETH", function () {
 
         adapter = await Adapter.deploy(plugins, await weth.getAddress(), opts);
 
+        const whale = await ethers.getImpersonatedSigner(WETH_WHALE);
         const wstethWhale = await ethers.getImpersonatedSigner(WSTETH_WHALE);
         await ethers.provider.send("hardhat_setBalance", [WSTETH_WHALE, "0xffffffffffffffffffffff"]);
 
         const fundAmount = ethers.parseEther("1.0");
         await wsteth.connect(wstethWhale).transfer(user.address, fundAmount);
+        await weth.connect(whale).transfer(user.address, fundAmount);
 
         const allowAbi = ["function allow(address,bool)"];
         const cometAsUser = new ethers.Contract(COMET_WETH_MARKET, allowAbi, user);
@@ -174,6 +194,16 @@ describe("Comet Multiplier Adapter / LiFI / wstETH", function () {
 
             expect(collateralBalance).to.be.gt(userBalance);
             expect(borrowBalance).to.be.gt(0);
+        });
+
+        it("Should revert when dst token is not wstETH", async function () {
+            const collateralAmount = ethers.parseEther("0.1");
+            const leverage = 20_000;
+
+            await expect(multiplyFake(user, collateralAmount, leverage)).to.be.revertedWithCustomError(
+                adapter,
+                "InvalidSwapParameters"
+            );
         });
     });
 

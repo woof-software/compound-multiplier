@@ -6,17 +6,16 @@ import { verify } from "../../utils/verify";
 async function main() {
     const [deployer] = await ethers.getSigners();
 
-    const endpoint = await ethers.deployContract("AAVEPlugin", [], deployer);
+    const endpoint = await ethers.deployContract("UniswapV3Plugin", [], deployer);
     await endpoint.waitForDeployment();
 
     const networkName = (await ethers.provider.getNetwork()).name;
-    console.log(`\nDeployed AAVE Plugin on ${networkName} to:`, endpoint.target);
+    console.log(`\nDeployed UniswapV3 Plugin on ${networkName} to:`, endpoint.target);
 
     await verify(endpoint.target, []);
 
     const deploymentsDir = path.join(__dirname, "../../../deployments");
     const deploymentFile = path.join(deploymentsDir, `${networkName}.json`);
-
     if (!fs.existsSync(deploymentsDir)) {
         fs.mkdirSync(deploymentsDir, { recursive: true });
     }
@@ -31,12 +30,13 @@ async function main() {
         deployments.loanPlugins = {};
     }
 
-    deployments.loanPlugins.aave = {
+    deployments.loanPlugins.uniswapV3 = {
         endpoint: endpoint.target
     };
 
     fs.writeFileSync(deploymentFile, JSON.stringify(deployments, null, 2));
     console.log(`Deployment info saved to: ${deploymentFile}`);
+    console.log(`Note: Configure UniswapV3 pools in deploy.config.ts under plugins.loanPlugins.uniswapV3Pools`);
 }
 
 main().catch((error) => {

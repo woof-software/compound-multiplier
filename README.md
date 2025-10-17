@@ -125,7 +125,7 @@ RESULT: User has 2x leveraged WETH position (1.996 WETH collateral, 2507.5 USDC 
    CometFoundation ──► Comet.supplyTo(user, 2507.5 USDC)
    ✅ User's debt: 0 USDC (paid off)
 
-5. WITHDRAW COLLATERAL
+5. COVER COLLATERAL
    CometFoundation ──► Comet.withdrawFrom(user, 1 WETH)
    ✅ Contract Balance: 1 WETH
 
@@ -171,11 +171,11 @@ RESULT: User deleveraged from 2x to 1x. Remaining 1 WETH collateral + no debt
    CometFoundation ──► Comet.supplyTo(user, 1000 USDC)
    ✅ User's USDC collateral increases, health factor improves
 
-6. WITHDRAW EXISTING COLLATERAL
+6. COVER EXISTING COLLATERAL
    CometFoundation ──► Comet.withdrawFrom(user, 0.5 WETH)
    ✅ Contract Balance: 1000 USDC + 0.5 WETH
 
-7. SWAP WITHDRAWN COLLATERAL
+7. SWAP COVERN COLLATERAL
    CometFoundation ──► SwapPlugin.swap(0.5 WETH → USDC)
    SwapPlugin ──► 1inch/LiFi.swap(0.5 WETH → 1005 USDC)
    ✅ Contract Balance: 2005 USDC total
