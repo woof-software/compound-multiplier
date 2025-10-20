@@ -1,49 +1,106 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.30;
+pragma solidity =0.8.30;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { ICometSwapPlugin } from "../../interfaces/ICometSwapPlugin.sol";
+import { IOneInchV6 } from "../../external/oneinch/IOneInchV6.sol";
+import { ICometFoundation } from "../../interfaces/ICometFoundation.sol";
+
+import { ICometAlerts as ICA } from "../../interfaces/ICometAlerts.sol";
+import { ICometEvents as ICE } from "../../interfaces/ICometEvents.sol";
 
 /**
  * @title OneInchV6SwapPlugin
- * @author WOOF!
- * @notice Swap plugin for integrating 1inch V6 aggregator with CometMultiplierAdapter
+ * @author WOOF! Software
+ * @custom:security-contact dmitriy@woof.software
+ * @notice Swap plugin for integrating 1inch V6 aggregator with CometMultiplier
  * @dev Implements ICometSwapPlugin interface to provide standardized token swap functionality
  *      using the 1inch V6 aggregation router for optimal swap execution
  */
 contract OneInchV6SwapPlugin is ICometSwapPlugin {
-    /// @notice Callback function selector for this swap plugin
-    /// @dev Used by CometMultiplierAdapter to identify and route swap calls to this plugin
-    bytes4 public constant CALLBACK_SELECTOR = 0x7a8c0f2b;
+    using SafeERC20 for IERC20;
+
+    bytes4 public constant SWAP_SELECTOR = IOneInchV6.swap.selector;
 
     /**
      * @inheritdoc ICometSwapPlugin
      */
-    function executeSwap(
+    function swap(
         address srcToken,
         address dstToken,
         uint256 amountIn,
-        uint256 minAmountOut,
         bytes calldata config,
         bytes calldata swapData
     ) external returns (uint256 amountOut) {
-        require(minAmountOut > 0, InvalidInput());
-        require(amountIn > 0, InvalidInput());
-        require(srcToken != dstToken, InvalidInput());
-        require(srcToken != address(0) && dstToken != address(0), ZeroAddress());
+        require(srcToken != address(0) && dstToken != address(0) && srcToken != dstToken, ICA.InvalidTokens());
+        require(amountIn > 0, ICA.InvalidAmountIn());
+
+        IOneInchV6.SwapDescription memory desc = _decodeSwapData(swapData);
+
+        _validateSwapParams(desc, srcToken, dstToken, amountIn);
 
         address router = abi.decode(config, (address));
-        IERC20(srcToken).approve(router, amountIn);
+        IERC20(srcToken).safeIncreaseAllowance(router, amountIn);
 
-        (bool ok, bytes memory ret) = router.call(swapData);
+        uint256 balBefore = IERC20(dstToken).balanceOf(address(this));
+
+        (bool ok, ) = router.call(swapData);
         if (!ok) {
             assembly {
-                revert(add(ret, 32), mload(ret))
+                let size := returndatasize()
+                returndatacopy(0, 0, size)
+                revert(0, size)
             }
         }
 
-        (amountOut, ) = abi.decode(ret, (uint256, uint256));
+        amountOut = IERC20(dstToken).balanceOf(address(this)) - balBefore;
+        require(amountOut >= desc.minReturnAmount, ICA.InvalidAmountOut());
 
-        emit SwapExecuted(router, srcToken, dstToken, amountOut);
+        emit ICE.Swap(router, srcToken, dstToken, amountOut);
+    }
+
+    /**
+     * @notice Decodes swapData for 1inch V6 swap
+     * @param swapData Encoded swap data from 1inch API
+     * @return desc Swap description with all parameters
+     */
+    function _decodeSwapData(bytes calldata swapData) internal pure returns (IOneInchV6.SwapDescription memory desc) {
+        // aderyn-fp-next-line(magic-number)
+        require(swapData.length > 4, ICA.InvalidSwapParameters());
+        // aderyn-fp-next-line(magic-number)
+        require(bytes4(swapData[:4]) == SWAP_SELECTOR, ICA.InvalidSelector());
+        (
+            ,
+            // address executor
+            desc,
+
+        ) = abi.decode(
+                // aderyn-fp-next-line(magic-number)
+                swapData[4:],
+                (address, IOneInchV6.SwapDescription, bytes)
+            ); // bytes memory data
+    }
+
+    /**
+     * @notice Validates the swap parameters
+     * @param desc Swap description from 1inch
+     * @param srcToken Expected source token
+     * @param dstToken Expected destination token
+     * @param amount Expected swap amount
+     */
+    function _validateSwapParams(
+        IOneInchV6.SwapDescription memory desc,
+        address srcToken,
+        address dstToken,
+        uint256 amount
+    ) internal view {
+        require(address(desc.srcToken) == srcToken && address(desc.dstToken) == dstToken, ICA.InvalidTokens());
+        require(desc.dstReceiver == address(this), ICA.InvalidReceiver());
+        require(desc.amount == amount && desc.minReturnAmount != 0, ICA.InvalidSwapParameters());
+    }
+
+    function supportsInterface(bytes4 interfaceId) external pure returns (bool) {
+        return interfaceId == type(ICometSwapPlugin).interfaceId;
     }
 }

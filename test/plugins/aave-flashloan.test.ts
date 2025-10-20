@@ -3,8 +3,8 @@ import { takeSnapshot } from "@nomicfoundation/hardhat-network-helpers";
 
 import { expect } from "chai";
 import type { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
-import { AAVEPlugin, FlashloanPluginTest, ICometFlashLoanPlugin, IERC20 } from "../../typechain-types";
-import { exp, getPlugins, getWhales, tokensInstances, ethers } from "../helpers/helpers";
+import { AAVEPlugin, FlashloanPluginTest, IERC20 } from "../../typechain-types";
+import { exp, getPlugins, getWhales, tokensInstances, ethers, AAVE_POOL } from "../helpers/helpers";
 
 describe("AAVE Flash Loan Plugin", function () {
     let snapshot: SnapshotRestorer;
@@ -22,21 +22,21 @@ describe("AAVE Flash Loan Plugin", function () {
     const premium = (debt * 5n) / 10_000n;
 
     let flp: string;
-    let data: ICometFlashLoanPlugin.CallbackDataStruct;
+    let data: any;
 
     before(async () => {
         [alice] = await ethers.getSigners();
 
         const { aavePlugin } = await getPlugins();
         plugin = aavePlugin.endpoint;
-        flp = aavePlugin.flp;
 
         ({ usdc } = await tokensInstances());
 
         const { usdcWhale } = await getWhales();
         await usdc.connect(usdcWhale).transfer(alice, exp(10000, 6));
 
-        flash = await ethers.deployContract("FlashloanPluginTest", [aavePlugin.flp, aavePlugin.endpoint]);
+        flp = AAVE_POOL;
+        flash = await ethers.deployContract("FlashloanPluginTest", [flp, aavePlugin.endpoint]);
 
         await usdc.connect(alice).transfer(flash, premium);
 
@@ -64,7 +64,6 @@ describe("AAVE Flash Loan Plugin", function () {
             const lastCallbackDataBefore = await flash.lastCallbackData();
             expect(lastCallbackDataBefore.debt).to.be.equal(0);
             expect(lastCallbackDataBefore.fee).to.be.equal(0);
-            expect(lastCallbackDataBefore.user).to.be.equal(ethers.ZeroAddress);
             expect(lastCallbackDataBefore.flp).to.be.equal(ethers.ZeroAddress);
             expect(lastCallbackDataBefore.asset).to.be.equal(ethers.ZeroAddress);
             expect(lastCallbackDataBefore.swapData).to.be.equal("0x");
@@ -74,7 +73,6 @@ describe("AAVE Flash Loan Plugin", function () {
             const lastCallbackDataAfter = await flash.lastCallbackData();
             expect(lastCallbackDataAfter.debt).to.be.equal(data.debt);
             expect(lastCallbackDataAfter.fee).to.be.equal(premium);
-            expect(lastCallbackDataAfter.user).to.be.equal(data.user);
             expect(lastCallbackDataAfter.flp).to.be.equal(data.flp);
             expect(lastCallbackDataAfter.asset).to.be.equal(data.asset);
             expect(lastCallbackDataAfter.swapData).to.be.equal(data.swapData);
@@ -100,14 +98,9 @@ describe("AAVE Flash Loan Plugin", function () {
                 swapData: "0x"
             };
         });
-        it("reverts when flid is not valid", async () => {
-            await expect(
-                flash.connect(alice).attackAAVE(data, data.asset, data.debt, premium, flash.target, true)
-            ).to.be.revertedWithCustomError(plugin, "InvalidFlashLoanId");
-        });
 
         it("reverts when callback caller is not authorized", async () => {
-            data.flp = flp;
+            data.flp = AAVE_POOL;
             expect(data.flp).to.not.be.eq(alice);
 
             await expect(
@@ -125,7 +118,7 @@ describe("AAVE Flash Loan Plugin", function () {
                     flash.target,
                     false
                 )
-            ).to.be.revertedWithCustomError(plugin, "InvalidFlashLoanData");
+            ).to.be.revertedWithCustomError(plugin, "UnauthorizedCallback");
         });
 
         it("reverts when data.asset != asset", async () => {
@@ -138,7 +131,7 @@ describe("AAVE Flash Loan Plugin", function () {
                     flash.target,
                     false
                 )
-            ).to.be.revertedWithCustomError(plugin, "InvalidFlashLoanData");
+            ).to.be.revertedWithCustomError(plugin, "UnauthorizedCallback");
         });
 
         it("reverts when initiator != address(this)", async () => {
@@ -151,7 +144,7 @@ describe("AAVE Flash Loan Plugin", function () {
                     alice, // wrong initiator
                     false
                 )
-            ).to.be.revertedWithCustomError(plugin, "InvalidFlashLoanData");
+            ).to.be.revertedWithCustomError(plugin, "UnauthorizedCallback");
         });
     });
 

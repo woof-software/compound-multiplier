@@ -21,7 +21,7 @@ All flash loan plugins implement the `ICometFlashLoanPlugin` interface, which pr
 ```solidity
 interface ICometFlashLoanPlugin {
   error UnauthorizedCallback();
-  error InvalidFlashLoanId();
+  error InvalidFlashLoanProvider();
   error InvalidFlashLoanData();
 
   struct CallbackData {
@@ -109,7 +109,7 @@ function protocolCallback(...) external returns (CallbackData memory _data) {
         tstore(slot, 0)              // Clear the slot
     }
 
-    require(keccak256(params) == flidExpected, InvalidFlashLoanId());
+    require(keccak256(params) == flidExpected, InvalidFlashLoanProvider());
     require(_data.flp == msg.sender, UnauthorizedCallback());
     // Additional validation...
 }
@@ -159,7 +159,7 @@ contract MyContract {
 
 ### Usage in Main Contracts
 
-Flash loan plugins are integrated into main contracts like `CometCollateralSwap` and `CometMultiplierAdapter`:
+Flash loan plugins are integrated into main contracts like `CometCollateralSwap` and `CometMultiplier`:
 
 1. **Plugin Registration**: Main contracts maintain arrays of available plugins
 2. **Dynamic Selection**: Plugins can be selected at runtime based on availability and cost

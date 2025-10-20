@@ -2,12 +2,21 @@ import { ethers, network } from "hardhat";
 import { deployConfig } from "./deploy.config";
 import * as fs from "fs";
 import * as path from "path";
+import { verify } from "../utils/verify";
+
+function encodePluginConfig(address: string): string {
+    return ethers.AbiCoder.defaultAbiCoder().encode(["address"], [address]);
+}
+
+function encodeBatchConfig(pools: { token: string; pool: string }[]): string {
+    return ethers.AbiCoder.defaultAbiCoder().encode(["tuple(address token, address pool)[]"], [pools]);
+}
 
 async function main() {
     const [deployer] = await ethers.getSigners();
     const networkName = network.name;
 
-    console.log("\nDeploying to:", networkName);
+    console.log("Network:", networkName);
     console.log("Deployer:", deployer.address);
     console.log("Balance:", ethers.formatEther(await ethers.provider.getBalance(deployer.address)), "ETH\n");
 
@@ -16,106 +25,124 @@ async function main() {
         throw new Error(`No config for network: ${networkName}`);
     }
 
+    const deploymentFile = path.join(__dirname, "..", "..", "deployments", `${networkName}.json`);
+    if (!fs.existsSync(deploymentFile)) {
+        throw new Error(`Plugins not deployed. Run deploy.plugins.ts first. Missing file: ${deploymentFile}`);
+    }
+
+    const deploymentData = JSON.parse(fs.readFileSync(deploymentFile, "utf8"));
+    if (!deploymentData.loanPlugins || !deploymentData.swapPlugins) {
+        throw new Error("Plugins data not found in deployment file");
+    }
+
     const gasPrice = network.config.gasPrice;
     const opts = gasPrice ? { gasPrice } : {};
 
-    const deployed: Record<string, string> = {};
     const pluginArray = [];
 
-    if (config.plugins.loanPlugins.morpho) {
-        console.log("Deploying MorphoPlugin...");
-        const Plugin = await ethers.getContractFactory("MorphoPlugin");
-        const plugin = await Plugin.deploy(opts);
-        await plugin.waitForDeployment();
-        deployed.morphoPlugin = await plugin.getAddress();
-        pluginArray.push({ endpoint: deployed.morphoPlugin, config: "0x" });
-        console.log("  " + deployed.morphoPlugin);
-    }
-
-    if (config.plugins.loanPlugins.euler) {
-        console.log("Deploying EulerV2Plugin...");
-        const Plugin = await ethers.getContractFactory("EulerV2Plugin");
-        const plugin = await Plugin.deploy(opts);
-        await plugin.waitForDeployment();
-        deployed.eulerPlugin = await plugin.getAddress();
-        pluginArray.push({ endpoint: deployed.eulerPlugin, config: "0x" });
-        console.log("  " + deployed.eulerPlugin);
-    }
-
-    if (config.plugins.loanPlugins.uniswapV3) {
-        console.log("Deploying UniswapV3Plugin...");
-        const Plugin = await ethers.getContractFactory("UniswapV3Plugin");
-        const plugin = await Plugin.deploy(opts);
-        await plugin.waitForDeployment();
-        deployed.uniswapPlugin = await plugin.getAddress();
-        pluginArray.push({ endpoint: deployed.uniswapPlugin, config: "0x" });
-        console.log("  " + deployed.uniswapPlugin);
-    }
-
-    if (config.plugins.swapPlugins.lifi) {
-        console.log("Deploying LiFiPlugin...");
-        const LiFi = await ethers.getContractFactory("LiFiPlugin");
-        const lifi = await LiFi.deploy(opts);
-        await lifi.waitForDeployment();
-        deployed.lifiPlugin = await lifi.getAddress();
+    if (deploymentData.loanPlugins.morpho) {
+        const morphoConfig = encodePluginConfig(config.plugins.loanPlugins.morpho);
         pluginArray.push({
-            endpoint: deployed.lifiPlugin,
-            config: ethers.AbiCoder.defaultAbiCoder().encode(["address"], [config.plugins.swapPlugins.lifi])
+            endpoint: deploymentData.loanPlugins.morpho.endpoint,
+            config: morphoConfig
         });
-        console.log("  " + deployed.lifiPlugin);
+        console.log("Added Morpho plugin:", deploymentData.loanPlugins.morpho.endpoint);
     }
 
-    if (config.plugins.swapPlugins.oneInch) {
-        console.log("Deploying OneInchV6SwapPlugin...");
-        const OneInch = await ethers.getContractFactory("OneInchV6SwapPlugin");
-        const oneInch = await OneInch.deploy(opts);
-        await oneInch.waitForDeployment();
-        deployed.oneInchPlugin = await oneInch.getAddress();
+    if (deploymentData.loanPlugins.euler) {
+        if (!config.plugins.loanPlugins.euler || config.plugins.loanPlugins.euler.length === 0) {
+            throw new Error("Euler V2 vaults configuration is required in deploy.config.ts");
+        }
+
+        const eulerConfig = encodeBatchConfig(config.plugins.loanPlugins.euler);
         pluginArray.push({
-            endpoint: deployed.oneInchPlugin,
-            config: ethers.AbiCoder.defaultAbiCoder().encode(["address"], [config.plugins.swapPlugins.oneInch])
+            endpoint: deploymentData.loanPlugins.euler.endpoint,
+            config: eulerConfig
         });
-        console.log("  " + deployed.oneInchPlugin);
+        console.log("Added Euler V2 plugin:", deploymentData.loanPlugins.euler.endpoint);
+        console.log("Vaults configured:", config.plugins.loanPlugins.euler.length);
     }
 
-    if (config.plugins.swapPlugins.wsteth) {
-        console.log("Deploying WstEthPlugin...");
-        const WstEth = await ethers.getContractFactory("WstEthPlugin");
-        const wstEth = await WstEth.deploy(opts);
-        await wstEth.waitForDeployment();
-        deployed.wstEthPlugin = await wstEth.getAddress();
+    if (deploymentData.loanPlugins.uniswapV3) {
+        if (!config.plugins.loanPlugins.uniswapV3Pools || config.plugins.loanPlugins.uniswapV3Pools.length === 0) {
+            throw new Error("UniswapV3 pools configuration is required in deploy.config.ts");
+        }
+
+        const uniswapV3Config = encodeBatchConfig(config.plugins.loanPlugins.uniswapV3Pools);
         pluginArray.push({
-            endpoint: deployed.wstEthPlugin,
-            config: ethers.AbiCoder.defaultAbiCoder().encode(["address"], [config.plugins.swapPlugins.wsteth])
+            endpoint: deploymentData.loanPlugins.uniswapV3.endpoint,
+            config: uniswapV3Config
         });
-        console.log("  " + deployed.wstEthPlugin);
+        console.log("Added Uniswap V3 plugin:", deploymentData.loanPlugins.uniswapV3.endpoint);
+        console.log("Pools configured:", config.plugins.loanPlugins.uniswapV3Pools.length);
     }
 
-    console.log("Deploying CometMultiplierAdapter...");
-    const Adapter = await ethers.getContractFactory("CometMultiplierAdapter");
+    if (deploymentData.loanPlugins.aave) {
+        const aaveConfig = encodePluginConfig(config.plugins.loanPlugins.aave);
+        pluginArray.push({
+            endpoint: deploymentData.loanPlugins.aave.endpoint,
+            config: aaveConfig
+        });
+        console.log("Added AAVE plugin:", deploymentData.loanPlugins.aave.endpoint);
+    }
+
+    if (deploymentData.loanPlugins.balancer) {
+        const balancerConfig = encodePluginConfig(config.plugins.loanPlugins.balancer);
+        pluginArray.push({
+            endpoint: deploymentData.loanPlugins.balancer.endpoint,
+            config: balancerConfig
+        });
+        console.log("Added Balancer plugin:", deploymentData.loanPlugins.balancer.endpoint);
+    }
+
+    if (deploymentData.swapPlugins.lifi) {
+        const lifiConfig = encodePluginConfig(config.plugins.swapPlugins.lifi);
+        pluginArray.push({
+            endpoint: deploymentData.swapPlugins.lifi.endpoint,
+            config: lifiConfig
+        });
+        console.log("Added LiFi plugin:", deploymentData.swapPlugins.lifi.endpoint);
+    }
+
+    if (deploymentData.swapPlugins.oneInch) {
+        const oneInchConfig = encodePluginConfig(config.plugins.swapPlugins.oneInch);
+        pluginArray.push({
+            endpoint: deploymentData.swapPlugins.oneInch.endpoint,
+            config: oneInchConfig
+        });
+        console.log("Added 1inch plugin:", deploymentData.swapPlugins.oneInch.endpoint);
+    }
+
+    if (deploymentData.swapPlugins.wsteth) {
+        pluginArray.push({
+            endpoint: deploymentData.swapPlugins.wsteth.endpoint,
+            config: "0x"
+        });
+        console.log("Added WstETH plugin:", deploymentData.swapPlugins.wsteth.endpoint);
+    }
+
+    console.log(`Deploying CometFoundation with ${pluginArray.length} plugins...`);
+
+    const Adapter = await ethers.getContractFactory("CometFoundation");
     const adapter = await Adapter.deploy(pluginArray, config.weth, opts);
     await adapter.waitForDeployment();
-    deployed.adapter = await adapter.getAddress();
-    console.log("  " + deployed.adapter);
 
-    const deploymentDir = path.join(__dirname, "..", "deployments");
-    if (!fs.existsSync(deploymentDir)) {
-        fs.mkdirSync(deploymentDir, { recursive: true });
+    const adapterAddress = await adapter.getAddress();
+
+    console.log("\nCometFoundation deployed:", adapterAddress);
+
+    console.log("\nVerifying contract on Etherscan...");
+    try {
+        await verify(adapterAddress, [pluginArray, config.weth]);
+        console.log("Contract verified");
+    } catch (error) {
+        console.warn("Verification failed:", error);
     }
-
-    const deploymentData = {
-        network: networkName,
-        chainId: network.config.chainId,
-        timestamp: new Date().toISOString(),
-        deployer: deployer.address,
-        contracts: deployed,
-        plugins: config.plugins
-    };
-
-    const outputPath = path.join(deploymentDir, `${networkName}.json`);
-    fs.writeFileSync(outputPath, JSON.stringify(deploymentData, null, 2));
-
-    console.log("\nDeployment saved to:", outputPath);
+    deploymentData.CometFoundation = adapterAddress;
+    deploymentData.foundationDeployedAt = new Date().toISOString();
+    fs.writeFileSync(deploymentFile, JSON.stringify(deploymentData, null, 2));
+    console.log("Deployment file:", deploymentFile);
+    console.log("Deployment completed.");
 }
 
 main()

@@ -1,10 +1,13 @@
 [
     "error InvalidFlashLoanData()",
-    "error InvalidFlashLoanId()",
+    "error InvalidFlashLoanProvider()",
+    "error SafeERC20FailedOperation(address token)",
     "error UnauthorizedCallback()",
+    "event FlashLoan(address indexed flp, address indexed asset, uint256 amount, uint256 fee)",
     "function CALLBACK_SELECTOR() view returns (bytes4)",
     "function SLOT_PLUGIN() view returns (bytes32)",
     "function repayFlashLoan(address flp, address baseAsset, uint256 amount)",
-    "function takeFlashLoan(tuple(uint256 debt, uint256 fee, uint256 snapshot, address user, address flp, address asset, bytes swapData) data, bytes) payable",
-    "function uniswapV3FlashCallback(uint256 fee0, uint256 fee1, bytes data) returns (tuple(uint256 debt, uint256 fee, uint256 snapshot, address user, address flp, address asset, bytes swapData) _data)"
+    "function supportsInterface(bytes4 interfaceId) pure returns (bool)",
+    "function takeFlashLoan(tuple(uint256 debt, uint256 fee, address flp, address asset, bytes swapData) data, bytes config) payable",
+    "function uniswapV3FlashCallback(uint256 fee0, uint256 fee1, bytes data) returns (tuple(uint256 debt, uint256 fee, address flp, address asset, bytes swapData) _data)"
 ]

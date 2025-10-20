@@ -1,12 +1,22 @@
 [
     {
         "inputs": [],
+        "name": "InvalidAmountIn",
+        "type": "error"
+    },
+    {
+        "inputs": [],
         "name": "InvalidAmountOut",
         "type": "error"
     },
     {
         "inputs": [],
-        "name": "InvalidInput",
+        "name": "InvalidReceiver",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "InvalidSelector",
         "type": "error"
     },
     {
@@ -16,12 +26,18 @@
     },
     {
         "inputs": [],
-        "name": "SwapFailed",
+        "name": "InvalidTokens",
         "type": "error"
     },
     {
-        "inputs": [],
-        "name": "ZeroAddress",
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            }
+        ],
+        "name": "SafeERC20FailedOperation",
         "type": "error"
     },
     {
@@ -48,16 +64,16 @@
             {
                 "indexed": false,
                 "internalType": "uint256",
-                "name": "actualAmountOut",
+                "name": "amountOut",
                 "type": "uint256"
             }
         ],
-        "name": "SwapExecuted",
+        "name": "Swap",
         "type": "event"
     },
     {
         "inputs": [],
-        "name": "CALLBACK_SELECTOR",
+        "name": "SWAP_SELECTOR",
         "outputs": [
             {
                 "internalType": "bytes4",
@@ -66,6 +82,25 @@
             }
         ],
         "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bytes4",
+                "name": "interfaceId",
+                "type": "bytes4"
+            }
+        ],
+        "name": "supportsInterface",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "pure",
         "type": "function"
     },
     {
@@ -86,11 +121,6 @@
                 "type": "uint256"
             },
             {
-                "internalType": "uint256",
-                "name": "minAmountOut",
-                "type": "uint256"
-            },
-            {
                 "internalType": "bytes",
                 "name": "config",
                 "type": "bytes"
@@ -101,7 +131,7 @@
                 "type": "bytes"
             }
         ],
-        "name": "executeSwap",
+        "name": "swap",
         "outputs": [
             {
                 "internalType": "uint256",

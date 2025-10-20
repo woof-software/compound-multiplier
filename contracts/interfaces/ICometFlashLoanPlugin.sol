@@ -1,21 +1,10 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.30;
+pragma solidity =0.8.30;
 
-interface ICometFlashLoanPlugin {
-    error UnauthorizedCallback();
-    error InvalidFlashLoanId();
-    error InvalidFlashLoanData();
+import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import { ICometStructs as ICS } from "./ICometStructs.sol";
 
-    struct CallbackData {
-        uint256 debt;
-        uint256 fee;
-        uint256 snapshot;
-        address user;
-        address flp;
-        address asset;
-        bytes swapData;
-    }
-
+interface ICometFlashLoanPlugin is IERC165 {
     /// @notice The selector of the callback function
     function CALLBACK_SELECTOR() external view returns (bytes4);
 
@@ -27,7 +16,7 @@ interface ICometFlashLoanPlugin {
      * @param data Flash loan parameters including debt amount, asset, and user information
      * @dev Stores flash loan ID in transient storage for callback validation
      */
-    function takeFlashLoan(CallbackData memory data, bytes memory) external payable;
+    function takeFlashLoan(ICS.CallbackData memory data, bytes memory) external payable;
 
     /**
      * @notice Repays the flash loan

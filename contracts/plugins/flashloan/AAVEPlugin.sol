@@ -1,19 +1,27 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
 import { IPool } from "contracts/external/aave/IPool.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { ICometFlashLoanPlugin } from "contracts/interfaces/ICometFlashLoanPlugin.sol";
+import { ICometStructs as ICS } from "contracts/interfaces/ICometStructs.sol";
+import { ICometAlerts as ICA } from "contracts/interfaces/ICometAlerts.sol";
+import { ICometEvents as ICE } from "contracts/interfaces/ICometEvents.sol";
 
 /**
  * @title AAVE Flash Loan Plugin
- * @author Woof Software
+ * @author WOOF! Software
+ * @custom:security-contact dmitriy@woof.software
  * @notice This contract implements a plugin for interacting with the AAVE protocol's flash loan feature. It allows a caller to request
  * a flash loan, handles the callback from AAVE when the loan is issued, and provides a method to approve repayment of the borrowed funds.
  * The contract uses a unique identifier to securely track each flash loan operation and ensures that only authorized callbacks are
- * processed. It is designed to be used as part of a larger system that supports composable flash loan plugins.
+ * processed. It is designed to be used as part of a larger system that supports composable flash loan plugins.\
  */
+// aderyn-fp-next-line(locked-ether)
 contract AAVEPlugin is ICometFlashLoanPlugin {
+    using SafeERC20 for IERC20;
+
     /// @inheritdoc ICometFlashLoanPlugin
     bytes4 public constant CALLBACK_SELECTOR = AAVEPlugin.executeOperation.selector;
     /// @inheritdoc ICometFlashLoanPlugin
@@ -22,16 +30,16 @@ contract AAVEPlugin is ICometFlashLoanPlugin {
     uint16 private constant REFERAL_CODE = 0;
 
     /// @inheritdoc ICometFlashLoanPlugin
-    function takeFlashLoan(CallbackData memory data, bytes memory) external payable {
+    function takeFlashLoan(ICS.CallbackData memory data, bytes memory config) external payable {
         bytes memory _data = abi.encode(data);
-        bytes32 flid = keccak256(_data);
         bytes32 slot = SLOT_PLUGIN;
+        address flp = abi.decode(config, (address));
 
         assembly {
-            tstore(slot, flid)
+            tstore(slot, flp)
         }
 
-        IPool(data.flp).flashLoanSimple(address(this), data.asset, data.debt, _data, REFERAL_CODE);
+        IPool(flp).flashLoanSimple(address(this), data.asset, data.debt, _data, REFERAL_CODE);
     }
 
     /**
@@ -48,25 +56,35 @@ contract AAVEPlugin is ICometFlashLoanPlugin {
         uint256 premium,
         address initiator,
         bytes calldata params
-    ) external returns (CallbackData memory _data) {
-        bytes32 flidExpected;
+    ) external returns (ICS.CallbackData memory _data) {
+        address flp;
         bytes32 slot = SLOT_PLUGIN;
         assembly {
-            flidExpected := tload(slot)
+            flp := tload(slot)
             tstore(slot, 0)
         }
-        require(keccak256(params) == flidExpected, InvalidFlashLoanId());
 
-        _data = abi.decode(params, (CallbackData));
+        _data = abi.decode(params, (ICS.CallbackData));
 
-        require(_data.flp == msg.sender, UnauthorizedCallback());
-        require(_data.debt == amount && _data.asset == asset && initiator == address(this), InvalidFlashLoanData());
+        require(flp == msg.sender, ICA.UnauthorizedCallback());
+
+        require(
+            _data.debt == amount && address(_data.asset) == asset && initiator == address(this),
+            ICA.InvalidFlashLoanData()
+        );
 
         _data.fee = premium;
+        _data.flp = flp;
+
+        emit ICE.FlashLoan(flp, asset, amount, premium);
     }
 
     /// @inheritdoc ICometFlashLoanPlugin
     function repayFlashLoan(address flp, address asset, uint256 amount) external {
-        IERC20(asset).approve(flp, amount);
+        IERC20(asset).safeIncreaseAllowance(flp, amount);
+    }
+
+    function supportsInterface(bytes4 interfaceId) external pure returns (bool) {
+        return interfaceId == type(ICometFlashLoanPlugin).interfaceId;
     }
 }

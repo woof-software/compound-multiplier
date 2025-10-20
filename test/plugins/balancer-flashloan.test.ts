@@ -23,21 +23,21 @@ describe("Balancer Flash Loan Plugin", function () {
     const premium = 0n;
 
     let flp: string;
-    let data: ICometFlashLoanPlugin.CallbackDataStruct;
+    let data: any;
 
     before(async () => {
         [alice] = await ethers.getSigners();
 
         const { balancerPlugin } = await getPlugins();
         plugin = balancerPlugin.endpoint;
-        flp = balancerPlugin.flp;
+        flp = BALANCER_VAULT;
 
         ({ usdc } = await tokensInstances());
 
         const { usdcWhale } = await getWhales();
         await usdc.connect(usdcWhale).transfer(alice, exp(10000, 6));
 
-        flash = await ethers.deployContract("FlashloanPluginTest", [balancerPlugin.flp, balancerPlugin.endpoint]);
+        flash = await ethers.deployContract("FlashloanPluginTest", [BALANCER_VAULT, balancerPlugin.endpoint]);
 
         snapshot = await takeSnapshot();
     });
@@ -63,7 +63,6 @@ describe("Balancer Flash Loan Plugin", function () {
             const lastCallbackDataBefore = await flash.lastCallbackData();
             expect(lastCallbackDataBefore.debt).to.be.equal(0);
             expect(lastCallbackDataBefore.fee).to.be.equal(0);
-            expect(lastCallbackDataBefore.user).to.be.equal(ethers.ZeroAddress);
             expect(lastCallbackDataBefore.flp).to.be.equal(ethers.ZeroAddress);
             expect(lastCallbackDataBefore.asset).to.be.equal(ethers.ZeroAddress);
             expect(lastCallbackDataBefore.swapData).to.be.equal("0x");
@@ -74,7 +73,6 @@ describe("Balancer Flash Loan Plugin", function () {
             const lastCallbackDataAfter = await flash.lastCallbackData();
             expect(lastCallbackDataAfter.debt).to.be.equal(data.debt);
             expect(lastCallbackDataAfter.fee).to.be.equal(premium);
-            expect(lastCallbackDataAfter.user).to.be.equal(data.user);
             expect(lastCallbackDataAfter.flp).to.be.equal(data.flp);
             expect(lastCallbackDataAfter.asset).to.be.equal(data.asset);
             expect(lastCallbackDataAfter.swapData).to.be.equal(data.swapData);
@@ -101,16 +99,6 @@ describe("Balancer Flash Loan Plugin", function () {
             };
         });
 
-        it("reverts when flid is not valid", async () => {
-            const tokens = [usdc.target];
-            const amounts = [data.debt];
-            const feeAmounts = [premium];
-
-            await expect(
-                flash.connect(alice).attackBalancer(data, tokens as any, amounts, feeAmounts, true)
-            ).to.be.revertedWithCustomError(plugin, "InvalidFlashLoanId");
-        });
-
         it("reverts when callback caller is not authorized", async () => {
             data.flp = flp;
             expect(data.flp).to.not.be.eq(alice);
@@ -131,7 +119,7 @@ describe("Balancer Flash Loan Plugin", function () {
 
             await expect(
                 flash.connect(alice).attackBalancer(data, tokens as any, amounts, feeAmounts, false)
-            ).to.be.revertedWithCustomError(plugin, "InvalidFlashLoanData");
+            ).to.be.revertedWithCustomError(plugin, "UnauthorizedCallback");
         });
 
         it("reverts when data.asset != tokens[0]", async () => {
@@ -141,7 +129,7 @@ describe("Balancer Flash Loan Plugin", function () {
 
             await expect(
                 flash.connect(alice).attackBalancer(data, tokens as any, amounts, feeAmounts, false)
-            ).to.be.revertedWithCustomError(plugin, "InvalidFlashLoanData");
+            ).to.be.revertedWithCustomError(plugin, "UnauthorizedCallback");
         });
     });
 

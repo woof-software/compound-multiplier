@@ -1,4 +1,0 @@
-[
-    "function submit(address) payable returns (uint256)",
-    "function withdraw(uint256,address)"
-]

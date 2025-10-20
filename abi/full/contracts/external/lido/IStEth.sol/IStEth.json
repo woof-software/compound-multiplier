@@ -1,4 +1,0 @@
-[
-    "function submit(address _referral) payable returns (uint256)",
-    "function withdraw(uint256 _amount, address _recipient)"
-]

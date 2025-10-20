@@ -1,31 +1,35 @@
 #!/usr/bin/env bash
-
-set -euo pipefail
-
-echo
+set -uo pipefail
 
 if ! command -v slither > /dev/null 2>&1; then
     echo "Slither is not found."
-    echo "Please, install Slither: "
-    echo "\`https://github.com/crytic/slither?tab=readme-ov-file#how-to-install\`."
-    echo
+    echo "Please install Slither from:"
+    echo "https://github.com/crytic/slither#how-to-install"
     exit 1
 fi
 
 REPORT_PATH="./SLITHER_REPORT.md"
 TMP_OUTPUT_FILE="./slither-cmd-output.txt"
 
+echo "Compiling contracts..."
+npx hardhat compile --quiet
+
 echo "Running Slither..."
-slither . --checklist > "$REPORT_PATH" 2> "$TMP_OUTPUT_FILE"
+slither . \
+    --checklist \
+    --exclude "naming-convention,solc-version,similar-names,timestamp" \
+    --filter-paths "node_modules|hardhat|@openzeppelin|contracts/interfaces|contracts/mocks|contracts/vendor|contracts-exposed|contracts/external|contracts/misc" \
+    > "$REPORT_PATH" 2> "$TMP_OUTPUT_FILE" || true
 
 echo "Preparing the Slither report..."
-echo "* * *" >> "$REPORT_PATH"
-echo "" >> "$REPORT_PATH"
-
-sed 's/$/\n/' "$TMP_OUTPUT_FILE" | cat >> "$REPORT_PATH"
+{
+    echo ""
+    echo "* * *"
+    echo ""
+    cat "$TMP_OUTPUT_FILE"
+} >> "$REPORT_PATH"
 
 rm -f "$TMP_OUTPUT_FILE"
 
-echo
+echo ""
 echo "The Slither report is stored in $REPORT_PATH."
-echo

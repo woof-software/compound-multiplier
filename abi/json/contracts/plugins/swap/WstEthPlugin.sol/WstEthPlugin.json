@@ -6,22 +6,18 @@
     },
     {
         "inputs": [],
-        "name": "InvalidInput",
-        "type": "error"
-    },
-    {
-        "inputs": [],
         "name": "InvalidSwapParameters",
         "type": "error"
     },
     {
-        "inputs": [],
-        "name": "SwapFailed",
-        "type": "error"
-    },
-    {
-        "inputs": [],
-        "name": "ZeroAddress",
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            }
+        ],
+        "name": "SafeERC20FailedOperation",
         "type": "error"
     },
     {
@@ -48,25 +44,12 @@
             {
                 "indexed": false,
                 "internalType": "uint256",
-                "name": "actualAmountOut",
+                "name": "amountOut",
                 "type": "uint256"
             }
         ],
-        "name": "SwapExecuted",
+        "name": "Swap",
         "type": "event"
-    },
-    {
-        "inputs": [],
-        "name": "CALLBACK_SELECTOR",
-        "outputs": [
-            {
-                "internalType": "bytes4",
-                "name": "",
-                "type": "bytes4"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
     },
     {
         "inputs": [],
@@ -76,6 +59,19 @@
                 "internalType": "address",
                 "name": "",
                 "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "SWAP_SELECTOR",
+        "outputs": [
+            {
+                "internalType": "bytes4",
+                "name": "",
+                "type": "bytes4"
             }
         ],
         "stateMutability": "view",
@@ -97,6 +93,25 @@
     {
         "inputs": [
             {
+                "internalType": "bytes4",
+                "name": "interfaceId",
+                "type": "bytes4"
+            }
+        ],
+        "name": "supportsInterface",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "pure",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
                 "internalType": "address",
                 "name": "srcToken",
                 "type": "address"
@@ -112,22 +127,17 @@
                 "type": "uint256"
             },
             {
-                "internalType": "uint256",
-                "name": "minAmountOut",
-                "type": "uint256"
-            },
-            {
                 "internalType": "bytes",
                 "name": "",
                 "type": "bytes"
             },
             {
                 "internalType": "bytes",
-                "name": "",
+                "name": "swapData",
                 "type": "bytes"
             }
         ],
-        "name": "executeSwap",
+        "name": "swap",
         "outputs": [
             {
                 "internalType": "uint256",

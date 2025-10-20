@@ -1,11 +1,14 @@
 module.exports = {
-    skipFiles: ["interfaces/", "mocks/", "vendor/"],
+    skipFiles: ["interfaces/", "misc/"],
     mocha: {
         fgrep: "[skip-on-coverage]", // Find everything with this tag.
         invert: true, // Run the grep's inverse set.
         enableTimeouts: false,
         parallel: false
     },
+
+    istanbulReporter: ["html", "lcov", "text", "json", "json-summary"],
+
     // measureStatementCoverage: false,
     // measureFunctionCoverage: false,
     irMinimum: !!process.env.VIA_IR, // Comment this line if "stack too deep" with `VIA_IR=true`.
