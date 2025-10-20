@@ -420,16 +420,17 @@ function _dust(address user, contract IERC20 asset, contract IComet comet, uint2
 
 Handles any leftover tokens by either supplying to Comet or transferring to the user
 
-_If the user has an outstanding borrow balance, the tokens are supplied to their_
+_If comet is address(0), tokens are always transferred to user.
+Otherwise, if asset is baseAsset, tokens are transferred; if collateral, they are supplied to Comet._
 
 #### Parameters
 
-| Name   | Type            | Description                                                                |
-| ------ | --------------- | -------------------------------------------------------------------------- |
-| user   | address         | Address of the user to receive leftover tokens if no borrow balance exists |
-| asset  | contract IERC20 | The ERC20 token to handle                                                  |
-| comet  | contract IComet | The Comet market instance                                                  |
-| amount | uint256         | Amount of tokens to handle                                                 |
+| Name   | Type            | Description                                                    |
+| ------ | --------------- | -------------------------------------------------------------- |
+| user   | address         | Address of the user to receive leftover tokens                 |
+| asset  | contract IERC20 | The ERC20 token to handle                                      |
+| comet  | contract IComet | The Comet market instance (or address(0) if supply not needed) |
+| amount | uint256         | Amount of tokens to handle                                     |
 
 ### \_validateExchange
 

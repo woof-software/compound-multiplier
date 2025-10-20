@@ -416,13 +416,7 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
 
             _supplyWithdraw(comet, user, params);
 
-            emit ICE.Multiplied(
-                user,
-                address(comet),
-                address(params.supplyAsset),
-                params.supplyAmount + amountOut,
-                data.debt
-            );
+            emit ICE.Multiplied(user, address(comet), address(params.supplyAsset), params.supplyAmount, data.debt);
         } else {
             _supplyWithdraw(comet, user, params);
 
@@ -430,18 +424,14 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
 
             require(amountOut >= repaymentAmount, ICA.InvalidAmountOut());
 
-            if (amountOut > repaymentAmount) {
-                _dust(user, data.asset, comet, amountOut - repaymentAmount);
+            uint256 dust = amountOut - repaymentAmount;
+
+            if (dust > 0) {
+                _dust(user, data.asset, mode == ICS.Mode.EXCHANGE ? comet : IComet(address(0)), dust);
             }
 
             if (mode == ICS.Mode.COVER) {
-                emit ICE.Covered(
-                    user,
-                    address(comet),
-                    address(params.withdrawAsset),
-                    params.withdrawAmount,
-                    amountOut - (data.debt + data.fee)
-                );
+                emit ICE.Covered(user, address(comet), address(params.withdrawAsset), params.withdrawAmount, dust);
             } else if (mode == ICS.Mode.EXCHANGE) {
                 emit ICE.Exchanged(
                     user,
@@ -539,14 +529,19 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
 
     /**
      * @notice Handles any leftover tokens by either supplying to Comet or transferring to the user
-     * @param user Address of the user to receive leftover tokens if no borrow balance exists
+     * @param user Address of the user to receive leftover tokens
      * @param asset The ERC20 token to handle
-     * @param comet The Comet market instance
+     * @param comet The Comet market instance (or address(0) if supply not needed)
      * @param amount Amount of tokens to handle
-     * @dev If the user has an outstanding borrow balance, the tokens are supplied to their
+     * @dev If comet is address(0), tokens are always transferred to user.
+     * Otherwise, if asset is baseAsset, tokens are transferred; if collateral, they are supplied to Comet.
      */
     function _dust(address user, IERC20 asset, IComet comet, uint256 amount) internal {
         if (amount == 0) return;
+        if (address(comet) == address(0)) {
+            asset.safeTransfer(user, amount);
+            return;
+        }
 
         IERC20 baseAsset = comet.baseToken();
 
