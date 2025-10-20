@@ -435,7 +435,7 @@ Otherwise, if asset is baseAsset, tokens are transferred; if collateral, they ar
 ### \_validateExchange
 
 ```solidity
-function _validateExchange(contract IComet comet, contract IERC20 fromAsset, contract IERC20 toAsset, uint256 fromAmount, uint256 minAmountOut, uint256 maxHealthFactorDrop) internal view
+function _validateExchange(contract IComet comet, address fromAsset, address toAsset, uint256 fromAmount, uint256 minAmountOut, uint256 maxHealthFactorDrop) internal view
 ```
 
 Validates parameters for a collateral swap to ensure health factor is maintained
@@ -447,8 +447,8 @@ _Reverts if any parameter is invalid or if the swap would violate health factor 
 | Name                | Type            | Description                                               |
 | ------------------- | --------------- | --------------------------------------------------------- |
 | comet               | contract IComet | The Comet comet interface                                 |
-| fromAsset           | contract IERC20 | The collateral asset being swapped from                   |
-| toAsset             | contract IERC20 | The collateral asset being swapped to                     |
+| fromAsset           | address         | The collateral asset being swapped from                   |
+| toAsset             | address         | The collateral asset being swapped to                     |
 | fromAmount          | uint256         | The amount of fromAsset to swap                           |
 | minAmountOut        | uint256         | The minimum acceptable amount of toAsset to receive       |
 | maxHealthFactorDrop | uint256         | The maximum allowed drop in health factor in basis points |
