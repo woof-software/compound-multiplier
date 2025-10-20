@@ -24,7 +24,7 @@ import { expect } from "chai";
 import { CometFoundation } from "../../typechain-types";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 
-describe("CometExchange", function () {
+describe.only("CometExchange", function () {
     let snapshot: SnapshotRestorer;
 
     // Contracts
@@ -283,6 +283,78 @@ describe("CometExchange", function () {
                         ](swapParams.opts, swapParams.fromAsset, swapParams.toAsset, swapParams.fromAmount, swapParams.minAmountOut, swapParams.maxHealthFactorDrop, swapParams.swapCalldata)
                 ).to.be.revertedWithCustomError(collateralSwap, "UnknownPlugin");
             });
+        });
+
+        it("reverts when fromAsset is baseAsset", async () => {
+            const swapParams: any = {
+                opts: {
+                    loanPlugin: await balancerPl.getAddress(),
+                    swapPlugin: lifiPlugin.endpoint,
+                    comet: await comet.getAddress()
+                },
+                fromAsset: await weth.getAddress(),
+                fromAmount: exp(0.1, 18),
+                toAsset: await rETH.getAddress(),
+                swapCalldata: "",
+                minAmountOut: 0n,
+                maxHealthFactorDrop: 1000
+            };
+
+            const { swapCalldata, toAmountMin } = await getQuote(
+                "ETH",
+                "ETH",
+                "WETH",
+                "rETH",
+                swapParams.fromAmount.toString(),
+                String(collateralSwap.target)
+            );
+
+            swapParams.swapCalldata = swapCalldata;
+            swapParams.minAmountOut = toAmountMin;
+
+            await expect(
+                collateralSwap
+                    .connect(alice)
+                    [
+                        "exchange((address,address,address),address,address,uint256,uint256,uint256,bytes)"
+                    ](swapParams.opts, swapParams.fromAsset, swapParams.toAsset, swapParams.fromAmount, swapParams.minAmountOut, swapParams.maxHealthFactorDrop, swapParams.swapCalldata)
+            ).to.be.revertedWithCustomError(collateralSwap, "InvalidSwapParameters");
+        });
+
+        it("reverts when toAsset is baseAsset", async () => {
+            const swapParams: any = {
+                opts: {
+                    loanPlugin: await balancerPl.getAddress(),
+                    swapPlugin: lifiPlugin.endpoint,
+                    comet: await comet.getAddress()
+                },
+                fromAsset: await wstETH.getAddress(),
+                fromAmount: exp(0.2, 18),
+                toAsset: await weth.getAddress(),
+                swapCalldata: "",
+                minAmountOut: 0n,
+                maxHealthFactorDrop: 1000
+            };
+
+            const { swapCalldata, toAmountMin } = await getQuote(
+                "ETH",
+                "ETH",
+                "wstETH",
+                "WETH",
+                swapParams.fromAmount.toString(),
+                String(collateralSwap.target)
+            );
+
+            swapParams.swapCalldata = swapCalldata;
+            swapParams.minAmountOut = toAmountMin;
+
+            await expect(
+                collateralSwap
+                    .connect(alice)
+                    [
+                        "exchange((address,address,address),address,address,uint256,uint256,uint256,bytes)"
+                    ](swapParams.opts, swapParams.fromAsset, swapParams.toAsset, swapParams.fromAmount, swapParams.minAmountOut, swapParams.maxHealthFactorDrop, swapParams.swapCalldata)
+            ).to.be.revertedWithCustomError(collateralSwap, "InvalidSwapParameters");
         });
 
         describe("swap", function () {

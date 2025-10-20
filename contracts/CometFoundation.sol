@@ -577,6 +577,7 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
             fromAsset != address(0) &&
                 toAsset != address(0) &&
                 fromAsset != baseAsset &&
+                toAsset != baseAsset &&
                 fromAsset != toAsset &&
                 minAmountOut > 0 &&
                 maxHealthFactorDrop < PRECISION,
