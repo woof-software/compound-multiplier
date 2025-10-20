@@ -24,7 +24,7 @@ import { expect } from "chai";
 import { CometFoundation } from "../../typechain-types";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 
-describe.only("CometExchange", function () {
+describe("CometExchange", function () {
     let snapshot: SnapshotRestorer;
 
     // Contracts
