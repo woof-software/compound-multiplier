@@ -269,7 +269,7 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
     ) internal {
         IComet comet = opts.comet;
 
-        _validateExchange(comet, fromAsset, toAsset, fromAmount, minAmountOut, maxHealthFactorDrop);
+        _validateExchange(comet, address(fromAsset), address(toAsset), fromAmount, minAmountOut, maxHealthFactorDrop);
 
         _tstore(
             toAsset.balanceOf(address(this)),
@@ -565,15 +565,18 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
      */
     function _validateExchange(
         IComet comet,
-        IERC20 fromAsset,
-        IERC20 toAsset,
+        address fromAsset,
+        address toAsset,
         uint256 fromAmount,
         uint256 minAmountOut,
         uint256 maxHealthFactorDrop
     ) internal view {
+        address baseAsset = address(comet.baseToken());
+
         require(
-            address(fromAsset) != address(0) &&
-                address(toAsset) != address(0) &&
+            fromAsset != address(0) &&
+                toAsset != address(0) &&
+                fromAsset != baseAsset &&
                 fromAsset != toAsset &&
                 minAmountOut > 0 &&
                 maxHealthFactorDrop < PRECISION,
@@ -582,10 +585,10 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
 
         require(
             Math.mulDiv(
-                _calculateLiquidity(comet, fromAmount, comet.getAssetInfoByAddress(fromAsset)),
+                _calculateLiquidity(comet, fromAmount, comet.getAssetInfoByAddress(IERC20(fromAsset))),
                 (PRECISION - maxHealthFactorDrop),
                 PRECISION
-            ) < _calculateLiquidity(comet, minAmountOut, comet.getAssetInfoByAddress(toAsset)),
+            ) < _calculateLiquidity(comet, minAmountOut, comet.getAssetInfoByAddress(IERC20(toAsset))),
             ICA.InsufficientLiquidity()
         );
     }
