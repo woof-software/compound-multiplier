@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
+import { ICometStructs as ICS } from "../interfaces/ICometStructs.sol";
 import { ICometFlashLoanPlugin } from "../interfaces/ICometFlashLoanPlugin.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -8,7 +9,7 @@ contract FlashloanPluginTest {
     address public flp;
     ICometFlashLoanPlugin public endpoint;
 
-    ICometFlashLoanPlugin.CallbackData public lastCallbackData;
+    ICS.CallbackData public lastCallbackData;
 
     uint256 public amm;
 
@@ -19,7 +20,7 @@ contract FlashloanPluginTest {
         endpoint = ICometFlashLoanPlugin(_endpoint);
     }
 
-    function flash(ICometFlashLoanPlugin.CallbackData memory data) external {
+    function flash(ICS.CallbackData memory data) external {
         (bool success, ) = address(endpoint).delegatecall(
             abi.encodeWithSelector(
                 ICometFlashLoanPlugin.takeFlashLoan.selector,
@@ -31,7 +32,7 @@ contract FlashloanPluginTest {
     }
 
     function attackAAVE(
-        ICometFlashLoanPlugin.CallbackData memory data,
+        ICS.CallbackData memory data,
         address asset,
         uint256 amount,
         uint256 premium,
@@ -54,7 +55,7 @@ contract FlashloanPluginTest {
     }
 
     function attackBalancer(
-        ICometFlashLoanPlugin.CallbackData memory data,
+        ICS.CallbackData memory data,
         IERC20[] memory tokens,
         uint256[] memory amounts,
         uint256[] memory feeAmounts,
@@ -74,15 +75,13 @@ contract FlashloanPluginTest {
         _catch(ok);
     }
 
-    function attackCallback() public pure returns (ICometFlashLoanPlugin.CallbackData memory) {
+    function attackCallback() public pure returns (ICS.CallbackData memory) {
         return
-            ICometFlashLoanPlugin.CallbackData({
+            ICS.CallbackData({
                 debt: 1000,
                 fee: 0,
-                snapshot: 0,
-                user: address(0),
                 flp: address(0),
-                asset: 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48,
+                asset: IERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48),
                 swapData: ""
             });
     }
@@ -90,7 +89,7 @@ contract FlashloanPluginTest {
     fallback() external payable {
         (, bytes memory payload) = address(endpoint).delegatecall(msg.data);
 
-        ICometFlashLoanPlugin.CallbackData memory data = abi.decode(payload, (ICometFlashLoanPlugin.CallbackData));
+        ICS.CallbackData memory data = abi.decode(payload, (ICS.CallbackData));
 
         lastCallbackData = data;
 

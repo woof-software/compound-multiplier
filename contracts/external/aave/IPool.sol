@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 interface IPool {
     /**
      * @notice Allows smartcontracts to access the liquidity of the pool within one transaction,
@@ -16,7 +18,7 @@ interface IPool {
      */
     function flashLoanSimple(
         address receiverAddress,
-        address asset,
+        IERC20 asset,
         uint256 amount,
         bytes calldata params,
         uint16 referralCode

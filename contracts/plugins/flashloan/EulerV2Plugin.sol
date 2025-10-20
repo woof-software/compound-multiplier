@@ -6,6 +6,9 @@ import { IEVault } from "../../external/euler/IEVault.sol";
 import { ICometFlashLoanPlugin } from "../../interfaces/ICometFlashLoanPlugin.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import { ICometStructs as ICS } from "../../interfaces/ICometStructs.sol";
+import { ICometAlerts as ICA } from "../../interfaces/ICometAlerts.sol";
+import { ICometEvents as ICE } from "../../interfaces/ICometEvents.sol";
 
 /**
  * @title EulerV2Plugin
@@ -14,8 +17,10 @@ import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol
  * @notice Flash loan plugin for integrating Euler V2 vaults with CometMultiplier
  * @dev Implements ICometFlashLoanPlugin interface to provide standardized flash loan functionality
  */
+// aderyn-fp-next-line(locked-ether)
 contract EulerV2Plugin is ICometFlashLoanPlugin {
     using SafeERC20 for IERC20;
+
     /// @notice Callback function selector for Euler V2 flash loans
     bytes4 public constant CALLBACK_SELECTOR = EulerV2Plugin.onFlashLoan.selector;
 
@@ -24,15 +29,43 @@ contract EulerV2Plugin is ICometFlashLoanPlugin {
 
     /**
      * @inheritdoc ICometFlashLoanPlugin
+     * @dev config encodes Pool[] with token->vault mappings
      */
-    function takeFlashLoan(CallbackData memory data, bytes memory) external payable {
-        bytes memory _data = abi.encode(data);
-        bytes32 flid = keccak256(_data);
+    function takeFlashLoan(ICS.CallbackData memory data, bytes memory config) external payable {
+        ICS.Pool[] memory vaults = abi.decode(config, (ICS.Pool[]));
+
+        address asset = address(data.asset);
+        address flp = _findVault(vaults, asset);
+
+        require(flp != address(0), ICA.InvalidFlashLoanProvider());
+
         bytes32 slot = SLOT_PLUGIN;
+
         assembly {
-            tstore(slot, flid)
+            tstore(slot, flp)
         }
-        IEVault(data.flp).flashLoan(data.debt, _data);
+
+        bytes memory _data = abi.encode(data);
+        IEVault(flp).flashLoan(data.debt, _data);
+    }
+
+    /**
+     * @notice Finds vault address for given asset
+     * @param vaults Array of token-to-vault mappings
+     * @param asset Asset address to find vault for
+     * @return vault Vault address, or address(0) if not found
+     */
+    function _findVault(ICS.Pool[] memory vaults, address asset) internal pure returns (address vault) {
+        uint256 length = vaults.length;
+        for (uint256 i = 0; i < length; ) {
+            if (vaults[i].token == asset) {
+                return vaults[i].pool;
+            }
+            unchecked {
+                ++i;
+            }
+        }
+        return address(0);
     }
 
     /**
@@ -48,16 +81,22 @@ contract EulerV2Plugin is ICometFlashLoanPlugin {
      * @return _data Decoded callback data for adapter processing
      * @dev Validates flash loan ID and sender authorization before processing
      */
-    function onFlashLoan(bytes calldata data) external returns (CallbackData memory _data) {
-        bytes32 flidExpected;
+    function onFlashLoan(bytes calldata data) external returns (ICS.CallbackData memory _data) {
+        address flp;
+
         bytes32 slot = SLOT_PLUGIN;
+
         assembly {
-            flidExpected := tload(slot)
+            flp := tload(slot)
             tstore(slot, 0)
         }
-        require(keccak256(data) == flidExpected, InvalidFlashLoanId());
-        _data = abi.decode(data, (CallbackData));
-        require(_data.flp == msg.sender, UnauthorizedCallback());
+
+        require(flp == msg.sender, ICA.UnauthorizedCallback());
+
+        _data = abi.decode(data, (ICS.CallbackData));
+        _data.flp = flp;
+
+        emit ICE.FlashLoan(flp, address(_data.asset), _data.debt, 0);
     }
 
     function supportsInterface(bytes4 interfaceId) external pure returns (bool) {

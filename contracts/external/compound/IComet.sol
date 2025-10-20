@@ -2,6 +2,7 @@
 pragma solidity =0.8.30;
 
 import { ICometExt } from "./ICometExt.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 /**
  * @title Compound's Comet Main Interface (without Ext)
@@ -27,23 +28,23 @@ interface IComet is ICometExt {
 
     error Unauthorized();
 
-    function supply(address asset, uint amount) external;
+    function supply(IERC20 asset, uint amount) external;
 
-    function supplyTo(address dst, address asset, uint amount) external;
+    function supplyTo(address dst, IERC20 asset, uint amount) external;
 
     function withdraw(address asset, uint amount) external;
 
-    function withdrawFrom(address src, address to, address asset, uint amount) external;
+    function withdrawFrom(address src, address to, IERC20 asset, uint amount) external;
 
-    function getAssetInfoByAddress(address asset) external view returns (AssetInfo memory);
+    function getAssetInfoByAddress(IERC20 asset) external view returns (AssetInfo memory);
 
     function getPrice(address priceFeed) external view returns (uint);
 
     function borrowBalanceOf(address account) external view returns (uint256);
 
-    function collateralBalanceOf(address account, address asset) external view returns (uint128);
+    function collateralBalanceOf(address account, IERC20 asset) external view returns (uint128);
 
-    function baseToken() external view returns (address);
+    function baseToken() external view returns (IERC20);
 
     function baseScale() external view returns (uint);
 

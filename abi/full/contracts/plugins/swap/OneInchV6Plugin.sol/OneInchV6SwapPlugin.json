@@ -1,11 +1,13 @@
 [
+    "error InvalidAmountIn()",
     "error InvalidAmountOut()",
-    "error InvalidInput()",
+    "error InvalidReceiver()",
+    "error InvalidSelector()",
     "error InvalidSwapParameters()",
+    "error InvalidTokens()",
     "error SafeERC20FailedOperation(address token)",
-    "error SwapFailed()",
-    "error ZeroAddress()",
-    "event SwapExecuted(address indexed router, address indexed srcToken, address indexed dstToken, uint256 amountOut)",
-    "function executeSwap(address srcToken, address dstToken, uint256 amountIn, uint256 minAmountOut, bytes config, bytes swapData) returns (uint256 amountOut)",
-    "function supportsInterface(bytes4 interfaceId) pure returns (bool)"
+    "event Swap(address indexed router, address indexed srcToken, address indexed dstToken, uint256 amountOut)",
+    "function SWAP_SELECTOR() view returns (bytes4)",
+    "function supportsInterface(bytes4 interfaceId) pure returns (bool)",
+    "function swap(address srcToken, address dstToken, uint256 amountIn, bytes config, bytes swapData) returns (uint256 amountOut)"
 ]
