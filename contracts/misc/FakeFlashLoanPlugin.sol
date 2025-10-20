@@ -4,6 +4,7 @@ pragma solidity =0.8.30;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import { IComet } from "../external/compound/IComet.sol";
+import { ICometStructs as ICS } from "../interfaces/ICometStructs.sol";
 import { ICometFlashLoanPlugin } from "../interfaces/ICometFlashLoanPlugin.sol";
 
 contract FakeFlashLoanPlugin is ICometFlashLoanPlugin {
@@ -14,7 +15,7 @@ contract FakeFlashLoanPlugin is ICometFlashLoanPlugin {
 
     bytes32 public constant SLOT_PLUGIN = bytes32(uint256(keccak256("FakeFalshLoanPlugin.plugin")) - 1);
 
-    function takeFlashLoan(CallbackData memory data, bytes memory) public payable {
+    function takeFlashLoan(ICS.CallbackData memory data, bytes memory) public payable {
         bytes memory _data = abi.encode(data);
         bytes32 flid = keccak256(_data);
         bytes32 slot = SLOT_PLUGIN;
@@ -36,8 +37,8 @@ contract FakeFlashLoanPlugin is ICometFlashLoanPlugin {
         IERC20(baseAsset).transfer(flp, amount);
     }
 
-    function onFlashLoan(bytes calldata data) external returns (CallbackData memory _data) {
-        _data = abi.decode(data, (CallbackData));
+    function onFlashLoan(bytes calldata data) external returns (ICS.CallbackData memory _data) {
+        _data = abi.decode(data, (ICS.CallbackData));
         uint256 allowance = IERC20(_data.asset).allowance(WHALE, address(this));
         if (allowance >= _data.debt) {
             IERC20(_data.asset).transferFrom(WHALE, address(this), _data.debt);

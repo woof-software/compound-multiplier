@@ -2,7 +2,7 @@
 pragma solidity =0.8.30;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { ICometFlashLoanPlugin } from "contracts/interfaces/ICometFlashLoanPlugin.sol";
+import { ICometStructs as ICS } from "contracts/interfaces/ICometStructs.sol";
 
 interface IFlashLoanRecipient {
     /**
@@ -19,5 +19,5 @@ interface IFlashLoanRecipient {
         uint256[] memory amounts,
         uint256[] memory feeAmounts,
         bytes memory userData
-    ) external returns (ICometFlashLoanPlugin.CallbackData memory _data);
+    ) external returns (ICS.CallbackData memory _data);
 }

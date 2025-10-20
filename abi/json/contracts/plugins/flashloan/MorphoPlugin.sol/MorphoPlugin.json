@@ -1,20 +1,5 @@
 [
     {
-        "inputs": [],
-        "name": "InvalidAmountOut",
-        "type": "error"
-    },
-    {
-        "inputs": [],
-        "name": "InvalidFlashLoanData",
-        "type": "error"
-    },
-    {
-        "inputs": [],
-        "name": "InvalidFlashLoanId",
-        "type": "error"
-    },
-    {
         "inputs": [
             {
                 "internalType": "address",
@@ -29,6 +14,37 @@
         "inputs": [],
         "name": "UnauthorizedCallback",
         "type": "error"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "flp",
+                "type": "address"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "asset",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "fee",
+                "type": "uint256"
+            }
+        ],
+        "name": "FlashLoan",
+        "type": "event"
     },
     {
         "inputs": [],
@@ -84,22 +100,12 @@
                         "type": "uint256"
                     },
                     {
-                        "internalType": "uint256",
-                        "name": "snapshot",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "address",
-                        "name": "user",
-                        "type": "address"
-                    },
-                    {
                         "internalType": "address",
                         "name": "flp",
                         "type": "address"
                     },
                     {
-                        "internalType": "address",
+                        "internalType": "contract IERC20",
                         "name": "asset",
                         "type": "address"
                     },
@@ -109,7 +115,7 @@
                         "type": "bytes"
                     }
                 ],
-                "internalType": "struct ICometFlashLoanPlugin.CallbackData",
+                "internalType": "struct ICometStructs.CallbackData",
                 "name": "_data",
                 "type": "tuple"
             }
@@ -174,22 +180,12 @@
                         "type": "uint256"
                     },
                     {
-                        "internalType": "uint256",
-                        "name": "snapshot",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "address",
-                        "name": "user",
-                        "type": "address"
-                    },
-                    {
                         "internalType": "address",
                         "name": "flp",
                         "type": "address"
                     },
                     {
-                        "internalType": "address",
+                        "internalType": "contract IERC20",
                         "name": "asset",
                         "type": "address"
                     },
@@ -199,13 +195,13 @@
                         "type": "bytes"
                     }
                 ],
-                "internalType": "struct ICometFlashLoanPlugin.CallbackData",
+                "internalType": "struct ICometStructs.CallbackData",
                 "name": "data",
                 "type": "tuple"
             },
             {
                 "internalType": "bytes",
-                "name": "",
+                "name": "config",
                 "type": "bytes"
             }
         ],

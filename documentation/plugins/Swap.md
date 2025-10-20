@@ -21,7 +21,7 @@ All swap plugins implement the `ICometSwapPlugin` interface, which provides a st
 
 ```solidity
 interface ICometSwapPlugin {
-  event SwapExecuted(
+  event Swap(
     address indexed router,
     address indexed srcToken,
     address indexed dstToken,
@@ -29,14 +29,14 @@ interface ICometSwapPlugin {
   );
 
   error InvalidAmountOut();
-  error InvalidInput();
+  error InvalidAmountIn();
   error ZeroAddress();
   error InvalidSwapParameters();
   error SwapFailed();
 
   function CALLBACK_SELECTOR() external view returns (bytes4);
 
-  function executeSwap(
+  function exchange(
     address srcToken,
     address dstToken,
     uint256 amountIn,
@@ -60,12 +60,12 @@ interface ICometSwapPlugin {
 
 #### Required Functions
 
-1. **`executeSwap()`**: Executes the token swap using the specific protocol
+1. **`exchange()`**: Executes the token swap using the specific protocol
 2. **`CALLBACK_SELECTOR()`**: Returns the function selector for protocol identification
 
 #### Events
 
-- **`SwapExecuted`**: Emitted when a swap is successfully completed, providing transparency about the swap execution
+- **`Swap`**: Emitted when a swap is successfully completed, providing transparency about the swap execution
 
 ## Validation Logic
 
@@ -88,7 +88,7 @@ Each swap plugin implements comprehensive validation logic to ensure security, p
 ### Example Validation Pattern
 
 ```solidity
-function executeSwap(
+function exchange(
   address srcToken,
   address dstToken,
   uint256 amountIn,
@@ -114,7 +114,7 @@ function executeSwap(
   amountOut = _extractAmountOut(result); // Plugin-specific extraction
   require(amountOut >= minAmountOut, InvalidAmountOut());
 
-  emit SwapExecuted(router, srcToken, dstToken, amountOut);
+  emit Swap(router, srcToken, dstToken, amountOut);
 }
 ```
 
@@ -161,7 +161,7 @@ contract SwapIntegratedContract {
     // Execute swap via plugin using delegatecall
     (bool success, bytes memory result) = swapPlugin.delegatecall(
       abi.encodeWithSelector(
-        ICometSwapPlugin.executeSwap.selector,
+        ICometSwapPlugin.exchange.selector,
         srcToken,
         dstToken,
         amountIn,
@@ -210,7 +210,7 @@ Swap plugins are integrated into main contracts like `CometCollateralSwap` and `
 Plugins implement comprehensive error handling with custom errors for different failure scenarios:
 
 - **`InvalidAmountOut`**: Output amount below minimum threshold
-- **`InvalidInput`**: Invalid input parameters or token addresses
+- **`InvalidAmountIn`**: Invalid input parameters or token addresses
 - **`ZeroAddress`**: Zero address provided where valid address required
 - **`InvalidSwapParameters`**: General parameter validation failures
 - **`SwapFailed`**: External swap call execution failures

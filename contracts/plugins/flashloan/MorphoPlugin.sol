@@ -5,6 +5,9 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IMorpho } from "../../external/morpho/IMorpho.sol";
 import { ICometFlashLoanPlugin } from "../../interfaces/ICometFlashLoanPlugin.sol";
+import { ICometStructs as ICS } from "../../interfaces/ICometStructs.sol";
+import { ICometAlerts as ICA } from "../../interfaces/ICometAlerts.sol";
+import { ICometEvents as ICE } from "../../interfaces/ICometEvents.sol";
 
 /**
  * @title MorphoPlugin
@@ -13,6 +16,7 @@ import { ICometFlashLoanPlugin } from "../../interfaces/ICometFlashLoanPlugin.so
  * @notice Flash loan plugin for integrating Morpho protocol with CometMultiplier
  * @dev Implements ICometFlashLoanPlugin interface to provide standardized flash loan functionality
  */
+// aderyn-fp-next-line(locked-ether)
 contract MorphoPlugin is ICometFlashLoanPlugin {
     using SafeERC20 for IERC20;
     /// @notice Callback function selector for Morpho flash loans
@@ -24,14 +28,13 @@ contract MorphoPlugin is ICometFlashLoanPlugin {
     /**
      * @inheritdoc ICometFlashLoanPlugin
      */
-    function takeFlashLoan(CallbackData memory data, bytes memory) external payable {
-        bytes memory _data = abi.encode(data);
-        bytes32 flid = keccak256(_data);
+    function takeFlashLoan(ICS.CallbackData memory data, bytes memory config) external payable {
+        address flp = abi.decode(config, (address));
         bytes32 slot = SLOT_PLUGIN;
         assembly {
-            tstore(slot, flid)
+            tstore(slot, flp)
         }
-        IMorpho(data.flp).flashLoan(data.asset, data.debt, _data);
+        IMorpho(flp).flashLoan(data.asset, data.debt, abi.encode(data));
     }
 
     /**
@@ -47,17 +50,17 @@ contract MorphoPlugin is ICometFlashLoanPlugin {
      * @return _data Decoded callback data for adapter processing
      * @dev Validates flash loan ID and sender authorization before processing
      */
-    function onMorphoFlashLoan(uint256, bytes calldata data) external returns (CallbackData memory _data) {
-        bytes32 flid = keccak256(data);
-        bytes32 flidExpected;
+    function onMorphoFlashLoan(uint256, bytes calldata data) external returns (ICS.CallbackData memory _data) {
+        address flp;
         bytes32 slot = SLOT_PLUGIN;
         assembly {
-            flidExpected := tload(slot)
+            flp := tload(slot)
             tstore(slot, 0)
         }
-        require(flid == flidExpected, InvalidFlashLoanId());
-        _data = abi.decode(data, (CallbackData));
-        require(_data.flp == msg.sender, UnauthorizedCallback());
+        require(flp == msg.sender, ICA.UnauthorizedCallback());
+        _data = abi.decode(data, (ICS.CallbackData));
+        _data.flp = flp;
+        emit ICE.FlashLoan(flp, address(_data.asset), _data.debt, 0);
     }
 
     function supportsInterface(bytes4 interfaceId) external pure returns (bool) {
