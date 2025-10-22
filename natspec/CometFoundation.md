@@ -86,7 +86,25 @@ Storage slot for transient data, derived from contract name hash
 address wEth
 ```
 
-Wrapped ETH (WETH) token address
+Returns the address of the Wrapped ETH (WETH) token
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+
+### treasury
+
+```solidity
+address treasury
+```
+
+Returns the address of the treasury
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
 
 ### plugins
 
@@ -130,7 +148,7 @@ Modifier to handle Comet's allowBySig for gasless approvals
 ### constructor
 
 ```solidity
-constructor(struct ICometStructs.Plugin[] _plugins, address _wEth) public payable
+constructor(struct ICometStructs.Plugin[] _plugins, address _wEth, address _treasury) public payable
 ```
 
 Initializes the adapter with flash loan and swap plugins
@@ -139,10 +157,11 @@ _Each plugin must have a valid non-zero callback selector_
 
 #### Parameters
 
-| Name      | Type                          | Description                                                                      |
-| --------- | ----------------------------- | -------------------------------------------------------------------------------- |
-| \_plugins | struct ICometStructs.Plugin[] | Array of plugin configurations containing endpoints and their callback selectors |
-| \_wEth    | address                       | Address of the Wrapped ETH (WETH) token                                          |
+| Name       | Type                          | Description                                                                      |
+| ---------- | ----------------------------- | -------------------------------------------------------------------------------- |
+| \_plugins  | struct ICometStructs.Plugin[] | Array of plugin configurations containing endpoints and their callback selectors |
+| \_wEth     | address                       | Address of the Wrapped ETH (WETH) token                                          |
+| \_treasury | address                       |                                                                                  |
 
 ### exchange
 
@@ -283,6 +302,20 @@ _This function first authorizes the adapter via allowBySig, then withdraws the p
 | collateralAmount | uint256                          | Amount of collateral tokens to withdraw (or type(uint256).max for maximum) |
 | swapData         | bytes                            | Encoded swap parameters for converting collateral to base asset            |
 | allowParams      | struct ICometStructs.AllowParams | EIP-712 signature parameters for Comet authorization                       |
+
+### rescue
+
+```solidity
+function rescue(contract IERC20 token) external
+```
+
+Sweeps all of a given token from the contract to the treasury
+
+#### Parameters
+
+| Name  | Type            | Description              |
+| ----- | --------------- | ------------------------ |
+| token | contract IERC20 | The ERC20 token to sweep |
 
 ### \_exchange
 
