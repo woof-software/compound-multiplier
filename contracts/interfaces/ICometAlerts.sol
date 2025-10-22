@@ -23,6 +23,12 @@ interface ICometAlerts {
      * @notice Emitted if wEth address is invalid
      */
     error InvalidWeth();
+
+    /**
+     * @notice Emitted if treasury address is invalid
+     */
+    error InvalidTreasury();
+
     /**
 
     //MULTIPLIER

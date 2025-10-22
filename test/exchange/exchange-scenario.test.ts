@@ -55,6 +55,8 @@ describe("CometExchange Scenarios", function () {
     let wbtcWhale: HardhatEthersSigner;
     let rsETHWhale: HardhatEthersSigner;
 
+    let treasury: HardhatEthersSigner;
+
     // constants
     const SUPPLY_AMOUNT = exp(2, 18);
     const BORROW_AMOUNT = exp(2.4, 18);
@@ -62,6 +64,7 @@ describe("CometExchange Scenarios", function () {
     before(async () => {
         const signers = await ethers.getSigners();
         alice = signers[6];
+        treasury = signers[9];
         const { balancerPlugin, aavePlugin } = await getPlugins();
 
         balancerFLP = BALANCER_VAULT;
@@ -89,7 +92,8 @@ describe("CometExchange Scenarios", function () {
                     config: ethers.AbiCoder.defaultAbiCoder().encode(["address"], [SWAP_ROUTER])
                 }
             ],
-            WETH_ADDRESS
+            WETH_ADDRESS,
+            await treasury.getAddress()
         ]);
 
         comet = await getComet();

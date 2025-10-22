@@ -7,7 +7,6 @@ import { ILiFi } from "../../external/lifi/ILiFi.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import { ICometStructs as ICS } from "../../interfaces/ICometStructs.sol";
 import { ICometAlerts as ICA } from "../../interfaces/ICometAlerts.sol";
 import { ICometEvents as ICE } from "../../interfaces/ICometEvents.sol";
 
@@ -71,9 +70,9 @@ contract LiFiPlugin is ICometSwapPlugin {
     function _decodeSwapData(
         bytes calldata swapData
     ) internal pure returns (address payable receiver, uint256 minAmountOut, ILiFi.SwapData[] memory swaps) {
-        // aderyn-fp-next-line(magic-number)
+        // aderyn-fp-next-line(literal-instead-of-constant)
         require(swapData.length > 4, ICA.InvalidSwapParameters());
-        // aderyn-fp-next-line(magic-number)
+        // aderyn-fp-next-line(literal-instead-of-constant)
         require(bytes4(swapData[:4]) == SWAP_SELECTOR, ICA.InvalidSelector());
         (
             ,
@@ -85,7 +84,8 @@ contract LiFiPlugin is ICometSwapPlugin {
             receiver,
             minAmountOut,
             swaps
-        ) = abi.decode(swapData[4:], (bytes32, string, string, address, uint256, ILiFi.SwapData[])); // aderyn-fp-next-line(magic-number)
+        ) = // aderyn-fp-next-line(literal-instead-of-constant)
+            abi.decode(swapData[4:], (bytes32, string, string, address, uint256, ILiFi.SwapData[]));
     }
 
     /**

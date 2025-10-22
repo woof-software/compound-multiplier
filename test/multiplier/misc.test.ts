@@ -26,6 +26,7 @@ describe("Comet Multiplier Adapter / Misc", function () {
     let user2: SignerWithAddress;
     let initialSnapshot: any;
     let whale2: SignerWithAddress;
+    let treasury: SignerWithAddress;
 
     async function getMarketOptions(_loanPlugin?: string, _swapPlugin?: string) {
         return {
@@ -43,7 +44,7 @@ describe("Comet Multiplier Adapter / Misc", function () {
             }
         ]);
 
-        [owner, user, user2] = await ethers.getSigners();
+        [owner, user, user2, treasury] = await ethers.getSigners();
 
         const LoanFactory = await ethers.getContractFactory("FakeFlashLoanPlugin", owner);
         loanPlugin = await LoanFactory.deploy(opts);
@@ -68,7 +69,7 @@ describe("Comet Multiplier Adapter / Misc", function () {
         usdc = await ethers.getContractAt("IERC20", USDC_ADDRESS);
         comet = await ethers.getContractAt("IComet", COMET_USDC_MARKET);
 
-        adapter = await Adapter.deploy(plugins, await weth.getAddress(), opts);
+        adapter = await Adapter.deploy(plugins, await weth.getAddress(), await treasury.getAddress(), opts);
 
         const whale = await ethers.getImpersonatedSigner(WETH_WHALE);
         whale2 = await ethers.getImpersonatedSigner(USDC_WHALE);
@@ -170,7 +171,7 @@ describe("Comet Multiplier Adapter / Misc", function () {
             ];
 
             const Adapter = await ethers.getContractFactory("CometFoundation", owner);
-            const adapter2 = await Adapter.deploy(plugins, await weth.getAddress(), opts);
+            const adapter2 = await Adapter.deploy(plugins, await weth.getAddress(), await treasury.getAddress(), opts);
 
             await weth.connect(user2).approve(await adapter2.getAddress(), ethers.parseEther("20"));
 
@@ -216,10 +217,28 @@ describe("Comet Multiplier Adapter / Misc", function () {
 
             const Adapter = await ethers.getContractFactory("CometFoundation", owner);
 
-            await expect(Adapter.deploy(plugins, ethers.ZeroAddress, opts)).to.be.revertedWithCustomError(
-                Adapter,
-                "InvalidWeth"
-            );
+            await expect(
+                Adapter.deploy(plugins, ethers.ZeroAddress, await treasury.getAddress(), opts)
+            ).to.be.revertedWithCustomError(Adapter, "InvalidWeth");
+        });
+
+        it("Should revert if invalid treasury address", async function () {
+            const plugins = [
+                {
+                    endpoint: await loanPlugin.getAddress(),
+                    config: "0x"
+                },
+                {
+                    endpoint: await swapPlugin.getAddress(),
+                    config: ethers.AbiCoder.defaultAbiCoder().encode(["address"], [ONE_INCH_ROUTER_V6])
+                }
+            ];
+
+            const Adapter = await ethers.getContractFactory("CometFoundation", owner);
+
+            await expect(
+                Adapter.deploy(plugins, await weth.getAddress(), ethers.ZeroAddress, opts)
+            ).to.be.revertedWithCustomError(Adapter, "InvalidTreasury");
         });
     });
 });

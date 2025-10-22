@@ -111,7 +111,11 @@ export async function getSwapPlugins() {
 }
 
 export async function deployCollateralSwap(flashLoanPlugins: Plugin[]): Promise<any> {
-    return (await ethers.deployContract("$CometFoundation", [flashLoanPlugins, WETH_ADDRESS])) as any;
+    return (await ethers.deployContract("$CometFoundation", [
+        flashLoanPlugins,
+        WETH_ADDRESS,
+        ethers.ZeroAddress
+    ])) as any;
 }
 
 export async function calcMinAmountOut(

@@ -33,6 +33,7 @@ describe.skip("Comet Multiplier Adapter / 1inch / Morpho", function () {
     let user: SignerWithAddress;
     let user2: SignerWithAddress;
     let initialSnapshot: any;
+    let treasury: SignerWithAddress;
 
     async function getMarketOptions() {
         return {
@@ -50,7 +51,7 @@ describe.skip("Comet Multiplier Adapter / 1inch / Morpho", function () {
             }
         ]);
 
-        [owner, user, user2] = await ethers.getSigners();
+        [owner, user, user2, treasury] = await ethers.getSigners();
 
         const LoanFactory = await ethers.getContractFactory("MorphoPlugin", owner);
         loanPlugin = await LoanFactory.deploy(opts);
@@ -75,7 +76,7 @@ describe.skip("Comet Multiplier Adapter / 1inch / Morpho", function () {
         usdc = await ethers.getContractAt("IERC20", USDC_ADDRESS);
         comet = await ethers.getContractAt("IComet", COMET_USDC_MARKET);
 
-        adapter = await Adapter.deploy(plugins, await weth.getAddress(), opts);
+        adapter = await Adapter.deploy(plugins, await weth.getAddress(), await treasury.getAddress(), opts);
 
         const whale = await ethers.getImpersonatedSigner(WETH_WHALE);
         await ethers.provider.send("hardhat_setBalance", [whale.address, "0xffffffffffffffffffffff"]);

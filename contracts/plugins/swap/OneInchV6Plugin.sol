@@ -5,7 +5,6 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { ICometSwapPlugin } from "../../interfaces/ICometSwapPlugin.sol";
 import { IOneInchV6 } from "../../external/oneinch/IOneInchV6.sol";
-import { ICometFoundation } from "../../interfaces/ICometFoundation.sol";
 
 import { ICometAlerts as ICA } from "../../interfaces/ICometAlerts.sol";
 import { ICometEvents as ICE } from "../../interfaces/ICometEvents.sol";
@@ -66,9 +65,9 @@ contract OneInchV6SwapPlugin is ICometSwapPlugin {
      * @return desc Swap description with all parameters
      */
     function _decodeSwapData(bytes calldata swapData) internal pure returns (IOneInchV6.SwapDescription memory desc) {
-        // aderyn-fp-next-line(magic-number)
+        // aderyn-fp-next-line(literal-instead-of-constant)
         require(swapData.length > 4, ICA.InvalidSwapParameters());
-        // aderyn-fp-next-line(magic-number)
+        // aderyn-fp-next-line(literal-instead-of-constant)
         require(bytes4(swapData[:4]) == SWAP_SELECTOR, ICA.InvalidSelector());
         (
             ,
@@ -76,10 +75,10 @@ contract OneInchV6SwapPlugin is ICometSwapPlugin {
             desc,
 
         ) = abi.decode(
-                // aderyn-fp-next-line(magic-number)
+                // aderyn-fp-next-line(literal-instead-of-constant)
                 swapData[4:],
                 (address, IOneInchV6.SwapDescription, bytes)
-            ); // bytes memory data
+            );
     }
 
     /**

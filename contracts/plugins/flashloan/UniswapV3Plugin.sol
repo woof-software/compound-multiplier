@@ -16,7 +16,7 @@ import { ICometEvents as ICE } from "../../interfaces/ICometEvents.sol";
  * @notice Flash loan plugin for integrating Uniswap V3 pools with CometMultiplier
  * @dev Implements ICometFlashLoanPlugin interface to provide standardized flash loan functionality
  */
-// aderyn-fp-next-line(locked-ether)
+// aderyn-fp-next-line(contract-locks-ether)
 contract UniswapV3Plugin is ICometFlashLoanPlugin {
     using SafeERC20 for IERC20;
 
@@ -64,12 +64,9 @@ contract UniswapV3Plugin is ICometFlashLoanPlugin {
      */
     function _findPool(ICS.Pool[] memory pools, address asset) internal pure returns (address pool) {
         uint256 length = pools.length;
-        for (uint256 i = 0; i < length; ) {
+        for (uint256 i = 0; i < length; ++i) {
             if (pools[i].token == asset) {
                 return pools[i].pool;
-            }
-            unchecked {
-                ++i;
             }
         }
         return address(0);

@@ -38,6 +38,8 @@ describe.skip("Comet Multiplier Adapter / 1inch / wstETH", function () {
     let user: SignerWithAddress;
     let initialSnapshot: any;
 
+    let treasury: SignerWithAddress;
+
     async function getMarketOptions(isIn: boolean) {
         return {
             comet: COMET_WETH_MARKET,
@@ -129,7 +131,7 @@ describe.skip("Comet Multiplier Adapter / 1inch / wstETH", function () {
             }
         ]);
 
-        [owner, user] = await ethers.getSigners();
+        [owner, user, treasury] = await ethers.getSigners();
 
         const LoanFactory = await ethers.getContractFactory("EulerV2Plugin", owner);
         loanPlugin = await LoanFactory.deploy(opts);
@@ -159,7 +161,7 @@ describe.skip("Comet Multiplier Adapter / 1inch / wstETH", function () {
         wsteth = await ethers.getContractAt("IERC20", WSTETH_ADDRESS);
         comet = await ethers.getContractAt("IComet", COMET_WETH_MARKET);
 
-        adapter = await Adapter.deploy(plugins, await weth.getAddress(), opts);
+        adapter = await Adapter.deploy(plugins, await weth.getAddress(), await treasury.getAddress(), opts);
 
         const wstethWhale = await ethers.getImpersonatedSigner(WSTETH_WHALE);
         await ethers.provider.send("hardhat_setBalance", [WSTETH_WHALE, "0xffffffffffffffffffffff"]);

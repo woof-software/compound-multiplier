@@ -16,6 +16,15 @@ interface ICometEvents {
      */
     event PluginAdded(address indexed endpoint, bytes4 indexed selector, bytes32 key);
 
+    /**
+     * @notice Emitted when dust tokens are rescued
+     * @param to The address receiving the rescued tokens
+     * @param token The address of the token being rescued
+     * @param comet The address of the Comet market from which dust is rescued
+     * @param amount The amount of tokens rescued
+     */
+    event Dust(address indexed to, address indexed token, address indexed comet, uint256 amount);
+
     // MULTIPLIER
 
     /**

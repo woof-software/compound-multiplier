@@ -31,6 +31,7 @@ describe("Comet Multiplier Adapter / LiFI / wstETH", function () {
     let owner: SignerWithAddress;
     let user: SignerWithAddress;
     let initialSnapshot: any;
+    let treasury: SignerWithAddress;
 
     async function getMarketOptions(isIn: boolean) {
         return {
@@ -97,7 +98,7 @@ describe("Comet Multiplier Adapter / LiFI / wstETH", function () {
             }
         ]);
 
-        [owner, user] = await ethers.getSigners();
+        [owner, user, treasury] = await ethers.getSigners();
 
         const LoanFactory = await ethers.getContractFactory("EulerV2Plugin", owner);
         loanPlugin = await LoanFactory.deploy(opts);
@@ -128,7 +129,7 @@ describe("Comet Multiplier Adapter / LiFI / wstETH", function () {
         wsteth = await ethers.getContractAt("IERC20", WSTETH_ADDRESS);
         comet = await ethers.getContractAt("IComet", COMET_WETH_MARKET);
 
-        adapter = await Adapter.deploy(plugins, await weth.getAddress(), opts);
+        adapter = await Adapter.deploy(plugins, await weth.getAddress(), await treasury.getAddress(), opts);
 
         const whale = await ethers.getImpersonatedSigner(WETH_WHALE);
         const wstethWhale = await ethers.getImpersonatedSigner(WSTETH_WHALE);

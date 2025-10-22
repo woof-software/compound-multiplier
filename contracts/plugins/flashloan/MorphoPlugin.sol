@@ -16,7 +16,7 @@ import { ICometEvents as ICE } from "../../interfaces/ICometEvents.sol";
  * @notice Flash loan plugin for integrating Morpho protocol with CometMultiplier
  * @dev Implements ICometFlashLoanPlugin interface to provide standardized flash loan functionality
  */
-// aderyn-fp-next-line(locked-ether)
+// aderyn-fp-next-line(contract-locks-ether)
 contract MorphoPlugin is ICometFlashLoanPlugin {
     using SafeERC20 for IERC20;
     /// @notice Callback function selector for Morpho flash loans

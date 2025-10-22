@@ -17,7 +17,7 @@ import { ICometEvents as ICE } from "contracts/interfaces/ICometEvents.sol";
  * The contract uses a unique identifier to securely track each flash loan operation and ensures that only authorized callbacks are
  * processed. It is designed to be used as part of a larger system that supports composable flash loan plugins.
  */
-// aderyn-fp-next-line(locked-ether)
+// aderyn-fp-next-line(contract-locks-ether)
 contract BalancerPlugin is IFlashLoanRecipient, ICometFlashLoanPlugin {
     using SafeERC20 for IERC20;
     /// @inheritdoc ICometFlashLoanPlugin

@@ -38,6 +38,7 @@ describe("Comet Multiplier Adapter / LiFi / Euler", function () {
     let user2: SignerWithAddress;
     let user3: SignerWithAddress;
     let initialSnapshot: any;
+    let treasury: SignerWithAddress;
 
     async function getMarketOptions() {
         return {
@@ -54,7 +55,7 @@ describe("Comet Multiplier Adapter / LiFi / Euler", function () {
             }
         ]);
 
-        [owner, user, user2, user3] = await ethers.getSigners();
+        [owner, user, user2, user3, treasury] = await ethers.getSigners();
 
         const LoanFactory = await ethers.getContractFactory("EulerV2Plugin", owner);
         loanPlugin = await LoanFactory.deploy(opts);
@@ -82,7 +83,7 @@ describe("Comet Multiplier Adapter / LiFi / Euler", function () {
         usdc = await ethers.getContractAt("IERC20", USDC_ADDRESS);
         comet = await ethers.getContractAt("IComet", COMET_USDC_MARKET);
 
-        adapter = await Adapter.deploy(plugins, WETH_ADDRESS, opts);
+        adapter = await Adapter.deploy(plugins, WETH_ADDRESS, await treasury.getAddress(), opts);
 
         const whale = await ethers.getImpersonatedSigner(WETH_WHALE);
         await ethers.provider.send("hardhat_setBalance", [whale.address, "0xffffffffffffffffffffff"]);

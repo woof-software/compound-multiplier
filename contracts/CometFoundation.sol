@@ -27,7 +27,7 @@ import { ICometFoundation } from "./interfaces/ICometFoundation.sol";
 /**
  * @title CometFoundation
  * @author WOOF! Software
- * @custom:security-contact
+ * @custom:security-contact dmitriy@woof.software
  * @notice This contract serves as a foundational component for managing plugins that facilitate flash loans and token swaps.
  * It maintains a registry of supported plugins, each identified by a unique key derived from the plugin's address and callback selector.
  * The contract provides internal functions to validate and interact with these plugins, ensuring secure and modular integration with various DeFi protocols.
@@ -43,19 +43,33 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
     bytes1 constant PLUGIN_MAGIC = 0x01;
 
     /// @notice Offset constants for transient storage slots
+    // aderyn-fp-next-line(unused-state-variable)
     uint8 internal constant SNAPSHOT_OFFSET = 0x20;
+    // aderyn-fp-next-line(unused-state-variable)
     uint8 internal constant LOAN_PLUGIN_OFFSET = 0x40;
+    // aderyn-fp-next-line(unused-state-variable)
     uint8 internal constant SWAP_PLUGIN_OFFSET = 0x60;
+    // aderyn-fp-next-line(unused-state-variable)
     uint8 internal constant MARKET_OFFSET = 0x80;
+    // aderyn-fp-next-line(unused-state-variable)
     uint8 internal constant ASSET_OFFSET = 0xA0;
+    // aderyn-fp-next-line(unused-state-variable)
     uint8 internal constant AMOUNT_OFFSET = 0xC0;
+    // aderyn-fp-next-line(unused-state-variable)
     uint8 internal constant USER_OFFSET = 0xE0;
 
     /// @notice Storage slot for transient data, derived from contract name hash
     bytes32 internal constant SLOT_FOUNDATION = bytes32(uint256(keccak256("CometFoundation.storage")) - 1);
 
-    /// @notice Wrapped ETH (WETH) token address
+    /**
+     * @inheritdoc ICometFoundation
+     */
     address public immutable wEth;
+
+    /**
+     * @inheritdoc ICometFoundation
+     */
+    address public immutable treasury;
 
     /// @notice Mapping of function selectors to their corresponding plugin configurations
     /// @dev Key is the callback selector, value contains plugin endpoint and configuration
@@ -107,9 +121,9 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
             });
 
         _process(comet, user, params, data, loanPlugin, swapPlugin, mode);
-        // aderyn-ignore-next-line(yul-block-return)
         assembly {
             mstore(0x00, 1)
+            // aderyn-fp-next-line(yul-return)
             return(0x00, 0x20)
         }
     }
@@ -135,33 +149,37 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
      * @param _wEth Address of the Wrapped ETH (WETH) token
      * @dev Each plugin must have a valid non-zero callback selector
      */
-    constructor(ICS.Plugin[] memory _plugins, address _wEth) payable {
+    constructor(ICS.Plugin[] memory _plugins, address _wEth, address _treasury) payable {
+        require(_wEth != address(0), ICA.InvalidWeth());
+        require(_treasury != address(0), ICA.InvalidTreasury());
+
+        treasury = _treasury;
+        wEth = _wEth;
+
         bytes4 pluginSelector;
 
-        for (uint256 i = 0; i < _plugins.length; i++) {
+        for (uint256 i = 0; i < _plugins.length; ++i) {
             ICS.Plugin memory plugin = _plugins[i];
 
+            // aderyn-fp-next-line(reentrancy-state-change)
             if (IERC165(plugin.endpoint).supportsInterface(type(ICometFlashLoanPlugin).interfaceId)) {
-                // aderyn-fp-next-line(reentrancy)
+                // aderyn-fp-next-line(reentrancy-state-change)
                 pluginSelector = ICometFlashLoanPlugin(plugin.endpoint).CALLBACK_SELECTOR();
-            } else if (IERC165(plugin.endpoint).supportsInterface(type(ICometSwapPlugin).interfaceId)) {
-                // aderyn-fp-next-line(reentrancy)
+            }
+            // aderyn-fp-next-line(reentrancy-state-change)
+            else if (IERC165(plugin.endpoint).supportsInterface(type(ICometSwapPlugin).interfaceId)) {
+                // aderyn-fp-next-line(reentrancy-state-change)
                 pluginSelector = ICometSwapPlugin(plugin.endpoint).SWAP_SELECTOR();
             } else {
                 revert ICA.UnknownPlugin();
             }
 
             bytes32 key = keccak256(abi.encodePacked(plugin.endpoint, pluginSelector));
-            // aderyn-fp-next-line(reentrancy)
+            // aderyn-fp-next-line(reentrancy-state-change)
             plugins[key] = abi.encodePacked(PLUGIN_MAGIC, plugin.config);
 
             emit ICE.PluginAdded(plugin.endpoint, pluginSelector, key);
         }
-
-        require(_wEth != address(0), ICA.InvalidWeth());
-
-        // aderyn-fp-next-line(reentrancy)
-        wEth = _wEth;
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -171,6 +189,7 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
     /**
      * @inheritdoc ICometExchange
      */
+    //  aderyn-fp-next-line(state-change-without-event)
     function exchange(
         ICS.Options calldata opts,
         IERC20 fromAsset,
@@ -186,6 +205,7 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
     /**
      * @inheritdoc ICometExchange
      */
+    //  aderyn-fp-next-line(state-change-without-event)
     function exchange(
         ICS.Options calldata opts,
         IERC20 fromAsset,
@@ -202,6 +222,7 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
     /**
      * @inheritdoc ICometMultiplier
      */
+    //  aderyn-fp-next-line(state-change-without-event)
     function multiply(
         ICS.Options calldata opts,
         IERC20 collateral,
@@ -215,6 +236,7 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
     /**
      * @inheritdoc ICometMultiplier
      */
+    //  aderyn-fp-next-line(state-change-without-event)
     function multiply(
         ICS.Options calldata opts,
         IERC20 collateral,
@@ -229,6 +251,7 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
     /**
      * @inheritdoc ICometCover
      */
+    //  aderyn-fp-next-line(state-change-without-event)
     function cover(
         ICS.Options calldata opts,
         IERC20 collateral,
@@ -241,6 +264,7 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
     /**
      * @inheritdoc ICometCover
      */
+    //  aderyn-fp-next-line(state-change-without-event)
     function cover(
         ICS.Options calldata opts,
         IERC20 collateral,
@@ -249,6 +273,14 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
         ICS.AllowParams calldata allowParams
     ) external nonReentrant allow(opts.comet, allowParams) {
         _cover(opts, collateral, collateralAmount, swapData);
+    }
+
+    /**
+     * @inheritdoc ICometFoundation
+     */
+    //  aderyn-fp-next-line(state-change-without-event)
+    function rescue(IERC20 token) external {
+        _dust(treasury, token, IComet(address(0)), token.balanceOf(address(this)));
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -538,19 +570,24 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
      */
     function _dust(address user, IERC20 asset, IComet comet, uint256 amount) internal {
         if (amount == 0) return;
-        if (address(comet) == address(0)) {
-            asset.safeTransfer(user, amount);
-            return;
-        }
 
-        IERC20 baseAsset = comet.baseToken();
-
-        if (asset == baseAsset) {
+        if (address(asset) == address(0)) {
+            // aderyn-fp-next-line(unsafe-erc20-operation)
+            payable(user).transfer(amount);
+        } else if (address(comet) == address(0)) {
             asset.safeTransfer(user, amount);
         } else {
-            asset.safeIncreaseAllowance(address(comet), amount);
-            comet.supplyTo(user, asset, amount);
+            IERC20 baseAsset = comet.baseToken();
+
+            if (asset == baseAsset) {
+                asset.safeTransfer(user, amount);
+            } else {
+                asset.safeIncreaseAllowance(address(comet), amount);
+                comet.supplyTo(user, asset, amount);
+            }
         }
+
+        emit ICE.Dust(user, address(asset), address(comet), amount);
     }
 
     /**
@@ -600,6 +637,8 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
      * @param amount Amount of the asset to evaluate
      * @param assetInfo Asset information struct from Comet
      * @return Liquidity value of the asset amount in base asset terms
+     * @dev Liquidity is calculated based on comet implementation.
+     * Implementation: https://github.com/compound-finance/comet/blob/main/contracts/Comet.sol#L544-L553
      */
     function _calculateLiquidity(
         IComet comet,
@@ -639,7 +678,7 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
                     Math.mulDiv(
                         collateralAmount,
                         comet.getPrice(info.priceFeed),
-                        // aderyn-fp-next-line(dynamic-decimals)
+                        // aderyn-fp-next-line(literal-instead-of-constant)
                         10 ** AggregatorV3Interface(info.priceFeed).decimals()
                     ),
                     comet.baseScale(),
@@ -663,7 +702,7 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
         address priceFeed = info.priceFeed;
 
         uint256 num = comet.getPrice(priceFeed) * comet.baseScale() * uint256(info.borrowCollateralFactor);
-        // aderyn-fp-next-line(dynamic-decimals)
+        // aderyn-fp-next-line(literal-instead-of-constant)
         uint256 den = (10 ** AggregatorV3Interface(priceFeed).decimals() * info.scale) * FACTOR_SCALE;
 
         return Math.mulDiv(collateralAmount, num, den);

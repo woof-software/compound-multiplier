@@ -56,6 +56,8 @@ describe("CometExchange", function () {
     let wstETHWhale: HardhatEthersSigner;
     let wbtcWhale: HardhatEthersSigner;
 
+    let treasury: HardhatEthersSigner;
+
     // constants
     const SUPPLY_AMOUNT = exp(2, 18);
     const BORROW_AMOUNT = exp(0.5, 18);
@@ -63,6 +65,7 @@ describe("CometExchange", function () {
     before(async () => {
         const signers = await ethers.getSigners();
         alice = signers[5];
+        treasury = signers[9];
         const { balancerPlugin, aavePlugin } = await getPlugins();
 
         balancerFLP = BALANCER_VAULT;
@@ -90,7 +93,8 @@ describe("CometExchange", function () {
                     config: ethers.AbiCoder.defaultAbiCoder().encode(["address"], [SWAP_ROUTER])
                 }
             ],
-            WETH_ADDRESS
+            WETH_ADDRESS,
+            await treasury.getAddress()
         ]);
 
         comet = await getComet();
@@ -114,7 +118,8 @@ describe("CometExchange", function () {
         it("deploys with correct params", async () => {
             const collateralSwap = await ethers.deployContract("CometFoundation", [
                 [balancerPluginA, aavePluginA, { endpoint: lifiPlugin.endpoint, config: "0x" }],
-                WETH_ADDRESS
+                WETH_ADDRESS,
+                await treasury.getAddress()
             ]);
 
             // Check plugins
@@ -148,7 +153,8 @@ describe("CometExchange", function () {
 
             const tx = await ethers.deployContract("CometFoundation", [
                 [balancerPluginA, aavePluginA, { endpoint: lifiPlugin.endpoint, config: "0x" }],
-                WETH_ADDRESS
+                WETH_ADDRESS,
+                await treasury.getAddress()
             ]);
 
             await expect(tx.deploymentTransaction())

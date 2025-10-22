@@ -17,7 +17,7 @@ import { ICometEvents as ICE } from "../../interfaces/ICometEvents.sol";
  * @notice Flash loan plugin for integrating Euler V2 vaults with CometMultiplier
  * @dev Implements ICometFlashLoanPlugin interface to provide standardized flash loan functionality
  */
-// aderyn-fp-next-line(locked-ether)
+// aderyn-fp-next-line(contract-locks-ether)
 contract EulerV2Plugin is ICometFlashLoanPlugin {
     using SafeERC20 for IERC20;
 
@@ -57,12 +57,9 @@ contract EulerV2Plugin is ICometFlashLoanPlugin {
      */
     function _findVault(ICS.Pool[] memory vaults, address asset) internal pure returns (address vault) {
         uint256 length = vaults.length;
-        for (uint256 i = 0; i < length; ) {
+        for (uint256 i = 0; i < length; ++i) {
             if (vaults[i].token == asset) {
                 return vaults[i].pool;
-            }
-            unchecked {
-                ++i;
             }
         }
         return address(0);
