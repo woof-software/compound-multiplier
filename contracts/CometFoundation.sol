@@ -128,21 +128,6 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
         }
     }
 
-    /// @notice Modifier to handle Comet's allowBySig for gasless approvals
-    modifier allow(IComet comet, ICS.AllowParams calldata allowParams) {
-        comet.allowBySig(
-            msg.sender,
-            address(this),
-            true,
-            allowParams.nonce,
-            allowParams.expiry,
-            allowParams.v,
-            allowParams.r,
-            allowParams.s
-        );
-        _;
-    }
-
     /**
      * @notice Initializes the adapter with flash loan and swap plugins
      * @param _plugins Array of plugin configurations containing endpoints and their callback selectors
@@ -215,7 +200,8 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
         uint256 maxHealthFactorDrop,
         bytes calldata swapData,
         ICS.AllowParams calldata allowParams
-    ) external nonReentrant allow(opts.comet, allowParams) {
+    ) external nonReentrant {
+        _allow(opts.comet, allowParams);
         _exchange(opts, fromAsset, toAsset, fromAmount, minAmountOut, maxHealthFactorDrop, swapData);
     }
 
@@ -244,7 +230,8 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
         uint256 leverage,
         bytes calldata swapData,
         ICS.AllowParams calldata allowParams
-    ) external payable nonReentrant allow(opts.comet, allowParams) {
+    ) external payable nonReentrant {
+        _allow(opts.comet, allowParams);
         _multiply(opts, collateral, collateralAmount, leverage, swapData);
     }
 
@@ -271,7 +258,8 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
         uint256 collateralAmount,
         bytes calldata swapData,
         ICS.AllowParams calldata allowParams
-    ) external nonReentrant allow(opts.comet, allowParams) {
+    ) external nonReentrant {
+        _allow(opts.comet, allowParams);
         _cover(opts, collateral, collateralAmount, swapData);
     }
 
@@ -588,6 +576,25 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
         }
 
         emit ICE.Dust(user, address(asset), address(comet), amount);
+    }
+
+    /**
+     * @notice Grants allowance to the foundation contract via signature
+     * @param comet The Comet comet interface
+     * @param allowParams Parameters for the allowance signature
+     * @dev Calls comet.allowBySig to set allowance for this contract
+     */
+    function _allow(IComet comet, ICS.AllowParams calldata allowParams) internal {
+        comet.allowBySig(
+            msg.sender,
+            address(this),
+            true,
+            allowParams.nonce,
+            allowParams.expiry,
+            allowParams.v,
+            allowParams.r,
+            allowParams.s
+        );
     }
 
     /**
