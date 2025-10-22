@@ -22,6 +22,11 @@
                 "internalType": "address",
                 "name": "_wEth",
                 "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "_treasury",
+                "type": "address"
             }
         ],
         "stateMutability": "payable",
@@ -60,6 +65,11 @@
     {
         "inputs": [],
         "name": "InvalidSwapParameters",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "InvalidTreasury",
         "type": "error"
     },
     {
@@ -128,6 +138,37 @@
             }
         ],
         "name": "Covered",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "to",
+                "type": "address"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "comet",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "Dust",
         "type": "event"
     },
     {
@@ -685,6 +726,32 @@
                 "internalType": "bytes",
                 "name": "",
                 "type": "bytes"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "contract IERC20",
+                "name": "token",
+                "type": "address"
+            }
+        ],
+        "name": "rescue",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "treasury",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
             }
         ],
         "stateMutability": "view",

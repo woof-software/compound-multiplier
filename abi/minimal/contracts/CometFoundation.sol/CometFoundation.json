@@ -1,5 +1,5 @@
 [
-    "constructor(tuple(address,bytes)[],address) payable",
+    "constructor(tuple(address,bytes)[],address,address) payable",
     "error InsufficientLiquidity()",
     "error InvalidAmountIn()",
     "error InvalidAmountOut()",
@@ -7,12 +7,14 @@
     "error InvalidLeverage()",
     "error InvalidMode()",
     "error InvalidSwapParameters()",
+    "error InvalidTreasury()",
     "error InvalidWeth()",
     "error NothingToDeleverage()",
     "error ReentrancyGuardReentrantCall()",
     "error SafeERC20FailedOperation(address)",
     "error UnknownPlugin()",
     "event Covered(address indexed,address indexed,address,uint256,uint256)",
+    "event Dust(address indexed,address indexed,address indexed,uint256)",
     "event Exchanged(address indexed,address indexed,address,address,uint256,uint256)",
     "event Multiplied(address indexed,address indexed,address indexed,uint256,uint256)",
     "event PluginAdded(address indexed,bytes4 indexed,bytes32)",
@@ -25,5 +27,7 @@
     "function multiply(tuple(address,address,address),address,uint256,uint256,bytes) payable",
     "function multiply(tuple(address,address,address),address,uint256,uint256,bytes,tuple(uint256,uint256,bytes32,bytes32,uint8)) payable",
     "function plugins(bytes32) view returns (bytes)",
+    "function rescue(address)",
+    "function treasury() view returns (address)",
     "function wEth() view returns (address)"
 ]

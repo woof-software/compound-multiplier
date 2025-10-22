@@ -1,5 +1,5 @@
 [
-    "constructor(tuple(address endpoint, bytes config)[] _plugins, address _wEth) payable",
+    "constructor(tuple(address endpoint, bytes config)[] _plugins, address _wEth, address _treasury) payable",
     "error InsufficientLiquidity()",
     "error InvalidAmountIn()",
     "error InvalidAmountOut()",
@@ -7,12 +7,14 @@
     "error InvalidLeverage()",
     "error InvalidMode()",
     "error InvalidSwapParameters()",
+    "error InvalidTreasury()",
     "error InvalidWeth()",
     "error NothingToDeleverage()",
     "error ReentrancyGuardReentrantCall()",
     "error SafeERC20FailedOperation(address token)",
     "error UnknownPlugin()",
     "event Covered(address indexed user, address indexed comet, address collateral, uint256 withdrawnAmount, uint256 amountOut)",
+    "event Dust(address indexed to, address indexed token, address indexed comet, uint256 amount)",
     "event Exchanged(address indexed user, address indexed comet, address fromAsset, address toAsset, uint256 fromAmount, uint256 amountOut)",
     "event Multiplied(address indexed user, address indexed comet, address indexed collateral, uint256 multipliedAmount, uint256 debt)",
     "event PluginAdded(address indexed endpoint, bytes4 indexed selector, bytes32 key)",
@@ -25,5 +27,7 @@
     "function multiply(tuple(address comet, address loanPlugin, address swapPlugin) opts, address collateral, uint256 collateralAmount, uint256 leverage, bytes swapData) payable",
     "function multiply(tuple(address comet, address loanPlugin, address swapPlugin) opts, address collateral, uint256 collateralAmount, uint256 leverage, bytes swapData, tuple(uint256 nonce, uint256 expiry, bytes32 r, bytes32 s, uint8 v) allowParams) payable",
     "function plugins(bytes32) view returns (bytes)",
+    "function rescue(address token)",
+    "function treasury() view returns (address)",
     "function wEth() view returns (address)"
 ]
