@@ -137,14 +137,6 @@ Fallback function to handle plugin calls via delegatecall
 _This function processes calls to flash loan and swap plugins, managing the entire lifecycle of a flash loan operation.
 It retrieves transient data from storage, validates the call, and orchestrates the flash loan process including swaps and collateral management._
 
-### allow
-
-```solidity
-modifier allow(contract IComet comet, struct ICometStructs.AllowParams allowParams)
-```
-
-Modifier to handle Comet's allowBySig for gasless approvals
-
 ### constructor
 
 ```solidity
@@ -464,6 +456,23 @@ Otherwise, if asset is baseAsset, tokens are transferred; if collateral, they ar
 | asset  | contract IERC20 | The ERC20 token to handle                                      |
 | comet  | contract IComet | The Comet market instance (or address(0) if supply not needed) |
 | amount | uint256         | Amount of tokens to handle                                     |
+
+### \_allow
+
+```solidity
+function _allow(contract IComet comet, struct ICometStructs.AllowParams allowParams) internal
+```
+
+Grants allowance to the foundation contract via signature
+
+_Calls comet.allowBySig to set allowance for this contract_
+
+#### Parameters
+
+| Name        | Type                             | Description                            |
+| ----------- | -------------------------------- | -------------------------------------- |
+| comet       | contract IComet                  | The Comet comet interface              |
+| allowParams | struct ICometStructs.AllowParams | Parameters for the allowance signature |
 
 ### \_validateExchange
 
