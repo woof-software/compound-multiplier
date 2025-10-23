@@ -41,7 +41,7 @@ async function main() {
     const pluginArray = [];
 
     if (deploymentData.loanPlugins.morpho) {
-        const morphoConfig = encodePluginConfig(config.plugins.loanPlugins.morpho);
+        const morphoConfig = encodePluginConfig(config.plugins.loanPlugins.morpho!);
         pluginArray.push({
             endpoint: deploymentData.loanPlugins.morpho.endpoint,
             config: morphoConfig
@@ -64,21 +64,21 @@ async function main() {
     }
 
     if (deploymentData.loanPlugins.uniswapV3) {
-        if (!config.plugins.loanPlugins.uniswapV3Pools || config.plugins.loanPlugins.uniswapV3Pools.length === 0) {
+        if (!config.plugins.loanPlugins.uniswapV3 || config.plugins.loanPlugins.uniswapV3.length === 0) {
             throw new Error("UniswapV3 pools configuration is required in deploy.config.ts");
         }
 
-        const uniswapV3Config = encodeBatchConfig(config.plugins.loanPlugins.uniswapV3Pools);
+        const uniswapV3Config = encodeBatchConfig(config.plugins.loanPlugins.uniswapV3);
         pluginArray.push({
             endpoint: deploymentData.loanPlugins.uniswapV3.endpoint,
             config: uniswapV3Config
         });
         console.log("Added Uniswap V3 plugin:", deploymentData.loanPlugins.uniswapV3.endpoint);
-        console.log("Pools configured:", config.plugins.loanPlugins.uniswapV3Pools.length);
+        console.log("Pools configured:", config.plugins.loanPlugins.uniswapV3.length);
     }
 
     if (deploymentData.loanPlugins.aave) {
-        const aaveConfig = encodePluginConfig(config.plugins.loanPlugins.aave);
+        const aaveConfig = encodePluginConfig(config.plugins.loanPlugins.aave!);
         pluginArray.push({
             endpoint: deploymentData.loanPlugins.aave.endpoint,
             config: aaveConfig
@@ -87,7 +87,7 @@ async function main() {
     }
 
     if (deploymentData.loanPlugins.balancer) {
-        const balancerConfig = encodePluginConfig(config.plugins.loanPlugins.balancer);
+        const balancerConfig = encodePluginConfig(config.plugins.loanPlugins.balancer!);
         pluginArray.push({
             endpoint: deploymentData.loanPlugins.balancer.endpoint,
             config: balancerConfig
@@ -105,7 +105,7 @@ async function main() {
     }
 
     if (deploymentData.swapPlugins.oneInch) {
-        const oneInchConfig = encodePluginConfig(config.plugins.swapPlugins.oneInch);
+        const oneInchConfig = encodePluginConfig(config.plugins.swapPlugins.oneInch!);
         pluginArray.push({
             endpoint: deploymentData.swapPlugins.oneInch.endpoint,
             config: oneInchConfig
@@ -124,7 +124,7 @@ async function main() {
     console.log(`Deploying CometFoundation with ${pluginArray.length} plugins...`);
 
     const Adapter = await ethers.getContractFactory("CometFoundation");
-    const adapter = await Adapter.deploy(pluginArray, config.weth, opts);
+    const adapter = await Adapter.deploy(pluginArray, config.weth, config.treasury, opts);
     await adapter.waitForDeployment();
 
     const adapterAddress = await adapter.getAddress();

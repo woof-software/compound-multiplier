@@ -36,7 +36,7 @@ async function main() {
 
     fs.writeFileSync(deploymentFile, JSON.stringify(deployments, null, 2));
     console.log(`Deployment info saved to: ${deploymentFile}`);
-    console.log(`Note: Configure UniswapV3 pools in deploy.config.ts under plugins.loanPlugins.uniswapV3Pools`);
+    console.log(`Note: Configure UniswapV3 pools in deploy.config.ts under plugins.loanPlugins.uniswapV3`);
 }
 
 main().catch((error) => {

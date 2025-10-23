@@ -338,7 +338,7 @@ export const deployConfig: Record<string, DeployConfig> = {
       loanPlugins: {
         morpho: "0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb",
         euler: "0xD8b27CF359b7D15710a5BE299AF6e7Bf904984C2",
-        uniswapV3Pools: [
+        uniswapV3: [
           {
             token: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", // USDC
             pool: "0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640", // USDC/WETH 0.05%
