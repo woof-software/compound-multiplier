@@ -1,7 +1,7 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
 import { CometFoundation, EulerV2Plugin, IComet, IERC20, WstEthPlugin } from "../../../typechain-types";
-import { executeWithRetry, getQuote, LIFI_ROUTER, USDC_ADDRESS, USDC_EVAULT } from "../../helpers/helpers";
+import { executeWithRetry, getQuote, LIFI_ROUTER, USDC_ADDRESS, USDC_EVAULT, WETH_WHALE } from "../../helpers/helpers";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 
 import { LiFiPlugin } from "../../../typechain-types";
@@ -14,11 +14,10 @@ const COMET_WETH_MARKET = "0xA17581A9E3356d9A858b789D68B4d866e593aE94";
 const WETH_EVAULT = process.env.WETH_EVAULT ?? "0xD8b27CF359b7D15710a5BE299AF6e7Bf904984C2";
 
 const WSTETH_WHALE = "0x0B925eD163218f6662a35e0f0371Ac234f9E9371";
-const WETH_WHALE = "0x28a55C4b4f9615FDE3CDAdDf6cc01FcF2E38A6b0";
 
 const opts = { maxFeePerGas: 4_000_000_000 };
 
-describe("Comet Multiplier Adapter / LiFI / wstETH", function () {
+describe.only("Comet Multiplier Adapter / LiFI / wstETH", function () {
     let adapter: CometFoundation;
     let loanPlugin: EulerV2Plugin;
     let swapPlugin: WstEthPlugin;

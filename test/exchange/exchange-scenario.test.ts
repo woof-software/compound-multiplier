@@ -32,7 +32,6 @@ describe("CometExchange Scenarios", function () {
     // Tokens
     let weth: IERC20;
     let wstETH: IERC20;
-    let rsETH: IERC20;
     let rETH: IERC20;
     let wbtc: IERC20;
 
@@ -97,11 +96,10 @@ describe("CometExchange Scenarios", function () {
         ]);
 
         comet = await getComet();
-        ({ weth, wstETH, rsETH, rETH, wbtc } = await tokensInstances());
+        ({ weth, wstETH, rETH, wbtc } = await tokensInstances());
         ({ wethWhale, wstETHWhale, wbtcWhale, rsETHWhale } = await getWhales());
 
         await wstETH.connect(wstETHWhale).transfer(alice, SUPPLY_AMOUNT);
-        await rsETH.connect(rsETHWhale).transfer(alice, SUPPLY_AMOUNT);
         await wbtc.connect(wbtcWhale).transfer(alice, exp(1, 8));
 
         await comet.connect(alice).allow(collateralSwap, true);
@@ -120,7 +118,7 @@ describe("CometExchange Scenarios", function () {
 
         // Prepare data
         const collateralA = wstETH;
-        const collateralB = rsETH;
+        const collateralB = rETH;
         const supplyAmountCollateralA = SUPPLY_AMOUNT;
         const fromAmount = (supplyAmountCollateralA * 9995n) / 2n / 10000n;
 
@@ -159,7 +157,7 @@ describe("CometExchange Scenarios", function () {
                 "ETH",
                 "ETH",
                 "wstETH",
-                "rsETH",
+                await collateralB.getAddress(),
                 swapParams.fromAmount.toString(),
                 String(collateralSwap.target)
             );
@@ -201,7 +199,7 @@ describe("CometExchange Scenarios", function () {
 
         // Prepare data
         const collateralA = wstETH;
-        const collateralB = rsETH;
+        const collateralB = rETH;
         const collateralC = wbtc;
         const supplyAmountCollateralA = SUPPLY_AMOUNT;
         const supplyAmountCollateralB = SUPPLY_AMOUNT;
@@ -248,7 +246,7 @@ describe("CometExchange Scenarios", function () {
             const { swapCalldata, toAmountMin } = await getQuote(
                 "ETH",
                 "ETH",
-                "rsETH",
+                await collateralB.getAddress(),
                 "WBTC",
                 swapParams.fromAmount.toString(),
                 String(collateralSwap.target)
@@ -297,7 +295,7 @@ describe("CometExchange Scenarios", function () {
 
         // Prepare data
         const collateralA = wstETH;
-        const collateralB = rsETH;
+        const collateralB = rETH;
         const collateralC = wbtc;
         const supplyAmountCollateralA = SUPPLY_AMOUNT;
         const supplyAmountCollateralB = SUPPLY_AMOUNT;
@@ -346,7 +344,7 @@ describe("CometExchange Scenarios", function () {
             const { swapCalldata, toAmountMin } = await getQuote(
                 "ETH",
                 "ETH",
-                "rsETH",
+                await collateralB.getAddress(),
                 "WBTC",
                 swapParams.fromAmount.toString(),
                 String(collateralSwap.target)
@@ -394,7 +392,7 @@ describe("CometExchange Scenarios", function () {
 
         // Prepare data
         const collateralA = wstETH;
-        const collateralB = rsETH;
+        const collateralB = rETH;
         const collateralC = wbtc;
         const supplyAmountCollateralA = SUPPLY_AMOUNT;
         const supplyAmountCollateralB = SUPPLY_AMOUNT;
@@ -448,7 +446,7 @@ describe("CometExchange Scenarios", function () {
             const { swapCalldata, toAmountMin } = await getQuote(
                 "ETH",
                 "ETH",
-                "rsETH",
+                await collateralB.getAddress(),
                 "WBTC",
                 swapParams.fromAmount.toString(),
                 String(collateralSwap.target)
@@ -633,7 +631,7 @@ describe("CometExchange Scenarios", function () {
         // Prepare data
         const collateralA = wstETH;
         const collateralB = rETH;
-        const collateralC = rsETH;
+        const collateralC = wbtc;
         const supplyAmountCollateralA = exp(0.5, 18);
         const fromAmount = (supplyAmountCollateralA * 9995n) / 4n / 10000n;
 
@@ -776,7 +774,7 @@ describe("CometExchange Scenarios", function () {
 
         let swapParams = {
             opts: {
-                loanPlugin: await balancerPl.getAddress(),
+                loanPlugin: await aavePl.getAddress(),
                 swapPlugin: lifiPlugin.endpoint,
                 comet: await comet.getAddress()
             },

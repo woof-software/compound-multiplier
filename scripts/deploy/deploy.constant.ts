@@ -48,7 +48,8 @@ constants.set(Network.Mainnet, {
         morpho: "0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb",
         aave: "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2",
         balancer: "0xBA12222222228d8Ba445958a75a0704d566BF2C8",
-        lifi: "0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE"
+        lifi: "0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE",
+        uniswapV4: "0x000000000004444c5dc75cB358380D2e3dE08A90"
     },
     pools: {
         euler: {
@@ -102,7 +103,8 @@ constants.set(Network.Base, {
         morpho: "0x8b5EB720849ae8e7091230bab4E6cf2f8A45bD19",
         aave: "0xA238Dd80C259a72e81d7e4664a9801593F98d1c5",
         balancer: "0xBA12222222228d8Ba445958a75a0704d566BF2C8",
-        lifi: "0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE"
+        lifi: "0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE",
+        uniswapV4: "0x498581ff718922c3f8e6a244956af099b2652b2b"
     },
     pools: {
         euler: {
@@ -133,7 +135,8 @@ constants.set(Network.Polygon, {
         morpho: "0x1bF0c2541F820E775182832f06c0B7Fc27A25f67",
         aave: "0x8dff5e27ea6b7ac08ebfdf9eb090f32ee9a30fcf",
         balancer: "0xBA12222222228d8Ba445958a75a0704d566BF2C8",
-        lifi: "0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE"
+        lifi: "0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE",
+        uniswapV4: "0x67366782805870060151383f4bbff9dab53e5cd6"
     },
     pools: {
         uniswapV3: {
@@ -164,7 +167,8 @@ constants.set(Network.Optimism, {
         morpho: "0xce95AfbB8EA029495c66020883F87aaE8864AF92",
         aave: "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
         balancer: "0xBA12222222228d8Ba445958a75a0704d566BF2C8",
-        lifi: "0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE"
+        lifi: "0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE",
+        uniswapV4: "0x9a13f98cb987694c9f086b1f5eb990eea8264ec3"
     },
     pools: {
         uniswapV3: {
@@ -225,7 +229,8 @@ constants.set(Network.Arbitrum, {
         morpho: "0x6c247b1F6182318877311737BaC0844bAa518F5e",
         aave: "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
         balancer: "0xBA12222222228d8Ba445958a75a0704d566BF2C8",
-        lifi: "0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE"
+        lifi: "0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE",
+        uniswapV4: "0x360e68faccca8ca495c1b759fd9eee466db9fb32"
     },
     pools: {
         euler: {
@@ -263,7 +268,8 @@ constants.set(Network.Unichain, {
     },
     protocols: {
         morpho: "0x8f5ae9cddb9f68de460c77730b018ae7e04a140a",
-        lifi: "0x864b314D4C5a0399368609581d3E8933a63b9232"
+        lifi: "0x864b314D4C5a0399368609581d3E8933a63b9232",
+        uniswapV4: "0x1f98400000000000000000000000000000000004"
     },
     pools: {
         euler: {

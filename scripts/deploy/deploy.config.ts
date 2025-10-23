@@ -14,6 +14,7 @@ export interface DeployConfig {
                 token: string;
                 pool: string;
             }>;
+            uniswapV4?: string;
             aave?: string;
             balancer?: string;
         };
@@ -139,7 +140,8 @@ export const deployConfig: Record<string, DeployConfig> = {
                     // }
                 ],
                 aave: MAINNET.protocols.aave,
-                balancer: MAINNET.protocols.balancer
+                balancer: MAINNET.protocols.balancer,
+                uniswapV4: MAINNET.protocols.uniswapV4
             },
             swapPlugins: {
                 lifi: MAINNET.protocols.lifi
@@ -217,7 +219,8 @@ export const deployConfig: Record<string, DeployConfig> = {
                     { token: ARBITRUM.tokens.rETH, pool: ARBITRUM.pools.uniswapV3.rETH } // RETH / ETH 0.05% (under 200k)
                 ],
                 aave: ARBITRUM.protocols.aave,
-                balancer: ARBITRUM.protocols.balancer
+                balancer: ARBITRUM.protocols.balancer,
+                uniswapV4: ARBITRUM.protocols.uniswapV4
             },
             swapPlugins: {
                 lifi: ARBITRUM.protocols.lifi
@@ -257,7 +260,8 @@ export const deployConfig: Record<string, DeployConfig> = {
                     { token: UNICHAIN.tokens.WBTC, pool: UNICHAIN.pools.uniswapV3.WBTC }, // WBTC / WETH 1% (under 200k) TODO: V4 has pool ("0x764afe9ab22a5c80882918bb4e59b954912b17a22c3524c68a8cf08f7386e08f" WBTC / WETH 0.05%)
                     { token: UNICHAIN.tokens.USDC, pool: UNICHAIN.pools.uniswapV3.USDC }, // USDC / WETH 0.3% TODO: V4 has pool ("0x3258f413c7a88cda2fa8709a589d221a80f6574f63df5a5b6774485d8acc39d9" USDC / WETH 0.05%)
                     { token: UNICHAIN.tokens.WETH, pool: UNICHAIN.pools.uniswapV3.WETH } // WETH / USDC 0.3% TODO: V4 has pool ("0x3258f413c7a88cda2fa8709a589d221a80f6574f63df5a5b6774485d8acc39d9" WETH / USDC 0.05%)
-                ]
+                ],
+                uniswapV4: UNICHAIN.protocols.uniswapV4
             },
             swapPlugins: {
                 lifi: UNICHAIN.protocols.lifi
@@ -319,7 +323,8 @@ export const deployConfig: Record<string, DeployConfig> = {
                     // }
                 ],
                 aave: BASE.protocols.aave,
-                balancer: BASE.protocols.balancer
+                balancer: BASE.protocols.balancer,
+                uniswapV4: BASE.protocols.uniswapV4
             },
             swapPlugins: {
                 lifi: BASE.protocols.lifi
@@ -348,7 +353,8 @@ export const deployConfig: Record<string, DeployConfig> = {
                     // }
                 ],
                 aave: POLYGON.protocols.aave,
-                balancer: POLYGON.protocols.balancer
+                balancer: POLYGON.protocols.balancer,
+                uniswapV4: POLYGON.protocols.uniswapV4
             },
             swapPlugins: {
                 lifi: POLYGON.protocols.lifi
@@ -383,7 +389,8 @@ export const deployConfig: Record<string, DeployConfig> = {
                     // }
                 ],
                 aave: OPTIMISM.protocols.aave,
-                balancer: OPTIMISM.protocols.balancer
+                balancer: OPTIMISM.protocols.balancer,
+                uniswapV4: OPTIMISM.protocols.uniswapV4
             },
             swapPlugins: {
                 lifi: OPTIMISM.protocols.lifi

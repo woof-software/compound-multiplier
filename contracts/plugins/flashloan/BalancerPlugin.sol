@@ -79,7 +79,17 @@ contract BalancerPlugin is IFlashLoanRecipient, ICometFlashLoanPlugin {
         IERC20(asset).safeTransfer(flp, amount);
     }
 
+    /**
+     * @notice Checks interface support
+     * @param interfaceId The interface identifier
+     * @return True if the interface is supported, false otherwise
+     */
     function supportsInterface(bytes4 interfaceId) external pure returns (bool) {
         return interfaceId == type(ICometFlashLoanPlugin).interfaceId;
     }
+
+    /**
+     * @inheritdoc ICometFlashLoanPlugin
+     */
+    function hook() external pure returns (bytes memory) {}
 }

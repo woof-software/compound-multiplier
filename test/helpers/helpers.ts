@@ -48,9 +48,10 @@ export const ONE_INCH_ROUTER_V6 = "0x111111125421cA6dc452d289314280a0f8842A65";
 export const USDC_EVAULT = "0x797DD80692c3b2dAdabCe8e30C07fDE5307D48a9";
 export const MORPHO = "0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb";
 export const UNI_V3_USDC_WETH_005 = "0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640";
+export const UNI_V4_MANAGER = "0x000000000004444c5dc75cB358380D2e3dE08A90";
 export const LIFI_ROUTER = "0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE";
 
-export async function executeWithRetry(operation: Function, maxRetries = 10) {
+export async function executeWithRetry(operation: Function, maxRetries = 5) {
     for (let i = 0; i < maxRetries; i++) {
         try {
             return await operation();

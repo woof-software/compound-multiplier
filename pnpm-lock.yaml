@@ -23,6 +23,9 @@ importers:
       '@uniswap/v3-core':
         specifier: ^1.0.1
         version: 1.0.1
+      '@uniswap/v4-core':
+        specifier: ^1.0.2
+        version: 1.0.2
       axios:
         specifier: ^1.11.0
         version: 1.12.2(debug@4.4.0)
@@ -1479,6 +1482,9 @@ packages:
   '@uniswap/v3-core@1.0.1':
     resolution: {integrity: sha512-7pVk4hEm00j9tc71Y9+ssYpO6ytkeI0y7WE9P6UcmNzhxPePwyAxImuhVsTqWK9YFvzgtvzJHi64pBl4jUzKMQ==}
     engines: {node: '>=10'}
+
+  '@uniswap/v4-core@1.0.2':
+    resolution: {integrity: sha512-X15Tm2wWd+USAzEExMbo+g9naA6QN6mPgWm0MzDwRNlOfaNlepfUpSyt9RSrUfEODspwbyWbcLg6t5nwc/e7lg==}
 
   '@yarnpkg/lockfile@1.1.0':
     resolution: {integrity: sha512-GpSwvyXOcOOlV70vbnzjj4fW5xW/FdUF6nQEt1ENy7m4ZCczi1+/buVUPAqmGfqznsORNFzUMjctTIp8a9tuCQ==}
@@ -6185,6 +6191,8 @@ snapshots:
       eslint-visitor-keys: 4.2.0
 
   '@uniswap/v3-core@1.0.1': {}
+
+  '@uniswap/v4-core@1.0.2': {}
 
   '@yarnpkg/lockfile@1.1.0': {}
 

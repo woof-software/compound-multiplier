@@ -96,7 +96,17 @@ contract EulerV2Plugin is ICometFlashLoanPlugin {
         emit ICE.FlashLoan(flp, address(_data.asset), _data.debt, 0);
     }
 
+    /**
+     * @notice Checks interface support
+     * @param interfaceId The interface identifier
+     * @return True if the interface is supported, false otherwise
+     */
     function supportsInterface(bytes4 interfaceId) external pure returns (bool) {
         return interfaceId == type(ICometFlashLoanPlugin).interfaceId || interfaceId == type(IERC165).interfaceId;
     }
+
+    /**
+     * @inheritdoc ICometFlashLoanPlugin
+     */
+    function hook() external pure returns (bytes memory) {}
 }

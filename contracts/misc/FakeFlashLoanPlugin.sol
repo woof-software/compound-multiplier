@@ -48,4 +48,6 @@ contract FakeFlashLoanPlugin is ICometFlashLoanPlugin {
     function supportsInterface(bytes4 interfaceId) external pure returns (bool) {
         return interfaceId == type(ICometFlashLoanPlugin).interfaceId;
     }
+
+    function hook() external pure returns (bytes memory) {}
 }

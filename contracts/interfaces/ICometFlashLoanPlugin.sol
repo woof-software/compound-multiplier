@@ -25,4 +25,12 @@ interface ICometFlashLoanPlugin is IERC165 {
      * @param amount Total repayment amount (principal + fee)
      */
     function repayFlashLoan(address flp, address baseAsset, uint256 amount) external;
+
+    /**
+     * @notice Hook function for loan callback return. Aave
+     * @dev AAVE requires uint256 == 1 while uniswap needs bytes memory layout. Other plugins require no return data.
+     * This function standardizes the return data for CometFoundation to handle.
+     * @return bytes memory Encoded return data for flash loan callback
+     */
+    function hook() external pure returns (bytes memory);
 }

@@ -84,7 +84,23 @@ contract AAVEPlugin is ICometFlashLoanPlugin {
         IERC20(asset).safeIncreaseAllowance(flp, amount);
     }
 
+    /**
+     * @notice Checks interface support
+     * @param interfaceId The interface identifier
+     * @return True if the interface is supported, false otherwise
+     */
     function supportsInterface(bytes4 interfaceId) external pure returns (bool) {
         return interfaceId == type(ICometFlashLoanPlugin).interfaceId;
+    }
+
+    /**
+     * @inheritdoc ICometFlashLoanPlugin
+     */
+    function hook() external pure returns (bytes memory) {
+        bytes memory data = new bytes(32);
+        assembly {
+            mstore(add(data, 32), 1)
+        }
+        return data;
     }
 }

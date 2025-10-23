@@ -100,10 +100,7 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
 
         require(comet != IComet(address(0)), ICA.InvalidComet());
 
-        (bool ok, bytes memory payload) = loanPlugin.delegatecall(msg.data);
-        _catch(ok);
-
-        ICS.CallbackData memory data = abi.decode(payload, (ICS.CallbackData));
+        ICS.CallbackData memory data = _callback(loanPlugin, msg.data);
         require(data.asset.balanceOf(address(this)) >= snapshot + data.debt, ICA.InvalidAmountOut());
 
         ICS.ProcessParams memory params = mode == ICS.Mode.MULTIPLY
@@ -121,10 +118,11 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
             });
 
         _process(comet, user, params, data, loanPlugin, swapPlugin, mode);
+
+        bytes memory hook = ICometFlashLoanPlugin(loanPlugin).hook();
+
         assembly {
-            mstore(0x00, 1)
-            // aderyn-fp-next-line(yul-return)
-            return(0x00, 0x20)
+            return(add(hook, 32), mload(hook))
         }
     }
 
@@ -291,9 +289,11 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
 
         _validateExchange(comet, address(fromAsset), address(toAsset), fromAmount, minAmountOut, maxHealthFactorDrop);
 
+        address loanPlugin = opts.loanPlugin;
+
         _tstore(
             toAsset.balanceOf(address(this)),
-            opts.loanPlugin,
+            loanPlugin,
             opts.swapPlugin,
             comet,
             fromAsset,
@@ -303,7 +303,7 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
         );
 
         _loan(
-            opts.loanPlugin,
+            loanPlugin,
             ICS.CallbackData({ debt: minAmountOut, fee: 0, flp: address(0), asset: toAsset, swapData: swapData })
         );
     }
@@ -381,10 +381,11 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
         require(loanDebt > 0, ICA.InvalidLeverage());
 
         IERC20 baseAsset = comet.baseToken();
+        address loanPlugin = opts.loanPlugin;
 
         _tstore(
             baseAsset.balanceOf(address(this)),
-            opts.loanPlugin,
+            loanPlugin,
             opts.swapPlugin,
             comet,
             collateral,
@@ -394,7 +395,7 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
         );
 
         _loan(
-            opts.loanPlugin,
+            loanPlugin,
             ICS.CallbackData({
                 debt: loanDebt,
                 fee: 0, // to be handled by plugin
@@ -545,6 +546,16 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
             abi.encodeWithSelector(ICometFlashLoanPlugin.repayFlashLoan.selector, flp, baseAsset, amount)
         );
         _catch(ok);
+    }
+
+    /**
+     * @notice Callaback on loan plugin via delegatecall
+     */
+    function _callback(address loanPlugin, bytes calldata data) internal returns (ICS.CallbackData memory) {
+        require(loanPlugin != address(0), ICA.UnknownPlugin());
+        (bool ok, bytes memory payload) = loanPlugin.delegatecall(data);
+        _catch(ok);
+        return abi.decode(payload, (ICS.CallbackData));
     }
 
     /**
