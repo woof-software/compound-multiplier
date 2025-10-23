@@ -1,8 +1,8 @@
 # Solidity API
 
-## UniswapV3Plugin
+## UniswapV4Plugin
 
-Flash loan plugin for integrating Uniswap V3 pools with CometMultiplier
+Flash loan plugin for integrating Uniswap V4 PoolManager with CometMultiplier
 
 _Implements ICometFlashLoanPlugin interface to provide standardized flash loan functionality_
 
@@ -12,7 +12,7 @@ _Implements ICometFlashLoanPlugin interface to provide standardized flash loan f
 bytes4 CALLBACK_SELECTOR
 ```
 
-Callback function selector for Uniswap V3 flash loans
+Callback function selector for Uniswap V4 unlock
 
 ### SLOT_PLUGIN
 
@@ -20,7 +20,7 @@ Callback function selector for Uniswap V3 flash loans
 bytes32 SLOT_PLUGIN
 ```
 
-Storage slot for transient flash loan ID validation
+Storage slot for transient flash loan validation
 
 ### takeFlashLoan
 
@@ -30,7 +30,7 @@ function takeFlashLoan(struct ICometStructs.CallbackData data, bytes config) ext
 
 Initiates a flash loan
 
-_config encodes UniswapV3Config with token->pool pools_
+_config encodes PoolManager address_
 
 #### Parameters
 
@@ -39,26 +39,27 @@ _config encodes UniswapV3Config with token->pool pools_
 | data   | struct ICometStructs.CallbackData | Flash loan parameters including debt amount, asset, and user information |
 | config | bytes                             |                                                                          |
 
-### \_findPool
+### unlockCallback
 
 ```solidity
-function _findPool(struct ICometStructs.Pool[] pools, address asset) internal pure returns (address pool)
+function unlockCallback(bytes data) external returns (struct ICometStructs.CallbackData _data)
 ```
 
-Finds pool address for given asset
+Handles unlock callback from Uniswap V4 PoolManager
+
+_Takes tokens from PoolManager and validates authorization_
 
 #### Parameters
 
-| Name  | Type                        | Description                    |
-| ----- | --------------------------- | ------------------------------ |
-| pools | struct ICometStructs.Pool[] | Array of token-to-pool pools   |
-| asset | address                     | Asset address to find pool for |
+| Name | Type  | Description                                      |
+| ---- | ----- | ------------------------------------------------ |
+| data | bytes | Encoded callback data from flash loan initiation |
 
 #### Return Values
 
-| Name | Type    | Description                              |
-| ---- | ------- | ---------------------------------------- |
-| pool | address | Pool address, or address(0) if not found |
+| Name   | Type                              | Description                                  |
+| ------ | --------------------------------- | -------------------------------------------- |
+| \_data | struct ICometStructs.CallbackData | Decoded callback data for adapter processing |
 
 ### repayFlashLoan
 
@@ -68,6 +69,8 @@ function repayFlashLoan(address flp, address baseAsset, uint256 amount) external
 
 Repays the flash loan
 
+_Settles the flash loan with PoolManager_
+
 #### Parameters
 
 | Name      | Type    | Description                              |
@@ -75,30 +78,6 @@ Repays the flash loan
 | flp       | address | Address of the flash loan provider       |
 | baseAsset | address | Address of the borrowed asset            |
 | amount    | uint256 | Total repayment amount (principal + fee) |
-
-### uniswapV3FlashCallback
-
-```solidity
-function uniswapV3FlashCallback(uint256 fee0, uint256 fee1, bytes data) external returns (struct ICometStructs.CallbackData _data)
-```
-
-Handles flash loan callback from Uniswap V3 pool
-
-_Validates flash loan ID and sender authorization before processing_
-
-#### Parameters
-
-| Name | Type    | Description                                      |
-| ---- | ------- | ------------------------------------------------ |
-| fee0 | uint256 | Fee amount for token0                            |
-| fee1 | uint256 | Fee amount for token1                            |
-| data | bytes   | Encoded callback data from flash loan initiation |
-
-#### Return Values
-
-| Name   | Type                              | Description                                  |
-| ------ | --------------------------------- | -------------------------------------------- |
-| \_data | struct ICometStructs.CallbackData | Decoded callback data for adapter processing |
 
 ### supportsInterface
 

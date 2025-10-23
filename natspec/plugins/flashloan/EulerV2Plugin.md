@@ -104,9 +104,33 @@ _Validates flash loan ID and sender authorization before processing_
 function supportsInterface(bytes4 interfaceId) external pure returns (bool)
 ```
 
-\_Returns true if this contract implements the interface defined by
-`interfaceId`. See the corresponding
-https://eips.ethereum.org/EIPS/eip-165#how-interfaces-are-identified[ERC section]
-to learn more about how these ids are created.
+Checks interface support
 
-This function call must use less than 30 000 gas.\_
+#### Parameters
+
+| Name        | Type   | Description              |
+| ----------- | ------ | ------------------------ |
+| interfaceId | bytes4 | The interface identifier |
+
+#### Return Values
+
+| Name | Type | Description                                         |
+| ---- | ---- | --------------------------------------------------- |
+| [0]  | bool | True if the interface is supported, false otherwise |
+
+### hook
+
+```solidity
+function hook() external pure returns (bytes)
+```
+
+Hook function for loan callback return. Aave
+
+_AAVE requires uint256 == 1 while uniswap needs bytes memory layout. Other plugins require no return data.
+This function standardizes the return data for CometFoundation to handle._
+
+#### Return Values
+
+| Name | Type  | Description                                              |
+| ---- | ----- | -------------------------------------------------------- |
+| [0]  | bytes | bytes memory Encoded return data for flash loan callback |

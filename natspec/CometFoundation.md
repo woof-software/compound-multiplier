@@ -437,6 +437,14 @@ _Uses delegatecall to invoke the repay function on the flash loan plugin_
 | baseAsset  | contract IERC20 | Address of the borrowed asset           |
 | amount     | uint256         | Total amount to repay (principal + fee) |
 
+### \_callback
+
+```solidity
+function _callback(address loanPlugin, bytes data) internal returns (struct ICometStructs.CallbackData)
+```
+
+Callaback on loan plugin via delegatecall
+
 ### \_dust
 
 ```solidity
