@@ -6,6 +6,7 @@
     "function CALLBACK_SELECTOR() view returns (bytes4)",
     "function SLOT_PLUGIN() view returns (bytes32)",
     "function executeOperation(address,uint256,uint256,address,bytes) returns (tuple(uint256,uint256,address,address,bytes))",
+    "function hook() pure returns (bytes)",
     "function repayFlashLoan(address,address,uint256)",
     "function supportsInterface(bytes4) pure returns (bool)",
     "function takeFlashLoan(tuple(uint256,uint256,address,address,bytes),bytes) payable"

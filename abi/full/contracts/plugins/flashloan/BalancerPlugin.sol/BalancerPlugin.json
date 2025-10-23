@@ -5,6 +5,7 @@
     "event FlashLoan(address indexed flp, address indexed asset, uint256 amount, uint256 fee)",
     "function CALLBACK_SELECTOR() view returns (bytes4)",
     "function SLOT_PLUGIN() view returns (bytes32)",
+    "function hook() pure returns (bytes)",
     "function receiveFlashLoan(address[] tokens, uint256[] amounts, uint256[] feeAmounts, bytes userData) returns (tuple(uint256 debt, uint256 fee, address flp, address asset, bytes swapData) _data)",
     "function repayFlashLoan(address flp, address asset, uint256 amount)",
     "function supportsInterface(bytes4 interfaceId) pure returns (bool)",
