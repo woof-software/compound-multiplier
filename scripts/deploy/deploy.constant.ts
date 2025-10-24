@@ -19,7 +19,7 @@ interface Constant {
 
 // Mainnet addresses
 constants.set(Network.Mainnet, {
-    treasury: "0xYourTreasuryAddressHere",
+    treasury: "0x6d903f6003cca6255D85CcA4D3B5E5146dC33925",
     tokens: {
         WETH: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
         USDC: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
@@ -88,7 +88,7 @@ constants.set(Network.Mainnet, {
 
 // Base addresses
 constants.set(Network.Base, {
-    treasury: "0xYourBaseTreasuryAddressHere",
+    treasury: "0xCC3E7c85Bb0EE4f09380e041fee95a0caeDD4a02",
     tokens: {
         USDC: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
         wstETH: "0xc1CbA3fCea344f92D9239c08C0568f6F2F0ee452",
@@ -121,7 +121,7 @@ constants.set(Network.Base, {
 
 // Polygon addresses
 constants.set(Network.Polygon, {
-    treasury: "0xYourPolygonTreasuryAddressHere",
+    treasury: "0xCC3E7c85Bb0EE4f09380e041fee95a0caeDD4a02",
     tokens: {
         WETH: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619",
         USDC: "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
@@ -151,7 +151,7 @@ constants.set(Network.Polygon, {
 
 // Optimism addresses
 constants.set(Network.Optimism, {
-    treasury: "0xYourOptimismTreasuryAddressHere",
+    treasury: "0xd98Be00b5D27fc98112BdE293e487f8D4cA57d07",
     tokens: {
         WETH: "0x4200000000000000000000000000000000000006",
         USDC: "0x7F5c764cBc14f9669B88837ca1490cCa17c31607",
@@ -184,7 +184,7 @@ constants.set(Network.Optimism, {
 
 // Linea addresses
 constants.set(Network.Linea, {
-    treasury: "0xYourLineaTreasuryAddressHere",
+    treasury: "0x4A900f81dEdA753bbBab12453b3775D5f26df6F3",
     tokens: {
         WETH: "0xe5D7C2a44FfDDf6b295A15c148167daaAf5Cf34f",
         USDC: "0x176211869cA2b568f2A7D4EE941E073a821EE1ff",
@@ -212,7 +212,7 @@ constants.set(Network.Linea, {
 
 // Arbitrum addresses
 constants.set(Network.Arbitrum, {
-    treasury: "0xYourArbitrumTreasuryAddressHere",
+    treasury: "0x3fB4d38ea7EC20D91917c09591490Eeda38Cf88A",
     tokens: {
         WETH: "0x82af49447d8a07e3bd95bd0d56f35241523fbab1",
         USDC: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
@@ -256,7 +256,7 @@ constants.set(Network.Arbitrum, {
 
 // Unichain addresses
 constants.set(Network.Unichain, {
-    treasury: "0xYourUnichainTreasuryAddressHere",
+    treasury: "0x2F4eAF29dfeeF4654bD091F7112926E108eF4Ed0",
     tokens: {
         WETH: "0x4200000000000000000000000000000000000006",
         USDC: "0x078D782b760474a361dDA0AF3839290b0EF57AD6",
