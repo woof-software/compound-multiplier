@@ -1,0 +1,29 @@
+{
+    "loanPlugins": {
+        "morpho": {
+            "endpoint": "0xECCc481a842f42E27914f99680D8eCa855489A8F"
+        },
+        "euler": {
+            "endpoint": "0x8Cf6EC5B545f87FA08d3c910d3CB58569892B1EA"
+        },
+        "uniswapV3": {
+            "endpoint": "0x4E3de695990C82b0bC9B358070585970Fe7f40c4"
+        },
+        "aave": {
+            "endpoint": "0x21E6cC8Ff2c07d9Bb08d388bF470E8d55a80ca94"
+        },
+        "balancer": {
+            "endpoint": "0x30f78d737ff06A6cEA7AFBa0099A1CCDEdBc2971"
+        },
+        "uniswapV4": {
+            "endpoint": "0x1C34fe1940859d46AB49F5626809b205F84f5F46"
+        }
+    },
+    "swapPlugins": {
+        "lifi": {
+            "endpoint": "0xAa681f66383f7571A950fB7a0Bc92002f6feE9Af"
+        }
+    },
+    "CometFoundation": "0xD8965C78172C05fbA0f768F75B8711A013F8C8Aa",
+    "foundationDeployedAt": "2025-10-29T00:52:05.979Z"
+}

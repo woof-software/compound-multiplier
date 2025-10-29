@@ -207,7 +207,7 @@ export async function getQuote(
                 fromAmount,
                 fromAddress,
                 options: {
-                    slippage: 1
+                    slippage: 99
                 }
             }
         })
@@ -238,14 +238,23 @@ export function exp(value: number | bigint, decimals: number | bigint = 0, preci
 //                               ADAPTER
 ///////////////////////////////////////////////////////////////
 
-export async function calculateLeveragedAmount(comet: IComet, collateralAmount: bigint, leverage: number) {
-    const info = await comet.getAssetInfoByAddress(WETH_ADDRESS);
+export async function calculateLeveragedAmount(
+    comet: IComet,
+    collateralAmount: bigint,
+    leverage: number,
+    collateralAddress: string = WETH_ADDRESS
+): Promise<bigint> {
+    const info = await comet.getAssetInfoByAddress(collateralAddress);
     const price = await comet.getPrice(info.priceFeed);
     const baseScale = await comet.baseScale();
+    const priceFeedDecimals = 8n;
+    const priceFeedScale = 10n ** priceFeedDecimals;
 
-    const initialValueBase = (collateralAmount * price * baseScale) / (info.scale * 100_000_000n);
+    const collateralValueInBase = (collateralAmount * price * baseScale) / (info.scale * priceFeedScale);
     const delta = BigInt(leverage - 10_000);
-    return (initialValueBase * delta) / 10_000n;
+    const borrowAmount = (collateralValueInBase * delta) / 10_000n;
+
+    return borrowAmount;
 }
 
 export async function calculateExpectedCollateral(collateralAmount: bigint, leverage: number): Promise<bigint> {
@@ -255,8 +264,8 @@ export async function calculateExpectedCollateral(collateralAmount: bigint, leve
     return collateralAmount + slippageAdjusted;
 }
 
-export async function calculateMaxLeverage(comet: IComet): Promise<number> {
-    const info = await comet.getAssetInfoByAddress(WETH_ADDRESS);
+export async function calculateMaxLeverage(comet: IComet, wethAddress: string = WETH_ADDRESS): Promise<number> {
+    const info = await comet.getAssetInfoByAddress(wethAddress);
     const borrowCollateralFactor = Number(info.borrowCollateralFactor) / 1e18;
     const theoreticalMax = (1 / (1 - borrowCollateralFactor)) * 10_000;
     return Math.floor(theoreticalMax * 0.95);

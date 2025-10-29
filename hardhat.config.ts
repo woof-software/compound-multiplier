@@ -63,6 +63,13 @@ const mochaBail = isOptionTrue(envs.BAIL);
 const enableSourcify = envs.SOURCIFY ? true : envs.ETHERSCAN_API_KEY ? false : true;
 
 const abiExporterExceptions = ["interfaces/", "mocks/", "vendor/", "contracts-exposed/"];
+const forkNetwork = envs.FORK_NETWORK?.toLowerCase();
+let forkUrl = "";
+
+if (forkNetwork) {
+    const envVarName = `${forkNetwork.toUpperCase()}_URL`;
+    forkUrl = envs[envVarName] ?? "";
+}
 
 const config: HardhatUserConfig = {
     solidity: {
@@ -82,11 +89,8 @@ const config: HardhatUserConfig = {
                     }
                 }
             }
-            // { version: "0.7.6" }
         ]
-        // overrides: { "contracts/Deployed.sol": { version: "0.8.21" } }
     },
-    // defaultNetwork: "hardhat",
     networks: {
         hardhat: {
             allowUnlimitedContractSize: !optimizerRuns,
@@ -95,42 +99,51 @@ const config: HardhatUserConfig = {
                 count: envs.NUMBER_OF_ACCOUNTS ? +envs.NUMBER_OF_ACCOUNTS : 20
             },
             forking: {
-                url: envs.FORKING_URL ?? "",
+                url: forkUrl,
                 enabled: enableForking
             },
-            // Uncomment if "Error: cannot estimate gas; transaction may fail or may require manual gas limit...".
-            // gas: 3E7,
             gasPrice: 14e9
         },
-        // Ethereum:
         ethereum: {
             chainId: 1,
             url: envs.ETHEREUM_URL ?? "",
             accounts: [...ethereumMainnetKeys]
         },
-        sepolia: {
-            chainId: 11155111,
-            url: envs.SEPOLIA_URL ?? "",
-            accounts: [...ethereumTestnetKeys]
+        arbitrum: {
+            chainId: 42161,
+            url: envs.ARBITRUM_URL ?? "",
+            accounts: [...ethereumMainnetKeys]
         },
-        holesky: {
-            chainId: 17000,
-            url: envs.HOLESKY_URL ?? "",
-            accounts: [...ethereumTestnetKeys]
+        base: {
+            chainId: 8453,
+            url: envs.BASE_URL ?? "",
+            accounts: [...ethereumMainnetKeys]
         },
-        hoodi: {
-            chainId: 560048,
-            url: envs.HOODI_URL ?? "",
-            accounts: [...ethereumTestnetKeys]
+        optimism: {
+            chainId: 10,
+            url: envs.OPTIMISM_URL ?? "",
+            accounts: [...ethereumMainnetKeys]
+        },
+        polygon: {
+            chainId: 137,
+            url: envs.POLYGON_URL ?? "",
+            accounts: [...ethereumMainnetKeys]
+        },
+        linea: {
+            chainId: 59140,
+            url: envs.LINEA_URL ?? "",
+            accounts: [...ethereumMainnetKeys]
+        },
+        unichain: {
+            chainId: 888,
+            url: envs.UNICHAIN_URL ?? "",
+            accounts: [...ethereumMainnetKeys]
         }
     },
     etherscan: {
-        // To see supported networks and their identifiers for `apiKey`, run `pnpm hardhat verify --list-networks`.
         apiKey: {
             mainnet: envs.ETHERSCAN_API_KEY ?? "",
-            sepolia: envs.ETHERSCAN_API_KEY ?? "",
-            holesky: envs.ETHERSCAN_API_KEY ?? ""
-            // hoodi: envs.ETHERSCAN_API_KEY ?? ""
+            arbitrumOne: envs.ARBISCAN_API_KEY ?? ""
         }
     },
     sourcify: {

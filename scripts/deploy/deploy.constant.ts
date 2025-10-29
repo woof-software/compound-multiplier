@@ -216,7 +216,7 @@ constants.set(Network.Arbitrum, {
     tokens: {
         WETH: "0x82af49447d8a07e3bd95bd0d56f35241523fbab1",
         USDC: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
-        USDCe: "0xFF970A61A04b1cA14834A43f5de4533eBDDB5CC8",
+        USDCe: "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8",
         USDT: "0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9",
         WBTC: "0x2f2a2543b76a4166549f7aab2e75bef0aefc5b0f",
         ARB: "0x912ce59144191c1204e64559fe8253a0e49e6548",
@@ -289,6 +289,14 @@ constants.set(Network.Unichain, {
         }
     }
 });
+
+export const COMETS: Map<Network, string> = new Map([
+    [Network.Mainnet, "0xA17581A9E3356d9A858b789D68B4d866e593aE94"],
+    [Network.Base, "0xb125E6687d4313864e53df431d5425969c15Eb2F"],
+    [Network.Polygon, "0xF25212E676D1F7F89Cd72fFEe66158f541246445"],
+    [Network.Optimism, "0x2e44e174f7D53F0212823acC11C01A11d58c5bCB"],
+    [Network.Arbitrum, "0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf"]
+]);
 
 export function envs(network: Network) {
     return constants.get(network);

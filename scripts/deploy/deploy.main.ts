@@ -2,7 +2,7 @@ import { ethers, network } from "hardhat";
 import { deployConfig } from "./deploy.config";
 import * as fs from "fs";
 import * as path from "path";
-import { verify } from "../utils/verify";
+// import { verify } from "../utils/verify";
 
 function encodePluginConfig(address: string): string {
     return ethers.AbiCoder.defaultAbiCoder().encode(["address"], [address]);
@@ -34,9 +34,6 @@ async function main() {
     if (!deploymentData.loanPlugins || !deploymentData.swapPlugins) {
         throw new Error("Plugins data not found in deployment file");
     }
-
-    const gasPrice = network.config.gasPrice;
-    const opts = gasPrice ? { gasPrice } : {};
 
     const pluginArray = [];
 
@@ -167,7 +164,7 @@ async function main() {
     console.log(`\nDeploying CometFoundation with ${pluginArray.length} plugins...`);
 
     const Adapter = await ethers.getContractFactory("CometFoundation");
-    const adapter = await Adapter.deploy(pluginArray, config.weth, config.treasury, opts);
+    const adapter = await Adapter.deploy(pluginArray, config.weth, config.treasury);
     await adapter.waitForDeployment();
 
     const adapterAddress = await adapter.getAddress();
@@ -175,12 +172,12 @@ async function main() {
     console.log("\nCometFoundation deployed:", adapterAddress);
 
     console.log("\nVerifying contract on Etherscan...");
-    try {
-        await verify(adapterAddress, [pluginArray, config.weth, config.treasury]);
-        console.log("Contract verified");
-    } catch (error) {
-        console.warn("Verification failed:", error);
-    }
+    // try {
+    //     await verify(adapterAddress, [pluginArray, config.weth, config.treasury]);
+    //     console.log("Contract verified");
+    // } catch (error) {
+    //     console.warn("Verification failed:", error);
+    // }
 
     deploymentData.CometFoundation = adapterAddress;
     deploymentData.foundationDeployedAt = new Date().toISOString();
