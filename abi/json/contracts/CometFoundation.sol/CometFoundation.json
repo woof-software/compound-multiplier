@@ -295,6 +295,19 @@
     },
     {
         "inputs": [],
+        "name": "MAX_LEVERAGE",
+        "outputs": [
+            {
+                "internalType": "uint16",
+                "name": "",
+                "type": "uint16"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
         "name": "PRECISION",
         "outputs": [
             {
@@ -616,7 +629,7 @@
             },
             {
                 "internalType": "uint256",
-                "name": "leverage",
+                "name": "baseAmount",
                 "type": "uint256"
             },
             {
@@ -666,7 +679,7 @@
             },
             {
                 "internalType": "uint256",
-                "name": "leverage",
+                "name": "baseAmount",
                 "type": "uint256"
             },
             {
