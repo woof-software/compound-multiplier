@@ -20,6 +20,12 @@ _The scale for factors_
 uint16 PRECISION
 ```
 
+### MAX_LEVERAGE
+
+```solidity
+uint16 MAX_LEVERAGE
+```
+
 ### PLUGIN_MAGIC
 
 ```solidity
@@ -209,7 +215,7 @@ eliminating the need for a separate approve transaction.
 ### multiply
 
 ```solidity
-function multiply(struct ICometStructs.Options opts, contract IERC20 collateral, uint256 collateralAmount, uint256 leverage, bytes swapData) external payable
+function multiply(struct ICometStructs.Options opts, contract IERC20 collateral, uint256 collateralAmount, uint256 baseAmount, bytes swapData) external payable
 ```
 
 Creates a leveraged position by borrowing against supplied collateral
@@ -228,13 +234,13 @@ Creates a leveraged position by borrowing against supplied collateral
 | opts             | struct ICometStructs.Options | Configuration options including market, selectors, and flash loan provider |
 | collateral       | contract IERC20              | Address of the collateral token to supply                                  |
 | collateralAmount | uint256                      | Amount of collateral tokens to supply                                      |
-| leverage         | uint256                      | Leverage multiplier (e.g., 20000 = 2x leverage)                            |
+| baseAmount       | uint256                      | Amount of base asset to borrow for leverage                                |
 | swapData         | bytes                        | Encoded swap parameters for the DEX aggregator                             |
 
 ### multiply
 
 ```solidity
-function multiply(struct ICometStructs.Options opts, contract IERC20 collateral, uint256 collateralAmount, uint256 leverage, bytes swapData, struct ICometStructs.AllowParams allowParams) external payable
+function multiply(struct ICometStructs.Options opts, contract IERC20 collateral, uint256 collateralAmount, uint256 baseAmount, bytes swapData, struct ICometStructs.AllowParams allowParams) external payable
 ```
 
 Creates a leveraged position with EIP-712 signature authorization
@@ -248,7 +254,7 @@ _This function first authorizes the adapter via allowBySig, then executes the po
 | opts             | struct ICometStructs.Options     | Configuration options including market, selectors, and flash loan provider |
 | collateral       | contract IERC20                  | Address of the collateral token to supply                                  |
 | collateralAmount | uint256                          | Amount of collateral tokens to supply                                      |
-| leverage         | uint256                          | Leverage multiplier (e.g., 20000 = 2x leverage)                            |
+| baseAmount       | uint256                          | Amount of base asset to borrow for leverage                                |
 | swapData         | bytes                            | Encoded swap parameters for the DEX aggregator                             |
 | allowParams      | struct ICometStructs.AllowParams | EIP-712 signature parameters for Comet authorization                       |
 
@@ -320,7 +326,7 @@ Internal implementation of exchange
 ### \_multiply
 
 ```solidity
-function _multiply(struct ICometStructs.Options opts, contract IERC20 collateral, uint256 collateralAmount, uint256 leverage, bytes swapData) internal
+function _multiply(struct ICometStructs.Options opts, contract IERC20 collateral, uint256 collateralAmount, uint256 baseAmount, bytes swapData) internal
 ```
 
 Internal implementation of multiply
