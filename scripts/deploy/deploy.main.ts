@@ -2,7 +2,7 @@ import { ethers, network } from "hardhat";
 import { deployConfig } from "./deploy.config";
 import * as fs from "fs";
 import * as path from "path";
-// import { verify } from "../utils/verify";
+import { verify } from "../utils/verify";
 
 function encodePluginConfig(address: string): string {
     return ethers.AbiCoder.defaultAbiCoder().encode(["address"], [address]);
@@ -172,12 +172,12 @@ async function main() {
     console.log("\nCometFoundation deployed:", adapterAddress);
 
     console.log("\nVerifying contract on Etherscan...");
-    // try {
-    //     await verify(adapterAddress, [pluginArray, config.weth, config.treasury]);
-    //     console.log("Contract verified");
-    // } catch (error) {
-    //     console.warn("Verification failed:", error);
-    // }
+    try {
+        await verify(adapterAddress, [pluginArray, config.weth, config.treasury]);
+        console.log("Contract verified");
+    } catch (error) {
+        console.warn("Verification failed:", error);
+    }
 
     deploymentData.CometFoundation = adapterAddress;
     deploymentData.foundationDeployedAt = new Date().toISOString();

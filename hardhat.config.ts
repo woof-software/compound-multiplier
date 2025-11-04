@@ -98,10 +98,13 @@ const config: HardhatUserConfig = {
                 accountsBalance: envs.ACCOUNT_BALANCE ?? "10000000000000000000000", // 10000 ETH.
                 count: envs.NUMBER_OF_ACCOUNTS ? +envs.NUMBER_OF_ACCOUNTS : 20
             },
-            forking: {
-                url: forkUrl,
-                enabled: enableForking
-            },
+            forking:
+                enableForking && forkUrl
+                    ? {
+                          url: forkUrl,
+                          enabled: true
+                      }
+                    : undefined,
             gasPrice: 14e9
         },
         ethereum: {
@@ -141,10 +144,26 @@ const config: HardhatUserConfig = {
         }
     },
     etherscan: {
-        apiKey: {
-            mainnet: envs.ETHERSCAN_API_KEY ?? "",
-            arbitrumOne: envs.ARBISCAN_API_KEY ?? ""
-        }
+        // API V2 requires a single Etherscan.io API key instead of network-specific keys
+        apiKey: envs.ETHERSCAN_API_KEY ?? envs.ARBISCAN_API_KEY ?? "",
+        customChains: [
+            {
+                network: "arbitrum",
+                chainId: 42161,
+                urls: {
+                    apiURL: "https://api.arbiscan.io/api",
+                    browserURL: "https://arbiscan.io"
+                }
+            },
+            {
+                network: "arbitrumOne",
+                chainId: 42161,
+                urls: {
+                    apiURL: "https://api.arbiscan.io/api",
+                    browserURL: "https://arbiscan.io"
+                }
+            }
+        ]
     },
     sourcify: {
         enabled: enableSourcify

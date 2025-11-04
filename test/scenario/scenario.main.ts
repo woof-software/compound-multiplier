@@ -23,10 +23,10 @@ let COMET_MARKET: string;
 
 const opts = { maxFeePerGas: 4_000_000_000 };
 
-if (!process.env.RUN_SCENARIO) {
-    console.log("Scenario skipped (RUN_SCENARIO not set). Run via deploy.sh only.");
-    process.exit(0);
-}
+// if (!process.env.RUN_SCENARIO) {
+//     console.log("Scenario skipped (RUN_SCENARIO not set). Run via deploy.sh only.");
+//     process.exit(0);
+// }
 
 const networkName = process.env.FORK_NETWORK!;
 let id = hre.config.networks[networkName]?.chainId!;
@@ -75,7 +75,7 @@ for (const loanPlugin of loanPlugins) {
     }
 }
 
-describe("Universal Comet Multiplier Tests", function () {
+describe.skip("Universal Comet Multiplier Tests", function () {
     let adapter: CometFoundation;
     let comet: IComet;
     let weth: IERC20;

@@ -10,7 +10,7 @@ interface ICometMultiplier {
      * @param opts Configuration options including market, selectors, and flash loan provider
      * @param collateral Address of the collateral token to supply
      * @param collateralAmount Amount of collateral tokens to supply
-     * @param leverage Leverage multiplier (e.g., 20000 = 2x leverage)
+     * @param baseAmount Amount of base asset to borrow for leverage
      * @param swapData Encoded swap parameters for the DEX aggregator
      * @dev This function:
      * 1. Validates the flash loan plugin exists
@@ -23,7 +23,7 @@ interface ICometMultiplier {
         ICS.Options memory opts,
         IERC20 collateral,
         uint256 collateralAmount,
-        uint256 leverage,
+        uint256 baseAmount,
         bytes calldata swapData
     ) external payable;
 
@@ -32,7 +32,7 @@ interface ICometMultiplier {
      * @param opts Configuration options including market, selectors, and flash loan provider
      * @param collateral Address of the collateral token to supply
      * @param collateralAmount Amount of collateral tokens to supply
-     * @param leverage Leverage multiplier (e.g., 20000 = 2x leverage)
+     * @param baseAmount Amount of base asset to borrow for leverage
      * @param swapData Encoded swap parameters for the DEX aggregator
      * @param allowParams EIP-712 signature parameters for Comet authorization
      * @dev This function first authorizes the adapter via allowBySig, then executes the position
@@ -42,7 +42,7 @@ interface ICometMultiplier {
         ICS.Options memory opts,
         IERC20 collateral,
         uint256 collateralAmount,
-        uint256 leverage,
+        uint256 baseAmount,
         bytes calldata swapData,
         ICS.AllowParams calldata allowParams
     ) external payable;

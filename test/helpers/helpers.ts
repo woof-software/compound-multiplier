@@ -376,7 +376,7 @@ export async function executeMultiplierLiFi(
             .connect(signer)
             [
                 "multiply((address,address,address),address,uint256,uint256,bytes)"
-            ](market, WETH_ADDRESS, collateralAmount, leverage, swapData);
+            ](market, WETH_ADDRESS, collateralAmount, baseAmount, swapData);
     });
 }
 

@@ -257,15 +257,16 @@ describe("Comet Multiplier Adapter / LiFi / Morpho", function () {
         it("should revert with leverage above maximum", async function () {
             const initialAmount = ethers.parseEther("0.1");
             const leverage = 60_000;
-            const comet = await getMarketOptions();
+            const market = await getMarketOptions();
 
+            const leveraged = await calculateLeveragedAmount(comet, initialAmount, leverage);
             await expect(
                 // @ts-ignore
                 adapter
                     .connect(user)
                     [
                         "multiply((address,address,address),address,uint256,uint256,bytes)"
-                    ](comet, WETH_ADDRESS, initialAmount, leverage, "0x")
+                    ](market, WETH_ADDRESS, initialAmount, leveraged, "0x")
             ).to.be.reverted;
         });
         it("should execute with msg.value (native ETH) and 1.5x leverage", async function () {
@@ -296,7 +297,7 @@ describe("Comet Multiplier Adapter / LiFi / Morpho", function () {
                 .connect(user)
                 [
                     "multiply((address,address,address),address,uint256,uint256,bytes)"
-                ](market, WETH_ADDRESS, 0, leverage, quote.swapCalldata, {
+                ](market, WETH_ADDRESS, 0, leveraged, quote.swapCalldata, {
                     ...opts,
                     value: initialAmount
                 });
@@ -343,7 +344,7 @@ describe("Comet Multiplier Adapter / LiFi / Morpho", function () {
                 .connect(user2)
                 [
                     "multiply((address,address,address),address,uint256,uint256,bytes)"
-                ](market, WETH_ADDRESS, 0, leverage, quote.swapCalldata, {
+                ](market, WETH_ADDRESS, 0, leveraged, quote.swapCalldata, {
                     ...opts,
                     value: initialAmount
                 });
@@ -380,7 +381,7 @@ describe("Comet Multiplier Adapter / LiFi / Morpho", function () {
                 .connect(user)
                 [
                     "multiply((address,address,address),address,uint256,uint256,bytes)"
-                ](market, WETH_ADDRESS, 0, maxLeverage, quote.swapCalldata, {
+                ](market, WETH_ADDRESS, 0, leveraged, quote.swapCalldata, {
                     ...opts,
                     value: initialAmount
                 });
@@ -395,15 +396,16 @@ describe("Comet Multiplier Adapter / LiFi / Morpho", function () {
         it("should revert with msg.value for non-WETH collateral", async function () {
             const initialAmount = ethers.parseEther("0.1");
             const leverage = 20_000;
-            const comet = await getMarketOptions();
+            const market = await getMarketOptions();
             const fakeToken = "0x0000000000000000000000000000000000000001";
 
+            const leveraged = await calculateLeveragedAmount(comet, initialAmount, leverage);
             await expect(
                 adapter
                     .connect(user)
                     [
                         "multiply((address,address,address),address,uint256,uint256,bytes)"
-                    ](comet, fakeToken, 0, leverage, "0x", { ...opts, value: initialAmount })
+                    ](market, fakeToken, 0, leveraged, "0x", { ...opts, value: initialAmount })
             ).to.be.revertedWithCustomError(adapter, "InvalidWeth");
         });
     });
@@ -869,7 +871,7 @@ describe("Comet Multiplier Adapter / LiFi / Morpho", function () {
                 .connect(user3)
                 [
                     "multiply((address,address,address),address,uint256,uint256,bytes,(uint256,uint256,bytes32,bytes32,uint8))"
-                ](market, WETH_ADDRESS, initialAmount, leverage, swapData, allowParams, opts);
+                ](market, WETH_ADDRESS, initialAmount, leveraged, swapData, allowParams, opts);
 
             const finalCol = await comet.collateralBalanceOf(user3.address, WETH_ADDRESS);
             const finalDebt = await comet.borrowBalanceOf(user3.address);

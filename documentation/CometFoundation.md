@@ -55,7 +55,7 @@ function multiply(
   ICS.Options calldata opts,
   IERC20 collateral,
   uint256 collateralAmount,
-  uint256 leverage,
+  uint256 baseAmount,
   bytes calldata swapData
 ) external payable nonReentrant;
 
@@ -64,7 +64,7 @@ function multiply(
   ICS.Options calldata opts,
   IERC20 collateral,
   uint256 collateralAmount,
-  uint256 leverage,
+  uint256 baseAmount,
   bytes calldata swapData,
   ICS.AllowParams calldata allowParams
 ) external payable nonReentrant;
@@ -202,7 +202,7 @@ cometFoundation.multiply{value: 1 ether}(
     opts,
     IERC20(WETH_ADDRESS),
     0,                  // Ignored when sending ETH
-    20000,              // 2x leverage
+    4000e8,
     swapData
 );
 ```
@@ -230,7 +230,7 @@ cometFoundation.multiply(
     opts,
     IERC20(WETH_ADDRESS),
     2 ether,            // 2 WETH initial
-    30000,              // 3x leverage
+    4000e8,             // 4000 USDC borrow
     oneInchSwapData
 );
 ```
@@ -260,7 +260,7 @@ cometFoundation.multiply(
     opts,
     IERC20(WETH_ADDRESS),
     1 ether,
-    20000,
+    2000e8,
     swapData,
     allowParams         // Signature included
 );

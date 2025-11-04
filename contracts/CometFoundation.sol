@@ -38,6 +38,7 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
     /// @dev The scale for factors
     uint64 public constant FACTOR_SCALE = 1e18;
     uint16 public constant PRECISION = 1e4;
+    uint16 public constant MAX_LEVERAGE = 10; // 10x
 
     /// @notice Magic byte to identify valid plugin calls
     bytes1 constant PLUGIN_MAGIC = 0x01;
@@ -211,10 +212,10 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
         ICS.Options calldata opts,
         IERC20 collateral,
         uint256 collateralAmount,
-        uint256 leverage,
+        uint256 baseAmount,
         bytes calldata swapData
     ) external payable nonReentrant {
-        _multiply(opts, collateral, collateralAmount, leverage, swapData);
+        _multiply(opts, collateral, collateralAmount, baseAmount, swapData);
     }
 
     /**
@@ -225,12 +226,12 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
         ICS.Options calldata opts,
         IERC20 collateral,
         uint256 collateralAmount,
-        uint256 leverage,
+        uint256 baseAmount,
         bytes calldata swapData,
         ICS.AllowParams calldata allowParams
     ) external payable nonReentrant {
         _allow(opts.comet, allowParams);
-        _multiply(opts, collateral, collateralAmount, leverage, swapData);
+        _multiply(opts, collateral, collateralAmount, baseAmount, swapData);
     }
 
     /**
@@ -315,7 +316,7 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
         ICS.Options calldata opts,
         IERC20 collateral,
         uint256 collateralAmount,
-        uint256 leverage,
+        uint256 baseAmount,
         bytes calldata swapData
     ) internal {
         IComet comet = opts.comet;
@@ -329,6 +330,9 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
             collateral.safeTransferFrom(msg.sender, address(this), collateralAmount);
         }
 
+        uint256 leveraged = _leveraged(comet, collateral, collateralAmount);
+
+        require(leveraged + baseAmount <= leveraged * MAX_LEVERAGE, ICA.InvalidLeverage());
         IERC20 baseAsset = comet.baseToken();
         address loanPlugin = opts.loanPlugin;
 
@@ -346,7 +350,7 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
         _loan(
             loanPlugin,
             ICS.CallbackData({
-                debt: _leveraged(comet, collateral, collateralAmount, leverage),
+                debt: baseAmount,
                 fee: 0, // to be handled by plugin
                 flp: address(0), // to be handled by plugin
                 asset: baseAsset,
@@ -676,34 +680,23 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
      * @param comet The Comet comet interface
      * @param collateral Address of the collateral token
      * @param collateralAmount Amount of collateral being supplied
-     * @param leverage Leverage multiplier (e.g., 20000 = 2x)
      * @return Required loan amount in base asset terms
      * @dev Formula: loan = (initialValue * (leverage - 1)) / PRECISION
      */
-    function _leveraged(
-        IComet comet,
-        IERC20 collateral,
-        uint256 collateralAmount,
-        uint256 leverage
-    ) private view returns (uint256) {
+    function _leveraged(IComet comet, IERC20 collateral, uint256 collateralAmount) private view returns (uint256) {
         IComet.AssetInfo memory info = comet.getAssetInfoByAddress(collateral);
 
         return
-            // leveraged collateral value in base asset
+            // collateral value in base asset
             Math.mulDiv(
-                // collateral value in base asset
                 Math.mulDiv(
-                    Math.mulDiv(
-                        collateralAmount,
-                        comet.getPrice(info.priceFeed),
-                        // aderyn-fp-next-line(literal-instead-of-constant)
-                        10 ** AggregatorV3Interface(info.priceFeed).decimals()
-                    ),
-                    comet.baseScale(),
-                    info.scale
+                    collateralAmount,
+                    comet.getPrice(info.priceFeed),
+                    // aderyn-fp-next-line(literal-instead-of-constant)
+                    10 ** AggregatorV3Interface(info.priceFeed).decimals()
                 ),
-                leverage - PRECISION,
-                PRECISION
+                comet.baseScale(),
+                info.scale
             );
     }
 
