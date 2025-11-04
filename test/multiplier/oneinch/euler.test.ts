@@ -21,7 +21,7 @@ import {
 } from "../../helpers/helpers";
 import { Log } from "ethers";
 
-const opts = { maxFeePerGas: 4_000_000_000 };
+const opts = { maxFeePerGas: 6_000_000_000 };
 
 describe.skip("Comet Multiplier Adapter / 1inch / Euler", function () {
     let adapter: CometFoundation;

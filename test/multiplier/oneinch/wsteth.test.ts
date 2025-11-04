@@ -22,7 +22,7 @@ const ONE_INCH_ROUTER_V6 = "0x111111125421cA6dc452d289314280a0f8842A65";
 const WSTETH_WHALE = "0x0B925eD163218f6662a35e0f0371Ac234f9E9371";
 const WETH_WHALE = "0x28a55C4b4f9615FDE3CDAdDf6cc01FcF2E38A6b0";
 
-const opts = { maxFeePerGas: 4_000_000_000 };
+const opts = { maxFeePerGas: 20_000_000_000 };
 
 describe.skip("Comet Multiplier Adapter / 1inch / wstETH", function () {
     let adapter: CometFoundation;

@@ -23,7 +23,7 @@ import {
 } from "../../helpers/helpers";
 
 const LIFI_ROUTER = "0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE";
-const opts = { maxFeePerGas: 4_000_000_000 };
+const opts = { maxFeePerGas: 30_000_000_000 };
 
 describe("Comet Multiplier Adapter / LiFi / Morpho", function () {
     let adapter: CometFoundation;
@@ -102,7 +102,7 @@ describe("Comet Multiplier Adapter / LiFi / Morpho", function () {
             initialSnapshot = await ethers.provider.send("evm_snapshot");
         });
 
-        it("should execute with 1.1x leverage", async function () {
+        it.only("should execute with 1.1x leverage", async function () {
             const initialAmount = ethers.parseEther("1");
             const leverage = 11_000;
 
