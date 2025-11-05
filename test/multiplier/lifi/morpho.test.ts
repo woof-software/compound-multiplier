@@ -102,7 +102,7 @@ describe("Comet Multiplier Adapter / LiFi / Morpho", function () {
             initialSnapshot = await ethers.provider.send("evm_snapshot");
         });
 
-        it.only("should execute with 1.1x leverage", async function () {
+        it("should execute with 1.1x leverage", async function () {
             const initialAmount = ethers.parseEther("1");
             const leverage = 11_000;
 

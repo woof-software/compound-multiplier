@@ -24,7 +24,7 @@ import {
 } from "../../helpers/helpers";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 
-const opts = { maxFeePerGas: 20_000_000_000 };
+const opts = { maxFeePerGas: 5_000_000_000 };
 
 describe("Comet Multiplier Adapter / LiFi / Euler", function () {
     let adapter: CometFoundation;
@@ -106,7 +106,7 @@ describe("Comet Multiplier Adapter / LiFi / Euler", function () {
             initialSnapshot = await ethers.provider.send("evm_snapshot");
         });
 
-        it.only("should execute with 1.1x leverage", async function () {
+        it("should execute with 1.1x leverage", async function () {
             const initialAmount = ethers.parseEther("1");
             const leverage = 11_000;
 

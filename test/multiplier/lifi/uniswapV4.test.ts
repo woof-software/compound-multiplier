@@ -24,7 +24,7 @@ const COMET_USDC_MARKET = "0xc3d688B66703497DAA19211EEdff47f25384cdc3";
 const LIFI_ROUTER = "0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE";
 const WETH_WHALE = "0xF04a5cC80B1E94C69B48f5ee68a08CD2F09A7c3E";
 
-const opts = { maxFeePerGas: 20_000_000_000 };
+const opts = { maxFeePerGas: 5_000_000_000 };
 
 describe("Comet Multiplier Adapter / LiFi / UniswapV4", function () {
     let adapter: CometFoundation;

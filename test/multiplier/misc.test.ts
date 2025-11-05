@@ -12,7 +12,7 @@ const USDC_EVAULT = "0x797DD80692c3b2dAdabCe8e30C07fDE5307D48a9";
 const WETH_WHALE = "0xF04a5cC80B1E94C69B48f5ee68a08CD2F09A7c3E";
 const USDC_WHALE = "0xEe7aE85f2Fe2239E27D9c1E23fFFe168D63b4055";
 
-const opts = { maxFeePerGas: 20_000_000_000 };
+const opts = { maxFeePerGas: 5_000_000_000 };
 
 describe("Comet Multiplier Adapter / Misc", function () {
     let adapter: CometFoundation;
