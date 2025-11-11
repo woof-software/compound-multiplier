@@ -1,5 +1,0 @@
-[
-    "error ERC20TransferFailed()",
-    "error NativeTransferFailed()",
-    "function ADDRESS_ZERO() view returns (address)"
-]
