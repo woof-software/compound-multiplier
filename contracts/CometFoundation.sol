@@ -267,7 +267,13 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
      */
     //  aderyn-fp-next-line(state-change-without-event)
     function rescue(IERC20 token) external {
-        _dust(treasury, token, IComet(address(0)), token.balanceOf(address(this)));
+        uint256 amount;
+        if (address(token) == address(0)) {
+            amount = address(this).balance;
+        } else {
+            amount = token.balanceOf(address(this));
+        }
+        _dust(treasury, token, IComet(address(0)), amount);
     }
 
     /*//////////////////////////////////////////////////////////////

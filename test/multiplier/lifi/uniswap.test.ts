@@ -897,4 +897,67 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
             expect(await cometExt.isAllowed(user3.address, adapterAddress)).to.be.true;
         });
     });
+
+    describe("Rescue", function () {
+        beforeEach(async function () {
+            await ethers.provider.send("evm_revert", [initialSnapshot]);
+            initialSnapshot = await ethers.provider.send("evm_snapshot");
+        });
+
+        it("Should rescue ERC20 tokens to treasury", async function () {
+            const rescueAmount = ethers.parseUnits("100", 6); // 100 USDC
+            await usdc.transfer(await adapter.getAddress(), rescueAmount, opts);
+
+            const treasuryBalanceBefore = await usdc.balanceOf(await treasury.getAddress());
+            const adapterBalanceBefore = await usdc.balanceOf(await adapter.getAddress());
+
+            expect(adapterBalanceBefore).to.equal(rescueAmount);
+
+            await adapter.rescue(usdc, opts);
+
+            const treasuryBalanceAfter = await usdc.balanceOf(await treasury.getAddress());
+            const adapterBalanceAfter = await usdc.balanceOf(await adapter.getAddress());
+
+            expect(adapterBalanceAfter).to.equal(0);
+            expect(treasuryBalanceAfter - treasuryBalanceBefore).to.equal(rescueAmount);
+        });
+
+        it("Should rescue native ETH to treasury", async function () {
+            const rescueAmount = ethers.parseEther("1.0");
+
+            // Send ETH to adapter
+            await owner.sendTransaction({
+                to: await adapter.getAddress(),
+                value: rescueAmount
+            });
+
+            const treasuryBalanceBefore = await ethers.provider.getBalance(await treasury.getAddress());
+            const adapterBalanceBefore = await ethers.provider.getBalance(await adapter.getAddress());
+
+            expect(adapterBalanceBefore).to.equal(rescueAmount);
+
+            await adapter.rescue(ethers.ZeroAddress, opts);
+
+            const treasuryBalanceAfter = await ethers.provider.getBalance(await treasury.getAddress());
+            const adapterBalanceAfter = await ethers.provider.getBalance(await adapter.getAddress());
+
+            expect(adapterBalanceAfter).to.equal(0);
+            expect(treasuryBalanceAfter - treasuryBalanceBefore).to.equal(rescueAmount);
+        });
+
+        it("Should handle rescue with zero balance", async function () {
+            const treasuryBalanceBefore = await usdc.balanceOf(await treasury.getAddress());
+            const adapterBalanceBefore = await usdc.balanceOf(await adapter.getAddress());
+
+            expect(adapterBalanceBefore).to.equal(0);
+
+            await adapter.rescue(usdc, opts);
+
+            const treasuryBalanceAfter = await usdc.balanceOf(await treasury.getAddress());
+            const adapterBalanceAfter = await usdc.balanceOf(await adapter.getAddress());
+
+            expect(adapterBalanceAfter).to.equal(0);
+            expect(treasuryBalanceAfter).to.equal(treasuryBalanceBefore);
+        });
+    });
 });
