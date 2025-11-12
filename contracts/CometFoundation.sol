@@ -333,7 +333,9 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
             collateralAmount = msg.value;
             IWEth(wEth).deposit{ value: msg.value }();
         } else {
+            uint256 balanceBefore = collateral.balanceOf(address(this));
             collateral.safeTransferFrom(msg.sender, address(this), collateralAmount);
+            collateralAmount = collateral.balanceOf(address(this)) - balanceBefore;
         }
 
         uint256 leveraged = _leveraged(comet, collateral, collateralAmount);
