@@ -434,9 +434,12 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
     ) internal {
         uint256 repaymentAmount = data.debt + data.fee;
         uint256 amountOut;
+        uint256 dust;
 
         if (mode == ICS.Mode.MULTIPLY) {
-            amountOut = _swap(swapPlugin, data.asset, params.supplyAsset, data.debt, data.swapData);
+            (amountOut, dust) = _swap(swapPlugin, data.asset, params.supplyAsset, data.debt, data.swapData);
+            _dust(user, data.asset, IComet(address(0)), dust);
+
             params.supplyAmount += amountOut;
 
             _supplyWithdraw(comet, user, params);
@@ -445,15 +448,21 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
         } else {
             _supplyWithdraw(comet, user, params);
 
-            amountOut = _swap(swapPlugin, params.withdrawAsset, data.asset, params.withdrawAmount, data.swapData);
+            (amountOut, dust) = _swap(
+                swapPlugin,
+                params.withdrawAsset,
+                data.asset,
+                params.withdrawAmount,
+                data.swapData
+            );
+
+            _dust(user, params.withdrawAsset, IComet(address(0)), dust);
 
             require(amountOut >= repaymentAmount, ICA.InvalidAmountOut());
 
-            uint256 dust = amountOut - repaymentAmount;
+            dust = amountOut - repaymentAmount;
 
-            if (dust > 0) {
-                _dust(user, data.asset, mode == ICS.Mode.EXCHANGE ? comet : IComet(address(0)), dust);
-            }
+            _dust(user, data.asset, mode == ICS.Mode.EXCHANGE ? comet : IComet(address(0)), dust);
 
             if (mode == ICS.Mode.COVER) {
                 emit ICE.Covered(user, address(comet), address(params.withdrawAsset), params.withdrawAmount, dust);
@@ -489,6 +498,7 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
 
     /**
      * @notice Executes a token swap using the configured swap plugin
+     * @param swapPlugin Address of the swap plugin to use
      * @param srcToken Address of the source token to swap from
      * @param dstToken Address of the destination token to swap to
      * @param amount Amount of source tokens to swap
@@ -502,8 +512,11 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
         IERC20 dstToken,
         uint256 amount,
         bytes memory swapData
-    ) internal returns (uint256 amountOut) {
+    ) internal returns (uint256 amountOut, uint256 dust) {
         require(swapPlugin != address(0), ICA.UnknownPlugin());
+
+        uint256 balanceBefore = srcToken.balanceOf(address(this));
+
         (bool ok, bytes memory data) = address(swapPlugin).delegatecall(
             abi.encodeWithSelector(
                 ICometSwapPlugin.swap.selector,
@@ -514,6 +527,11 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
                 swapData
             )
         );
+
+        if (balanceBefore < srcToken.balanceOf(address(this)) + amount) {
+            dust = srcToken.balanceOf(address(this)) + amount - balanceBefore;
+        }
+
         _catch(ok);
 
         (amountOut) = abi.decode(data, (uint256));
