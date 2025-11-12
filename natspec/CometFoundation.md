@@ -384,7 +384,7 @@ _This function handles the actual supply and withdrawal of assets in the Comet m
 ### \_swap
 
 ```solidity
-function _swap(address swapPlugin, contract IERC20 srcToken, contract IERC20 dstToken, uint256 amount, bytes swapData) internal returns (uint256 amountOut)
+function _swap(address swapPlugin, contract IERC20 srcToken, contract IERC20 dstToken, uint256 amount, bytes swapData) internal returns (uint256 amountOut, uint256 dust)
 ```
 
 Executes a token swap using the configured swap plugin
@@ -395,7 +395,7 @@ _Uses delegatecall to execute swap in the context of this contract_
 
 | Name       | Type            | Description                                 |
 | ---------- | --------------- | ------------------------------------------- |
-| swapPlugin | address         |                                             |
+| swapPlugin | address         | Address of the swap plugin to use           |
 | srcToken   | contract IERC20 | Address of the source token to swap from    |
 | dstToken   | contract IERC20 | Address of the destination token to swap to |
 | amount     | uint256         | Amount of source tokens to swap             |
@@ -406,6 +406,7 @@ _Uses delegatecall to execute swap in the context of this contract_
 | Name      | Type    | Description                                  |
 | --------- | ------- | -------------------------------------------- |
 | amountOut | uint256 | Actual amount of destination tokens received |
+| dust      | uint256 |                                              |
 
 ### \_loan
 
