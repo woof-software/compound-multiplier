@@ -996,7 +996,7 @@ describe("Comet Multiplier Adapter / LiFi / Morpho", function () {
             const adapterBalanceAfter = await ethers.provider.getBalance(await adapter.getAddress());
 
             expect(adapterBalanceAfter).to.equal(0);
-            expect(treasuryBalanceAfter - treasuryBalanceBefore).to.equal(rescueAmount);
+            expect(treasuryBalanceAfter - treasuryBalanceBefore).to.equal(rescueAmount); // FAILS???
         });
 
         it("Should handle rescue with zero balance", async function () {

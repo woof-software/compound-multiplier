@@ -535,12 +535,13 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
                 swapData
             )
         );
-
-        if (balanceBefore < srcToken.balanceOf(address(this)) + amount) {
-            dust = srcToken.balanceOf(address(this)) + amount - balanceBefore;
-        }
-
         _catch(ok);
+
+        uint256 balanceAfter = srcToken.balanceOf(address(this));
+        uint256 delt = balanceBefore - amount;
+        if (delt < balanceAfter) {
+            dust = balanceAfter - delt;
+        }
 
         (amountOut) = abi.decode(data, (uint256));
     }
@@ -601,8 +602,8 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
         if (amount == 0) return;
 
         if (address(asset) == address(0)) {
-            // aderyn-fp-next-line(unsafe-erc20-operation)
-            payable(user).transfer(amount);
+            (bool ok, ) = payable(user).call{ value: amount }("");
+            _catch(ok);
         } else if (address(comet) == address(0)) {
             asset.safeTransfer(user, amount);
         } else {
