@@ -39,7 +39,7 @@ Executes a token swap between two assets
 ### \_decodeSwapData
 
 ```solidity
-function _decodeSwapData(bytes swapData) internal pure returns (address receiver, uint256 minAmountOut, struct IOKX.RouterPath[] paths)
+function _decodeSwapData(bytes swapData) internal view returns (address receiver, struct IOKX.BaseRequest baseRequest, struct IOKX.RouterPath[] paths)
 ```
 
 Decodes the swapData for OKX dagSwap
@@ -52,28 +52,30 @@ Decodes the swapData for OKX dagSwap
 
 #### Return Values
 
-| Name         | Type                     | Description                       |
-| ------------ | ------------------------ | --------------------------------- |
-| receiver     | address                  | Address to receive swapped tokens |
-| minAmountOut | uint256                  | Minimum amount expected from swap |
-| paths        | struct IOKX.RouterPath[] | Array of routing paths            |
+| Name        | Type                     | Description                             |
+| ----------- | ------------------------ | --------------------------------------- |
+| receiver    | address                  | Address to receive swapped tokens       |
+| baseRequest | struct IOKX.BaseRequest  | Base request with token and amount info |
+| paths       | struct IOKX.RouterPath[] | Array of routing paths                  |
 
 ### \_validateSwapParams
 
 ```solidity
-function _validateSwapParams(address receiver, struct IOKX.RouterPath[] paths, address srcToken, uint256 minAmountOut) internal view
+function _validateSwapParams(address receiver, struct IOKX.BaseRequest baseRequest, struct IOKX.RouterPath[] paths, address srcToken, address dstToken, uint256 amountIn) internal view
 ```
 
 Validates the swap parameters
 
 #### Parameters
 
-| Name         | Type                     | Description                    |
-| ------------ | ------------------------ | ------------------------------ |
-| receiver     | address                  | Address to receive tokens      |
-| paths        | struct IOKX.RouterPath[] | Array of routing paths         |
-| srcToken     | address                  | Expected source token          |
-| minAmountOut | uint256                  | Minimum expected output amount |
+| Name        | Type                     | Description                             |
+| ----------- | ------------------------ | --------------------------------------- |
+| receiver    | address                  | Address to receive tokens               |
+| baseRequest | struct IOKX.BaseRequest  | Base request with token and amount info |
+| paths       | struct IOKX.RouterPath[] | Array of routing paths                  |
+| srcToken    | address                  | Expected source token                   |
+| dstToken    | address                  | Expected destination token              |
+| amountIn    | uint256                  | Expected input amount                   |
 
 ### supportsInterface
 
