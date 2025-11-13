@@ -22,6 +22,7 @@ import {
     signAllowBySig,
     USDC_WHALE
 } from "../../helpers/helpers";
+import { HDNodeWallet } from "ethers";
 
 const LIFI_ROUTER = "0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE";
 const opts = { maxFeePerGas: 30_000_000_000 };
@@ -38,7 +39,7 @@ describe("Comet Multiplier Adapter / LiFi / Morpho", function () {
     let user2: SignerWithAddress;
     let user3: SignerWithAddress;
     let initialSnapshot: any;
-    let treasury: SignerWithAddress;
+    let treasury: HDNodeWallet;
 
     async function getMarketOptions() {
         return {
@@ -55,7 +56,10 @@ describe("Comet Multiplier Adapter / LiFi / Morpho", function () {
             }
         ]);
 
-        [owner, user, user2, user3, treasury] = await ethers.getSigners();
+        [owner, user, user2, user3] = await ethers.getSigners();
+
+        // Create a NEW wallet for treasury instead of using a signer
+        treasury = ethers.Wallet.createRandom().connect(ethers.provider);
 
         const LoanFactory = await ethers.getContractFactory("MorphoPlugin", owner);
         loanPlugin = await LoanFactory.deploy(opts);
@@ -979,8 +983,12 @@ describe("Comet Multiplier Adapter / LiFi / Morpho", function () {
             expect(treasuryBalanceAfter - treasuryBalanceBefore).to.equal(rescueAmount);
         });
 
-        it("Should rescue native ETH to treasury", async function () {
+        it.only("Should rescue native ETH to treasury", async function () {
             const rescueAmount = ethers.parseEther("1.0");
+
+            const contractTreasury = await adapter.treasury();
+            const testTreasury = await treasury.getAddress();
+            expect(contractTreasury).to.equal(testTreasury);
 
             // Send ETH to adapter
             await owner.sendTransaction({

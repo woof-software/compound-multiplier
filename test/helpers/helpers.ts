@@ -6,6 +6,7 @@ import { ethers } from "hardhat";
 import { CometFoundation, IComet, ICometCover, ICometMultiplier, IERC20 } from "../../typechain-types";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 export { SnapshotRestorer, takeSnapshot, time } from "@nomicfoundation/hardhat-network-helpers";
+import CryptoJS from "crypto-js";
 
 export interface Plugin {
     endpoint: string;
@@ -219,6 +220,83 @@ export async function getQuote(
         toAmountMin: BigInt(quoteData.estimate.toAmountMin),
         toAmount: BigInt(quoteData.estimate.toAmount),
         swapCalldata: swapCalldata
+    };
+}
+
+/**
+ * Get quote from OKX DEX (same as 1inch quote)
+ */
+export async function getOKXQuote(
+    fromToken: string,
+    toToken: string,
+    amount: string,
+    slippage: string = "1"
+): Promise<string> {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    const url = `https://web3.okx.com/api/v6/dex/aggregator/quote`;
+    const params = {
+        chainIndex: "1",
+        fromTokenAddress: fromToken,
+        toTokenAddress: toToken,
+        amount
+    };
+
+    const res = await axios.get(url, { params, headers: getOKXHeaders("GET", "/api/v6/dex/aggregator/quote", params) });
+
+    if (res.data.code !== "0") throw new Error(`OKX Quote Error: ${res.data.msg}`);
+
+    return res.data.data[0].routerResult.toTokenAmount;
+}
+
+/**
+ * Get swap calldata from OKX DEX (same as 1inch swap)
+ */
+export async function getOKXSwapData(
+    fromToken: string,
+    toToken: string,
+    amount: string,
+    userAddress: string,
+    slippage: string = "1"
+): Promise<string> {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    const url = `https://web3.okx.com/api/v6/dex/aggregator/swap`;
+    const params = {
+        chainIndex: "1",
+        fromTokenAddress: fromToken,
+        toTokenAddress: toToken,
+        amount,
+        userWalletAddress: userAddress,
+        slippage
+    };
+
+    const res = await axios.get(url, { params, headers: getOKXHeaders("GET", "/api/v6/dex/aggregator/swap", params) });
+
+    if (res.data.code !== "0") throw new Error(`OKX Swap Error: ${res.data.msg}`);
+
+    return res.data.data[0].tx.data;
+}
+
+function getOKXHeaders(method: string, requestPath: string, params?: any): Record<string, string> {
+    const timestamp = new Date().toISOString();
+    const apiKey = process.env.OKX_API_KEY;
+    const secretKey = process.env.OKX_SECRET_KEY;
+    const passphrase = process.env.OKX_PASSPHRASE;
+
+    if (!apiKey || !secretKey || !passphrase) {
+        throw new Error("OKX API credentials not configured");
+    }
+
+    const queryString = params ? "?" + new URLSearchParams(params).toString() : "";
+    const message = timestamp + method.toUpperCase() + requestPath + queryString;
+
+    const signature = CryptoJS.enc.Base64.stringify(CryptoJS.HmacSHA256(message, secretKey));
+    return {
+        "OK-ACCESS-KEY": apiKey,
+        "OK-ACCESS-SIGN": signature,
+        "OK-ACCESS-PASSPHRASE": passphrase,
+        "OK-ACCESS-TIMESTAMP": timestamp
     };
 }
 

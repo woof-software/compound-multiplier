@@ -61,7 +61,7 @@ Decodes the swapData for OKX dagSwap
 ### \_validateSwapParams
 
 ```solidity
-function _validateSwapParams(address receiver, struct IOKX.RouterPath[] paths, address srcToken, address dstToken, uint256 amount, uint256 minAmountOut) internal view
+function _validateSwapParams(address receiver, struct IOKX.RouterPath[] paths, address srcToken, uint256 minAmountOut) internal view
 ```
 
 Validates the swap parameters
@@ -73,8 +73,6 @@ Validates the swap parameters
 | receiver     | address                  | Address to receive tokens      |
 | paths        | struct IOKX.RouterPath[] | Array of routing paths         |
 | srcToken     | address                  | Expected source token          |
-| dstToken     | address                  | Expected destination token     |
-| amount       | uint256                  | Expected input amount          |
 | minAmountOut | uint256                  | Minimum expected output amount |
 
 ### supportsInterface
