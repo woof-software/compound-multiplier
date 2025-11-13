@@ -21,7 +21,7 @@ let WETH_ADDRESS: string;
 let BASE_TOKEN_ADDRESS: string;
 let COMET_MARKET: string;
 
-const opts = { maxFeePerGas: 4_000_000_000 };
+const opts = { maxFeePerGas: 5_000_000_000 };
 
 // if (!process.env.RUN_SCENARIO) {
 //     console.log("Scenario skipped (RUN_SCENARIO not set). Run via deploy.sh only.");
@@ -31,14 +31,19 @@ const opts = { maxFeePerGas: 4_000_000_000 };
 const networkName = process.env.FORK_NETWORK!;
 let id = hre.config.networks[networkName]?.chainId!;
 const deploymentPath = `./deployments/${networkName}.json`;
-const config = deployConfig[networkName];
-if (!fs.existsSync(deploymentPath)) {
-    throw new Error(`Deployment file not found: ${deploymentPath}`);
-}
+// Normalize network name for deployConfig lookup (ethereum -> mainnet)
+const deployConfigKey = networkName.toLowerCase() === "ethereum" ? "mainnet" : networkName.toLowerCase();
+const config = deployConfig[deployConfigKey];
+// if (!fs.existsSync(deploymentPath)) {
+//     throw new Error(`Deployment file not found: ${deploymentPath}`);
+// }
 
-const deploymentData = JSON.parse(fs.readFileSync(deploymentPath, "utf8"));
+// const deploymentData = JSON.parse(fs.readFileSync(deploymentPath, "utf8"));
 
-const networkEnum = Network[(networkName.charAt(0).toUpperCase() + networkName.slice(1)) as keyof typeof Network];
+// Map network name to Network enum (ethereum -> Mainnet)
+const networkEnumKey =
+    networkName.toLowerCase() === "ethereum" ? "Mainnet" : networkName.charAt(0).toUpperCase() + networkName.slice(1);
+const networkEnum = Network[networkEnumKey as keyof typeof Network];
 NETWORK_CONFIG = envs(networkEnum);
 
 if (!NETWORK_CONFIG) {
@@ -49,7 +54,7 @@ if (!NETWORK_CONFIG) {
 WETH_ADDRESS = NETWORK_CONFIG.tokens.WETH;
 BASE_TOKEN_ADDRESS = NETWORK_CONFIG.tokens.USDC;
 COMET_MARKET = COMETS.get(networkEnum)!;
-
+let deploymentData = "" as any;
 const loanPlugins = Object.keys(deploymentData.loanPlugins || {});
 const swapPlugins = Object.keys(deploymentData.swapPlugins || {});
 

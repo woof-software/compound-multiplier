@@ -15,9 +15,9 @@ const WETH_EVAULT = process.env.WETH_EVAULT ?? "0xD8b27CF359b7D15710a5BE299AF6e7
 
 const WSTETH_WHALE = "0x0B925eD163218f6662a35e0f0371Ac234f9E9371";
 
-const opts = { maxFeePerGas: 4_000_000_000 };
+const opts = { maxFeePerGas: 5_000_000_000 };
 
-describe.only("Comet Multiplier Adapter / LiFI / wstETH", function () {
+describe("Comet Multiplier Adapter / LiFI / wstETH", function () {
     let adapter: CometFoundation;
     let loanPlugin: EulerV2Plugin;
     let swapPlugin: WstEthPlugin;

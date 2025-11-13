@@ -340,7 +340,11 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
 
         uint256 leveraged = _leveraged(comet, collateral, collateralAmount);
 
-        require(leveraged + baseAmount <= leveraged * MAX_LEVERAGE, ICA.InvalidLeverage());
+        require(
+            _leveraged(comet, collateral, collateralAmount) + baseAmount <=
+                Math.mulDiv(leveraged, _maxLeverage(comet, collateral), FACTOR_SCALE),
+            ICA.InvalidLeverage()
+        );
         IERC20 baseAsset = comet.baseToken();
         address loanPlugin = opts.loanPlugin;
 
@@ -724,6 +728,16 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
                 ),
                 comet.baseScale(),
                 info.scale
+            );
+    }
+
+    function _maxLeverage(IComet comet, IERC20 collateral) internal view returns (uint256) {
+        IComet.AssetInfo memory info = comet.getAssetInfoByAddress(collateral);
+        return
+            Math.mulDiv(
+                Math.mulDiv(FACTOR_SCALE, FACTOR_SCALE, FACTOR_SCALE - uint256(info.borrowCollateralFactor)),
+                PRECISION - 100,
+                PRECISION
             );
     }
 

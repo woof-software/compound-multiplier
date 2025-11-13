@@ -22,7 +22,7 @@ const ONE_INCH_ROUTER_V6 = "0x111111125421cA6dc452d289314280a0f8842A65";
 
 const WETH_WHALE = "0xF04a5cC80B1E94C69B48f5ee68a08CD2F09A7c3E";
 
-const opts = { maxFeePerGas: 4_000_000_000 };
+const opts = { maxFeePerGas: 5_000_000_000 };
 
 describe.skip("Comet Multiplier Adapter / 1inch / UniswapV3", function () {
     let adapter: CometFoundation;
