@@ -509,6 +509,12 @@ _Reverts if any parameter is invalid or if the swap would violate health factor 
 | minAmountOut        | uint256         | The minimum acceptable amount of toAsset to receive       |
 | maxHealthFactorDrop | uint256         | The maximum allowed drop in health factor in basis points |
 
+### \_maxLeverage
+
+```solidity
+function _maxLeverage(contract IComet comet, contract IERC20 collateral) internal view returns (uint256)
+```
+
 ### \_config
 
 ```solidity

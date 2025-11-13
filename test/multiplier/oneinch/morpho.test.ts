@@ -20,7 +20,7 @@ import {
     calculateExpectedCollateral
 } from "../../helpers/helpers";
 
-const opts = { maxFeePerGas: 4_000_000_000 };
+const opts = { maxFeePerGas: 5_000_000_000 };
 
 describe.skip("Comet Multiplier Adapter / 1inch / Morpho", function () {
     let adapter: CometFoundation;
