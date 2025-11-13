@@ -208,7 +208,7 @@ export async function getQuote(
                 fromAmount,
                 fromAddress,
                 options: {
-                    slippage: 5
+                    slippage: 10
                 }
             }
         })

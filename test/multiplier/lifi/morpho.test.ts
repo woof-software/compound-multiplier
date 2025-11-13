@@ -983,7 +983,7 @@ describe("Comet Multiplier Adapter / LiFi / Morpho", function () {
             expect(treasuryBalanceAfter - treasuryBalanceBefore).to.equal(rescueAmount);
         });
 
-        it.only("Should rescue native ETH to treasury", async function () {
+        it("Should rescue native ETH to treasury", async function () {
             const rescueAmount = ethers.parseEther("1.0");
 
             const contractTreasury = await adapter.treasury();

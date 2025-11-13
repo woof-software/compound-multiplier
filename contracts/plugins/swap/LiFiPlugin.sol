@@ -42,11 +42,7 @@ contract LiFiPlugin is ICometSwapPlugin {
 
         address router = abi.decode(config, (address));
 
-        for (uint256 i = 0; i < swaps.length; ++i) {
-            if (swaps[i].requiresDeposit && swaps[i].sendingAssetId != address(0)) {
-                IERC20(swaps[i].sendingAssetId).safeIncreaseAllowance(router, swaps[i].fromAmount);
-            }
-        }
+        IERC20(srcToken).safeIncreaseAllowance(router, amountIn);
 
         uint256 balBefore = IERC20(dstToken).balanceOf(address(this));
 
