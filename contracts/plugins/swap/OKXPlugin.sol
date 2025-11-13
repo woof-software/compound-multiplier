@@ -36,7 +36,7 @@ contract OKXPlugin is ICometSwapPlugin {
 
         (address receiver, uint256 minAmountOut, IOKX.RouterPath[] memory paths) = _decodeSwapData(swapData);
 
-        _validateSwapParams(receiver, paths, srcToken, dstToken, amountIn, minAmountOut);
+        _validateSwapParams(receiver, paths, srcToken, minAmountOut);
 
         address router = abi.decode(config, (address));
         IERC20(srcToken).safeIncreaseAllowance(router, amountIn);
@@ -84,16 +84,12 @@ contract OKXPlugin is ICometSwapPlugin {
      * @param receiver Address to receive tokens
      * @param paths Array of routing paths
      * @param srcToken Expected source token
-     * @param dstToken Expected destination token
-     * @param amount Expected input amount
      * @param minAmountOut Minimum expected output amount
      */
     function _validateSwapParams(
         address receiver,
         IOKX.RouterPath[] memory paths,
         address srcToken,
-        address dstToken,
-        uint256 amount,
         uint256 minAmountOut
     ) internal view {
         require(receiver == address(this), ICA.InvalidReceiver());
