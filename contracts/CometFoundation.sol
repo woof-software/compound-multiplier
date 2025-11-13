@@ -38,7 +38,6 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
     /// @dev The scale for factors
     uint64 public constant FACTOR_SCALE = 1e18;
     uint16 public constant PRECISION = 1e4;
-    uint16 public constant MAX_LEVERAGE = 10; // 10x
 
     /// @notice Magic byte to identify valid plugin calls
     bytes1 constant PLUGIN_MAGIC = 0x01;
@@ -213,9 +212,10 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
         IERC20 collateral,
         uint256 collateralAmount,
         uint256 baseAmount,
+        uint256 maxHealthFactorDrop,
         bytes calldata swapData
     ) external payable nonReentrant {
-        _multiply(opts, collateral, collateralAmount, baseAmount, swapData);
+        _multiply(opts, collateral, collateralAmount, baseAmount, maxHealthFactorDrop, swapData);
     }
 
     /**
@@ -227,11 +227,12 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
         IERC20 collateral,
         uint256 collateralAmount,
         uint256 baseAmount,
+        uint256 maxHealthFactorDrop,
         bytes calldata swapData,
         ICS.AllowParams calldata allowParams
     ) external payable nonReentrant {
         _allow(opts.comet, allowParams);
-        _multiply(opts, collateral, collateralAmount, baseAmount, swapData);
+        _multiply(opts, collateral, collateralAmount, baseAmount, maxHealthFactorDrop, swapData);
     }
 
     /**
@@ -323,10 +324,12 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
         IERC20 collateral,
         uint256 collateralAmount,
         uint256 baseAmount,
+        uint256 maxHealthFactorDrop,
         bytes calldata swapData
     ) internal {
         IComet comet = opts.comet;
         require(address(comet) != address(0), ICA.InvalidComet());
+        require(maxHealthFactorDrop < PRECISION, ICA.InvalidMultiplyParameters());
 
         if (msg.value > 0) {
             require(address(collateral) == wEth, ICA.InvalidWeth());
@@ -342,7 +345,7 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
 
         require(
             _leveraged(comet, collateral, collateralAmount) + baseAmount <=
-                Math.mulDiv(leveraged, _maxLeverage(comet, collateral), FACTOR_SCALE),
+                Math.mulDiv(leveraged, _maxLeverage(comet, collateral, maxHealthFactorDrop), FACTOR_SCALE),
             ICA.InvalidLeverage()
         );
         IERC20 baseAsset = comet.baseToken();
@@ -731,12 +734,16 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
             );
     }
 
-    function _maxLeverage(IComet comet, IERC20 collateral) internal view returns (uint256) {
+    function _maxLeverage(
+        IComet comet,
+        IERC20 collateral,
+        uint256 maxHealthFactorDrop
+    ) internal view returns (uint256) {
         IComet.AssetInfo memory info = comet.getAssetInfoByAddress(collateral);
         return
             Math.mulDiv(
                 Math.mulDiv(FACTOR_SCALE, FACTOR_SCALE, FACTOR_SCALE - uint256(info.borrowCollateralFactor)),
-                PRECISION - 100,
+                PRECISION - maxHealthFactorDrop,
                 PRECISION
             );
     }

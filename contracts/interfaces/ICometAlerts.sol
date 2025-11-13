@@ -30,6 +30,11 @@ interface ICometAlerts {
     error InvalidTreasury();
 
     /**
+     * @notice Emitted if max health factor drop is invalid
+     */
+    error InvalidMultiplyParameters();
+
+    /**
 
     //MULTIPLIER
 
