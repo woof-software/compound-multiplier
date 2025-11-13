@@ -64,6 +64,11 @@
     },
     {
         "inputs": [],
+        "name": "InvalidMultiplyParameters",
+        "type": "error"
+    },
+    {
+        "inputs": [],
         "name": "InvalidSwapParameters",
         "type": "error"
     },
@@ -288,19 +293,6 @@
                 "internalType": "uint64",
                 "name": "",
                 "type": "uint64"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "MAX_LEVERAGE",
-        "outputs": [
-            {
-                "internalType": "uint16",
-                "name": "",
-                "type": "uint16"
             }
         ],
         "stateMutability": "view",
@@ -633,9 +625,46 @@
                 "type": "uint256"
             },
             {
+                "internalType": "uint256",
+                "name": "maxHealthFactorDrop",
+                "type": "uint256"
+            },
+            {
                 "internalType": "bytes",
                 "name": "swapData",
                 "type": "bytes"
+            },
+            {
+                "components": [
+                    {
+                        "internalType": "uint256",
+                        "name": "nonce",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "expiry",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "bytes32",
+                        "name": "r",
+                        "type": "bytes32"
+                    },
+                    {
+                        "internalType": "bytes32",
+                        "name": "s",
+                        "type": "bytes32"
+                    },
+                    {
+                        "internalType": "uint8",
+                        "name": "v",
+                        "type": "uint8"
+                    }
+                ],
+                "internalType": "struct ICometStructs.AllowParams",
+                "name": "allowParams",
+                "type": "tuple"
             }
         ],
         "name": "multiply",
@@ -683,41 +712,14 @@
                 "type": "uint256"
             },
             {
+                "internalType": "uint256",
+                "name": "maxHealthFactorDrop",
+                "type": "uint256"
+            },
+            {
                 "internalType": "bytes",
                 "name": "swapData",
                 "type": "bytes"
-            },
-            {
-                "components": [
-                    {
-                        "internalType": "uint256",
-                        "name": "nonce",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "expiry",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "bytes32",
-                        "name": "r",
-                        "type": "bytes32"
-                    },
-                    {
-                        "internalType": "bytes32",
-                        "name": "s",
-                        "type": "bytes32"
-                    },
-                    {
-                        "internalType": "uint8",
-                        "name": "v",
-                        "type": "uint8"
-                    }
-                ],
-                "internalType": "struct ICometStructs.AllowParams",
-                "name": "allowParams",
-                "type": "tuple"
             }
         ],
         "name": "multiply",
