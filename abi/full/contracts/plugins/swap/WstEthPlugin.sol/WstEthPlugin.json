@@ -1,0 +1,11 @@
+[
+    "error InvalidAmountOut()",
+    "error InvalidSwapParameters()",
+    "error SafeERC20FailedOperation(address token)",
+    "event Swap(address indexed router, address indexed srcToken, address indexed dstToken, uint256 amountOut)",
+    "function STETH_ADDRESS() view returns (address)",
+    "function SWAP_SELECTOR() view returns (bytes4)",
+    "function WSTETH_ADDRESS() view returns (address)",
+    "function supportsInterface(bytes4 interfaceId) pure returns (bool)",
+    "function swap(address srcToken, address dstToken, uint256 amountIn, bytes, bytes swapData) returns (uint256 amountOut)"
+]
