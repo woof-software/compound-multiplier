@@ -20,7 +20,8 @@ import {
     getUserNonce,
     getFutureExpiry,
     signAllowBySig,
-    WST_ETH
+    WST_ETH,
+    USDC_WHALE
 } from "../../helpers/helpers";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 
@@ -222,8 +223,8 @@ describe("Comet Multiplier Adapter / LiFi / Euler", function () {
                 adapter
                     .connect(user2)
                     [
-                        "multiply((address,address,address),address,uint256,uint256,bytes)"
-                    ](market, WETH_ADDRESS, initialAmount, leverage, "0x")
+                        "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                    ](market, WETH_ADDRESS, initialAmount, leverage, 100, "0x")
             ).to.be.reverted;
         });
 
@@ -241,8 +242,8 @@ describe("Comet Multiplier Adapter / LiFi / Euler", function () {
                 adapter
                     .connect(user)
                     [
-                        "multiply((address,address,address),address,uint256,uint256,bytes)"
-                    ](market, WETH_ADDRESS, initialAmount, leverage, "0x")
+                        "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                    ](market, WETH_ADDRESS, initialAmount, leverage, 100, "0x")
             ).to.be.revertedWithCustomError(adapter, "InvalidComet");
         });
 
@@ -256,8 +257,8 @@ describe("Comet Multiplier Adapter / LiFi / Euler", function () {
                 adapter
                     .connect(user)
                     [
-                        "multiply((address,address,address),address,uint256,uint256,bytes)"
-                    ](market, WETH_ADDRESS, initialAmount, leverage, "0x")
+                        "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                    ](market, WETH_ADDRESS, initialAmount, leverage, 100, "0x")
             ).to.be.reverted;
         });
 
@@ -271,8 +272,8 @@ describe("Comet Multiplier Adapter / LiFi / Euler", function () {
                 adapter
                     .connect(user)
                     [
-                        "multiply((address,address,address),address,uint256,uint256,bytes)"
-                    ](market, WETH_ADDRESS, initialAmount, leverage, "0x")
+                        "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                    ](market, WETH_ADDRESS, initialAmount, leverage, 100, "0x")
             ).to.be.reverted;
         });
 
@@ -287,8 +288,8 @@ describe("Comet Multiplier Adapter / LiFi / Euler", function () {
                 adapter
                     .connect(user)
                     [
-                        "multiply((address,address,address),address,uint256,uint256,bytes)"
-                    ](market, WETH_ADDRESS, initialAmount, maxLeverage, "0x")
+                        "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                    ](market, WETH_ADDRESS, initialAmount, maxLeverage, 100, "0x")
             ).to.be.reverted;
         });
 
@@ -319,8 +320,8 @@ describe("Comet Multiplier Adapter / LiFi / Euler", function () {
             const tx = await adapter
                 .connect(user)
                 [
-                    "multiply((address,address,address),address,uint256,uint256,bytes)"
-                ](market, WETH_ADDRESS, 0, leveraged, quote.swapCalldata, {
+                    "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                ](market, WETH_ADDRESS, 0, leveraged, 100, quote.swapCalldata, {
                     ...opts,
                     value: initialAmount
                 });
@@ -366,8 +367,8 @@ describe("Comet Multiplier Adapter / LiFi / Euler", function () {
             await adapter
                 .connect(user2)
                 [
-                    "multiply((address,address,address),address,uint256,uint256,bytes)"
-                ](market, WETH_ADDRESS, 0, leveraged, quote.swapCalldata, {
+                    "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                ](market, WETH_ADDRESS, 0, leveraged, 100, quote.swapCalldata, {
                     ...opts,
                     value: initialAmount
                 });
@@ -404,8 +405,8 @@ describe("Comet Multiplier Adapter / LiFi / Euler", function () {
             await adapter
                 .connect(user)
                 [
-                    "multiply((address,address,address),address,uint256,uint256,bytes)"
-                ](market, WETH_ADDRESS, 0, leveraged, quote.swapCalldata, {
+                    "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                ](market, WETH_ADDRESS, 0, leveraged, 100, quote.swapCalldata, {
                     ...opts,
                     value: initialAmount
                 });
@@ -428,8 +429,8 @@ describe("Comet Multiplier Adapter / LiFi / Euler", function () {
                 adapter
                     .connect(user)
                     [
-                        "multiply((address,address,address),address,uint256,uint256,bytes)"
-                    ](market, fakeToken, 0, leveraged, "0x", { ...opts, value: initialAmount })
+                        "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                    ](market, fakeToken, 0, leveraged, 100, "0x", { ...opts, value: initialAmount })
             ).to.be.revertedWithCustomError(adapter, "InvalidWeth");
         });
     });
@@ -894,8 +895,8 @@ describe("Comet Multiplier Adapter / LiFi / Euler", function () {
             await adapter
                 .connect(user3)
                 [
-                    "multiply((address,address,address),address,uint256,uint256,bytes,(uint256,uint256,bytes32,bytes32,uint8))"
-                ](market, WETH_ADDRESS, initialAmount, leveraged, swapData, allowParams, opts);
+                    "multiply((address,address,address),address,uint256,uint256,uint256,bytes,(uint256,uint256,bytes32,bytes32,uint8))"
+                ](market, WETH_ADDRESS, initialAmount, leveraged, 100, swapData, allowParams, opts);
 
             const finalCol = await comet.collateralBalanceOf(user3.address, WETH_ADDRESS);
             const finalDebt = await comet.borrowBalanceOf(user3.address);
@@ -964,8 +965,8 @@ describe("Comet Multiplier Adapter / LiFi / Euler", function () {
                 adapter
                     .connect(user3)
                     [
-                        "multiply((address,address,address),address,uint256,uint256,bytes,(uint256,uint256,bytes32,bytes32,uint8))"
-                    ](market, WETH_ADDRESS, initialAmount, leveraged, swapData, allowParams, opts)
+                        "multiply((address,address,address),address,uint256,uint256,uint256,bytes,(uint256,uint256,bytes32,bytes32,uint8))"
+                    ](market, WETH_ADDRESS, initialAmount, leveraged, 100, swapData, allowParams, opts)
             ).to.be.reverted;
 
             expect(await cometExt.isAllowed(user3.address, adapterAddress)).to.be.false;
@@ -1104,6 +1105,9 @@ describe("Comet Multiplier Adapter / LiFi / Euler", function () {
 
         it("Should rescue ERC20 tokens to treasury", async function () {
             const rescueAmount = ethers.parseUnits("100", 6); // 100 USDC
+            const usdcWhale = await ethers.getImpersonatedSigner(USDC_WHALE);
+            await ethers.provider.send("hardhat_setBalance", [USDC_WHALE, "0x1000000000000000000"]);
+            await usdc.connect(usdcWhale).transfer(await adapter.getAddress(), rescueAmount);
             await usdc.transfer(await adapter.getAddress(), rescueAmount, opts);
 
             const treasuryBalanceBefore = await usdc.balanceOf(await treasury.getAddress());

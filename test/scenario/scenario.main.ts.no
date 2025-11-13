@@ -224,8 +224,8 @@ async function multiply(
         return adapter
             .connect(signer)
             [
-                "multiply((address,address,address),address,uint256,uint256,bytes)"
-            ](market, WETH_ADDRESS, collateralAmount, leverage, swapData, opts);
+                "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+            ](market, WETH_ADDRESS, collateralAmount, leverage, 100, swapData, opts);
     });
 }
 

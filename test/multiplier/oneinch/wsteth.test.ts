@@ -62,7 +62,7 @@ describe.skip("Comet Multiplier Adapter / 1inch / wstETH", function () {
         return adapter
             .connect(signer)
             [
-                "multiply((address,address,address),address,uint256,uint256,bytes)"
+                "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
             ](market, WSTETH_ADDRESS, collateralAmount, leverageBps, "0x");
     }
 

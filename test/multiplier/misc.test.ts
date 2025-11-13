@@ -113,8 +113,8 @@ describe("Comet Multiplier Adapter / Misc", function () {
                 adapter
                     .connect(user)
                     [
-                        "multiply((address,address,address),address,uint256,uint256,bytes)"
-                    ](comet, WETH_ADDRESS, ethers.parseEther("1"), 20000, "0x")
+                        "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                    ](comet, WETH_ADDRESS, ethers.parseEther("1"), 20000, 100, "0x")
             ).to.be.revertedWithCustomError(adapter, "UnknownPlugin");
         });
 
@@ -127,8 +127,8 @@ describe("Comet Multiplier Adapter / Misc", function () {
                 adapter
                     .connect(user)
                     [
-                        "multiply((address,address,address),address,uint256,uint256,bytes)"
-                    ](comet, WETH_ADDRESS, ethers.parseEther("1"), 20000, "0x")
+                        "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                    ](comet, WETH_ADDRESS, ethers.parseEther("1"), 20000, 100, "0x")
             ).to.be.revertedWithCustomError(adapter, "UnknownPlugin");
         });
 
@@ -141,8 +141,8 @@ describe("Comet Multiplier Adapter / Misc", function () {
                 adapter
                     .connect(user2)
                     [
-                        "multiply((address,address,address),address,uint256,uint256,bytes)"
-                    ](comet, WETH_ADDRESS, ethers.parseEther("1"), 20000, "0x")
+                        "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                    ](comet, WETH_ADDRESS, ethers.parseEther("1"), 20000, 100, "0x")
             ).to.be.revertedWithCustomError(adapter, "InvalidAmountOut");
         });
 
@@ -190,8 +190,8 @@ describe("Comet Multiplier Adapter / Misc", function () {
             await adapter2
                 .connect(user2)
                 [
-                    "multiply((address,address,address),address,uint256,uint256,bytes)"
-                ](market0, WETH_ADDRESS, ethers.parseEther("0.1"), 15000, swapForOpen);
+                    "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                ](market0, WETH_ADDRESS, ethers.parseEther("0.1"), 15000, 100, swapForOpen);
 
             await expect(
                 //@ts-ignore

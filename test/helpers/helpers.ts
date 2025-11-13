@@ -319,8 +319,8 @@ export async function executeMultiplier1Inch(
         return adapter
             .connect(signer)
             [
-                "multiply((address,address,address),address,uint256,uint256,bytes)"
-            ](market, WETH_ADDRESS, collateralAmount, leverage, swapData);
+                "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+            ](market, WETH_ADDRESS, collateralAmount, leverage, 100, swapData);
     });
 }
 
@@ -375,8 +375,8 @@ export async function executeMultiplierLiFi(
         return adapter
             .connect(signer)
             [
-                "multiply((address,address,address),address,uint256,uint256,bytes)"
-            ](market, WETH_ADDRESS, collateralAmount, baseAmount, swapData);
+                "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+            ](market, WETH_ADDRESS, collateralAmount, baseAmount, 100, swapData);
     });
 }
 

@@ -216,8 +216,8 @@ describe.skip("Comet Multiplier Adapter / 1inch / UniswapV3", function () {
                 adapter
                     .connect(user2)
                     [
-                        "multiply((address,address,address),address,uint256,uint256,bytes)"
-                    ](market, WETH_ADDRESS, initialAmount, leverage, "0x")
+                        "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                    ](market, WETH_ADDRESS, initialAmount, leverage, 100, "0x")
             ).to.be.reverted;
         });
 
@@ -230,8 +230,8 @@ describe.skip("Comet Multiplier Adapter / 1inch / UniswapV3", function () {
                 adapter
                     .connect(user)
                     [
-                        "multiply((address,address,address),address,uint256,uint256,bytes)"
-                    ](market, WETH_ADDRESS, initialAmount, leverage, "0x")
+                        "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                    ](market, WETH_ADDRESS, initialAmount, leverage, 100, "0x")
             ).to.be.reverted;
         });
 
@@ -244,8 +244,8 @@ describe.skip("Comet Multiplier Adapter / 1inch / UniswapV3", function () {
                 adapter
                     .connect(user)
                     [
-                        "multiply((address,address,address),address,uint256,uint256,bytes)"
-                    ](market, WETH_ADDRESS, initialAmount, leverage, "0x")
+                        "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                    ](market, WETH_ADDRESS, initialAmount, leverage, 100, "0x")
             ).to.be.reverted;
         });
 
@@ -258,8 +258,8 @@ describe.skip("Comet Multiplier Adapter / 1inch / UniswapV3", function () {
                 adapter
                     .connect(user)
                     [
-                        "multiply((address,address,address),address,uint256,uint256,bytes)"
-                    ](market, WETH_ADDRESS, initialAmount, leverage, "0x")
+                        "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                    ](market, WETH_ADDRESS, initialAmount, leverage, 100, "0x")
             ).to.be.reverted;
         });
     });
