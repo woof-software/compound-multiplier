@@ -49,8 +49,8 @@ describe("Comet Multiplier Adapter / LiFI / wstETH", function () {
         return adapter
             .connect(signer)
             [
-                "multiply((address,address,address),address,uint256,uint256,bytes)"
-            ](market, WETH_ADDRESS, collateralAmount, leverageBps, ethers.AbiCoder.defaultAbiCoder().encode(["uint256"], [1]));
+                "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+            ](market, WETH_ADDRESS, collateralAmount, leverageBps, 100, ethers.AbiCoder.defaultAbiCoder().encode(["uint256"], [1]));
     }
 
     async function multiplyFake(signer: SignerWithAddress, collateralAmount: bigint, leverageBps: number) {
@@ -62,8 +62,8 @@ describe("Comet Multiplier Adapter / LiFI / wstETH", function () {
         return adapter
             .connect(signer)
             [
-                "multiply((address,address,address),address,uint256,uint256,bytes)"
-            ](market, USDC_ADDRESS, collateralAmount, leverageBps, ethers.AbiCoder.defaultAbiCoder().encode(["uint256"], [1]));
+                "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+            ](market, USDC_ADDRESS, collateralAmount, leverageBps, 100, ethers.AbiCoder.defaultAbiCoder().encode(["uint256"], [1]));
     }
 
     async function cover(signer: SignerWithAddress, collateralAmount: bigint, minAmountOut: bigint = 1n) {

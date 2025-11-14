@@ -34,9 +34,11 @@ contract OKXPlugin is ICometSwapPlugin {
         require(srcToken != address(0) && dstToken != address(0) && srcToken != dstToken, ICA.InvalidTokens());
         require(amountIn > 0, ICA.InvalidAmountIn());
 
-        (address receiver, uint256 minAmountOut, IOKX.RouterPath[] memory paths) = _decodeSwapData(swapData);
+        (address receiver, IOKX.BaseRequest memory baseRequest, IOKX.RouterPath[] memory paths) = _decodeSwapData(
+            swapData
+        );
 
-        _validateSwapParams(receiver, paths, srcToken, dstToken, amountIn, minAmountOut);
+        _validateSwapParams(receiver, baseRequest, paths, srcToken, dstToken, amountIn);
 
         address router = abi.decode(config, (address));
         IERC20(srcToken).safeIncreaseAllowance(router, amountIn);
@@ -53,7 +55,7 @@ contract OKXPlugin is ICometSwapPlugin {
         }
 
         amountOut = IERC20(dstToken).balanceOf(address(this)) - balBefore;
-        require(amountOut >= minAmountOut, ICA.InvalidAmountOut());
+        require(amountOut >= baseRequest.minReturnAmount, ICA.InvalidAmountOut());
 
         emit ICE.Swap(router, srcToken, dstToken, amountOut);
     }
@@ -62,47 +64,47 @@ contract OKXPlugin is ICometSwapPlugin {
      * @notice Decodes the swapData for OKX dagSwap
      * @param swapData Encoded swap data from OKX API
      * @return receiver Address to receive swapped tokens
-     * @return minAmountOut Minimum amount expected from swap
+     * @return baseRequest Base request with token and amount info
      * @return paths Array of routing paths
      */
     function _decodeSwapData(
         bytes calldata swapData
-    ) internal pure returns (address receiver, uint256 minAmountOut, IOKX.RouterPath[] memory paths) {
+    ) internal view returns (address receiver, IOKX.BaseRequest memory baseRequest, IOKX.RouterPath[] memory paths) {
         require(swapData.length > 4, ICA.InvalidSwapParameters());
         require(bytes4(swapData[:4]) == SWAP_SELECTOR, ICA.InvalidSelector());
-        IOKX.BaseRequest memory baseRequest;
         (, receiver, baseRequest, paths) = abi.decode(
             swapData[4:],
             (uint256, address, IOKX.BaseRequest, IOKX.RouterPath[])
         );
-
-        minAmountOut = baseRequest.minReturnAmount;
     }
 
     /**
      * @notice Validates the swap parameters
      * @param receiver Address to receive tokens
+     * @param baseRequest Base request with token and amount info
      * @param paths Array of routing paths
      * @param srcToken Expected source token
      * @param dstToken Expected destination token
-     * @param amount Expected input amount
-     * @param minAmountOut Minimum expected output amount
+     * @param amountIn Expected input amount
      */
     function _validateSwapParams(
         address receiver,
+        IOKX.BaseRequest memory baseRequest,
         IOKX.RouterPath[] memory paths,
         address srcToken,
         address dstToken,
-        uint256 amount,
-        uint256 minAmountOut
+        uint256 amountIn
     ) internal view {
         require(receiver == address(this), ICA.InvalidReceiver());
-        require(paths.length != 0 && minAmountOut != 0, ICA.InvalidSwapParameters());
-
-        require(paths.length > 0, ICA.InvalidSwapParameters());
-
-        address fromToken = address(uint160((paths[0].fromToken)));
-        require(fromToken == srcToken, ICA.InvalidTokens());
+        require(paths.length != 0 && baseRequest.minReturnAmount != 0, ICA.InvalidSwapParameters());
+        uint256 fromToken = paths[0].fromToken;
+        require(
+            baseRequest.fromToken == fromToken &&
+                uint160(fromToken) == uint160(srcToken) &&
+                baseRequest.toToken == dstToken,
+            ICA.InvalidTokens()
+        );
+        require(baseRequest.fromTokenAmount == amountIn, ICA.InvalidSwapParameters());
     }
 
     function supportsInterface(bytes4 interfaceId) external pure returns (bool) {

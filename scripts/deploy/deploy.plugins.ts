@@ -1,7 +1,7 @@
 import { ethers, network } from "hardhat";
 import * as fs from "fs";
 import * as path from "path";
-//import { verify } from "../utils/verify";
+import { verify } from "../utils/verify";
 import { deployConfig } from "./deploy.config";
 
 interface PluginInfo {
@@ -17,7 +17,8 @@ const pluginMap: Record<string, PluginInfo> = {
     aave: { type: "loan", contractName: "AAVEPlugin" },
     balancer: { type: "loan", contractName: "BalancerPlugin" },
     lifi: { type: "swap", contractName: "LiFiPlugin" },
-    oneInch: { type: "swap", contractName: "OneInchPlugin" }
+    oneInch: { type: "swap", contractName: "OneInchPlugin" },
+    okx: { type: "swap", contractName: "OKXPlugin" }
 };
 
 async function deployPlugin(contractName: string, pluginType: "loan" | "swap", key: string, deployments: any) {
@@ -26,14 +27,24 @@ async function deployPlugin(contractName: string, pluginType: "loan" | "swap", k
     await endpoint.waitForDeployment();
     const address = await endpoint.getAddress();
 
+    const deploymentTx = endpoint.deploymentTransaction();
+    if (deploymentTx) {
+        await deploymentTx.wait(5);
+    }
+
+    const code = await ethers.provider.getCode(address);
+    if (code === "0x") {
+        throw new Error(`Contract ${contractName} (${key}) deployment failed - no bytecode at ${address}`);
+    }
+
     console.log(`Deployed ${contractName} (${key}) on ${network.name} to: ${address}`);
 
-    // try {
-    //     await verify(address, []);
-    //     console.log(`Verified ${contractName}`);
-    // } catch (error) {
-    //     console.warn(`Verification failed for ${contractName}:`, error);
-    // }
+    try {
+        await verify(address, []);
+        console.log(`Verified ${contractName}`);
+    } catch (error) {
+        console.warn(`Verification failed for ${contractName}:`, error);
+    }
 
     if (!deployments[`${pluginType}Plugins`]) {
         deployments[`${pluginType}Plugins`] = {};
@@ -73,7 +84,18 @@ async function main() {
     for (const key of loanKeys) {
         const info = pluginMap[key];
         if (info && info.type === "loan") {
-            await deployPlugin(info.contractName, "loan", key, deployments);
+            if (deployments.loanPlugins && deployments.loanPlugins[key]) {
+                const address = deployments.loanPlugins[key].endpoint;
+                console.log(`Skipping ${info.contractName} (${key}) - already deployed at: ${address}`);
+                try {
+                    await verify(address, []);
+                    console.log(`Verified ${info.contractName} (${key})`);
+                } catch (error) {
+                    console.warn(`Verification failed for ${info.contractName} (${key}):`, error);
+                }
+            } else {
+                await deployPlugin(info.contractName, "loan", key, deployments);
+            }
         } else {
             console.log(`Skipping unknown loan plugin: ${key}`);
         }
@@ -82,15 +104,37 @@ async function main() {
     for (const key of swapKeys) {
         const info = pluginMap[key];
         if (info && info.type === "swap") {
-            await deployPlugin(info.contractName, "swap", key, deployments);
+            if (deployments.swapPlugins && deployments.swapPlugins[key]) {
+                const address = deployments.swapPlugins[key].endpoint;
+                console.log(`Skipping ${info.contractName} (${key}) - already deployed at: ${address}`);
+                try {
+                    await verify(address, []);
+                    console.log(`Verified ${info.contractName} (${key})`);
+                } catch (error) {
+                    console.warn(`Verification failed for ${info.contractName} (${key}):`, error);
+                }
+            } else {
+                await deployPlugin(info.contractName, "swap", key, deployments);
+            }
         } else {
             console.log(`Skipping unknown swap plugin: ${key}`);
         }
     }
 
-    const wstethNetworks = ["mainnet"];
+    const wstethNetworks = ["mainnet", "arbitrum"];
     if (wstethNetworks.includes(networkName)) {
-        await deployPlugin("WstEthPlugin", "swap", "wsteth", deployments);
+        if (deployments.swapPlugins && deployments.swapPlugins.wsteth) {
+            const address = deployments.swapPlugins.wsteth.endpoint;
+            console.log(`Skipping WstEthPlugin (wsteth) - already deployed at: ${address}`);
+            try {
+                await verify(address, []);
+                console.log(`Verified WstEthPlugin (wsteth)`);
+            } catch (error) {
+                console.warn(`Verification failed for WstEthPlugin (wsteth):`, error);
+            }
+        } else {
+            await deployPlugin("WstEthPlugin", "swap", "wsteth", deployments);
+        }
     }
 
     fs.writeFileSync(deploymentFile, JSON.stringify(deployments, null, 2));

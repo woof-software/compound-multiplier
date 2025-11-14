@@ -21,6 +21,7 @@ export interface DeployConfig {
         swapPlugins: {
             lifi: string;
             oneInch?: string;
+            okx?: string;
         };
     };
 }
@@ -223,7 +224,8 @@ export const deployConfig: Record<string, DeployConfig> = {
                 uniswapV4: ARBITRUM.protocols.uniswapV4
             },
             swapPlugins: {
-                lifi: ARBITRUM.protocols.lifi
+                lifi: ARBITRUM.protocols.lifi,
+                okx: ARBITRUM.protocols.okx
             }
         }
     },

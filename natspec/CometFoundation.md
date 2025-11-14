@@ -20,12 +20,6 @@ _The scale for factors_
 uint16 PRECISION
 ```
 
-### MAX_LEVERAGE
-
-```solidity
-uint16 MAX_LEVERAGE
-```
-
 ### PLUGIN_MAGIC
 
 ```solidity
@@ -215,7 +209,7 @@ eliminating the need for a separate approve transaction.
 ### multiply
 
 ```solidity
-function multiply(struct ICometStructs.Options opts, contract IERC20 collateral, uint256 collateralAmount, uint256 baseAmount, bytes swapData) external payable
+function multiply(struct ICometStructs.Options opts, contract IERC20 collateral, uint256 collateralAmount, uint256 baseAmount, uint256 maxHealthFactorDrop, bytes swapData) external payable
 ```
 
 Creates a leveraged position by borrowing against supplied collateral
@@ -229,18 +223,19 @@ Creates a leveraged position by borrowing against supplied collateral
 
 #### Parameters
 
-| Name             | Type                         | Description                                                                |
-| ---------------- | ---------------------------- | -------------------------------------------------------------------------- |
-| opts             | struct ICometStructs.Options | Configuration options including market, selectors, and flash loan provider |
-| collateral       | contract IERC20              | Address of the collateral token to supply                                  |
-| collateralAmount | uint256                      | Amount of collateral tokens to supply                                      |
-| baseAmount       | uint256                      | Amount of base asset to borrow for leverage                                |
-| swapData         | bytes                        | Encoded swap parameters for the DEX aggregator                             |
+| Name                | Type                         | Description                                                                |
+| ------------------- | ---------------------------- | -------------------------------------------------------------------------- |
+| opts                | struct ICometStructs.Options | Configuration options including market, selectors, and flash loan provider |
+| collateral          | contract IERC20              | Address of the collateral token to supply                                  |
+| collateralAmount    | uint256                      | Amount of collateral tokens to supply                                      |
+| baseAmount          | uint256                      | Amount of base asset to borrow for leverage                                |
+| maxHealthFactorDrop | uint256                      | Maximum allowed drop in health factor in basis points (10000 = 100%)       |
+| swapData            | bytes                        | Encoded swap parameters for the DEX aggregator                             |
 
 ### multiply
 
 ```solidity
-function multiply(struct ICometStructs.Options opts, contract IERC20 collateral, uint256 collateralAmount, uint256 baseAmount, bytes swapData, struct ICometStructs.AllowParams allowParams) external payable
+function multiply(struct ICometStructs.Options opts, contract IERC20 collateral, uint256 collateralAmount, uint256 baseAmount, uint256 maxHealthFactorDrop, bytes swapData, struct ICometStructs.AllowParams allowParams) external payable
 ```
 
 Creates a leveraged position with EIP-712 signature authorization
@@ -249,14 +244,15 @@ _This function first authorizes the adapter via allowBySig, then executes the po
 
 #### Parameters
 
-| Name             | Type                             | Description                                                                |
-| ---------------- | -------------------------------- | -------------------------------------------------------------------------- |
-| opts             | struct ICometStructs.Options     | Configuration options including market, selectors, and flash loan provider |
-| collateral       | contract IERC20                  | Address of the collateral token to supply                                  |
-| collateralAmount | uint256                          | Amount of collateral tokens to supply                                      |
-| baseAmount       | uint256                          | Amount of base asset to borrow for leverage                                |
-| swapData         | bytes                            | Encoded swap parameters for the DEX aggregator                             |
-| allowParams      | struct ICometStructs.AllowParams | EIP-712 signature parameters for Comet authorization                       |
+| Name                | Type                             | Description                                                                |
+| ------------------- | -------------------------------- | -------------------------------------------------------------------------- |
+| opts                | struct ICometStructs.Options     | Configuration options including market, selectors, and flash loan provider |
+| collateral          | contract IERC20                  | Address of the collateral token to supply                                  |
+| collateralAmount    | uint256                          | Amount of collateral tokens to supply                                      |
+| baseAmount          | uint256                          | Amount of base asset to borrow for leverage                                |
+| maxHealthFactorDrop | uint256                          | Maximum allowed drop in health factor in basis points (10000 = 100%)       |
+| swapData            | bytes                            | Encoded swap parameters for the DEX aggregator                             |
+| allowParams         | struct ICometStructs.AllowParams | EIP-712 signature parameters for Comet authorization                       |
 
 ### cover
 
@@ -326,7 +322,7 @@ Internal implementation of exchange
 ### \_multiply
 
 ```solidity
-function _multiply(struct ICometStructs.Options opts, contract IERC20 collateral, uint256 collateralAmount, uint256 baseAmount, bytes swapData) internal
+function _multiply(struct ICometStructs.Options opts, contract IERC20 collateral, uint256 collateralAmount, uint256 baseAmount, uint256 maxHealthFactorDrop, bytes swapData) internal
 ```
 
 Internal implementation of multiply
@@ -384,7 +380,7 @@ _This function handles the actual supply and withdrawal of assets in the Comet m
 ### \_swap
 
 ```solidity
-function _swap(address swapPlugin, contract IERC20 srcToken, contract IERC20 dstToken, uint256 amount, bytes swapData) internal returns (uint256 amountOut)
+function _swap(address swapPlugin, contract IERC20 srcToken, contract IERC20 dstToken, uint256 amount, bytes swapData) internal returns (uint256 amountOut, uint256 dust)
 ```
 
 Executes a token swap using the configured swap plugin
@@ -395,7 +391,7 @@ _Uses delegatecall to execute swap in the context of this contract_
 
 | Name       | Type            | Description                                 |
 | ---------- | --------------- | ------------------------------------------- |
-| swapPlugin | address         |                                             |
+| swapPlugin | address         | Address of the swap plugin to use           |
 | srcToken   | contract IERC20 | Address of the source token to swap from    |
 | dstToken   | contract IERC20 | Address of the destination token to swap to |
 | amount     | uint256         | Amount of source tokens to swap             |
@@ -406,6 +402,7 @@ _Uses delegatecall to execute swap in the context of this contract_
 | Name      | Type    | Description                                  |
 | --------- | ------- | -------------------------------------------- |
 | amountOut | uint256 | Actual amount of destination tokens received |
+| dust      | uint256 |                                              |
 
 ### \_loan
 
@@ -512,7 +509,7 @@ _Reverts if any parameter is invalid or if the swap would violate health factor 
 ### \_maxLeverage
 
 ```solidity
-function _maxLeverage(contract IComet comet, contract IERC20 collateral) internal view returns (uint256)
+function _maxLeverage(contract IComet comet, contract IERC20 collateral, uint256 maxHealthFactorDrop) internal view returns (uint256)
 ```
 
 ### \_config

@@ -18,13 +18,9 @@ if [ -z "$RPC_URL" ]; then
   exit 1
 fi
 
-echo "Forking Hardhat from $NETWORK: $RPC_URL"
-export FORK_NETWORK="$NETWORK"
-export FORKING_URL="$RPC_URL"
-export FORKING=true
+echo "Deploying to $NETWORK: $RPC_URL"
 
-npx hardhat run scripts/deploy/deploy.plugins.ts --network arbitrum
-npx hardhat run scripts/deploy/deploy.main.ts --network arbitrum
-RUN_SCENARIO=1 npx hardhat test test/scenario/scenario.main.ts --network hardhat
+npx hardhat run scripts/deploy/deploy.plugins.ts --network $NETWORK
+npx hardhat run scripts/deploy/deploy.main.ts --network $NETWORK
 
 echo "All steps completed successfully on forked $NETWORK!"

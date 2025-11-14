@@ -41,6 +41,7 @@ contract LiFiPlugin is ICometSwapPlugin {
         _validateSwapParams(receiver, swaps, srcToken, dstToken, amountIn, minAmountOut);
 
         address router = abi.decode(config, (address));
+
         IERC20(srcToken).safeIncreaseAllowance(router, amountIn);
 
         uint256 balBefore = IERC20(dstToken).balanceOf(address(this));
@@ -84,8 +85,7 @@ contract LiFiPlugin is ICometSwapPlugin {
             receiver,
             minAmountOut,
             swaps
-        ) = // aderyn-fp-next-line(literal-instead-of-constant)
-            abi.decode(swapData[4:], (bytes32, string, string, address, uint256, ILiFi.SwapData[]));
+        ) = abi.decode(swapData[4:], (bytes32, string, string, address, uint256, ILiFi.SwapData[])); // aderyn-fp-next-line(literal-instead-of-constant)
     }
 
     /**

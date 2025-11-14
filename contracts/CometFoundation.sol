@@ -38,7 +38,6 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
     /// @dev The scale for factors
     uint64 public constant FACTOR_SCALE = 1e18;
     uint16 public constant PRECISION = 1e4;
-    uint16 public constant MAX_LEVERAGE = 10; // 10x
 
     /// @notice Magic byte to identify valid plugin calls
     bytes1 constant PLUGIN_MAGIC = 0x01;
@@ -213,9 +212,10 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
         IERC20 collateral,
         uint256 collateralAmount,
         uint256 baseAmount,
+        uint256 maxHealthFactorDrop,
         bytes calldata swapData
     ) external payable nonReentrant {
-        _multiply(opts, collateral, collateralAmount, baseAmount, swapData);
+        _multiply(opts, collateral, collateralAmount, baseAmount, maxHealthFactorDrop, swapData);
     }
 
     /**
@@ -227,11 +227,12 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
         IERC20 collateral,
         uint256 collateralAmount,
         uint256 baseAmount,
+        uint256 maxHealthFactorDrop,
         bytes calldata swapData,
         ICS.AllowParams calldata allowParams
     ) external payable nonReentrant {
         _allow(opts.comet, allowParams);
-        _multiply(opts, collateral, collateralAmount, baseAmount, swapData);
+        _multiply(opts, collateral, collateralAmount, baseAmount, maxHealthFactorDrop, swapData);
     }
 
     /**
@@ -267,7 +268,13 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
      */
     //  aderyn-fp-next-line(state-change-without-event)
     function rescue(IERC20 token) external {
-        _dust(treasury, token, IComet(address(0)), token.balanceOf(address(this)));
+        uint256 amount;
+        if (address(token) == address(0)) {
+            amount = address(this).balance;
+        } else {
+            amount = token.balanceOf(address(this));
+        }
+        _dust(treasury, token, IComet(address(0)), amount);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -317,24 +324,28 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
         IERC20 collateral,
         uint256 collateralAmount,
         uint256 baseAmount,
+        uint256 maxHealthFactorDrop,
         bytes calldata swapData
     ) internal {
         IComet comet = opts.comet;
         require(address(comet) != address(0), ICA.InvalidComet());
+        require(maxHealthFactorDrop < PRECISION, ICA.InvalidMultiplyParameters());
 
         if (msg.value > 0) {
             require(address(collateral) == wEth, ICA.InvalidWeth());
             collateralAmount = msg.value;
             IWEth(wEth).deposit{ value: msg.value }();
         } else {
+            uint256 balanceBefore = collateral.balanceOf(address(this));
             collateral.safeTransferFrom(msg.sender, address(this), collateralAmount);
+            collateralAmount = collateral.balanceOf(address(this)) - balanceBefore;
         }
 
         uint256 leveraged = _leveraged(comet, collateral, collateralAmount);
 
         require(
             _leveraged(comet, collateral, collateralAmount) + baseAmount <=
-                Math.mulDiv(leveraged, _maxLeverage(comet, collateral), FACTOR_SCALE),
+                Math.mulDiv(leveraged, _maxLeverage(comet, collateral, maxHealthFactorDrop), FACTOR_SCALE),
             ICA.InvalidLeverage()
         );
         IERC20 baseAsset = comet.baseToken();
@@ -438,9 +449,12 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
     ) internal {
         uint256 repaymentAmount = data.debt + data.fee;
         uint256 amountOut;
+        uint256 dust;
 
         if (mode == ICS.Mode.MULTIPLY) {
-            amountOut = _swap(swapPlugin, data.asset, params.supplyAsset, data.debt, data.swapData);
+            (amountOut, dust) = _swap(swapPlugin, data.asset, params.supplyAsset, data.debt, data.swapData);
+            _dust(user, data.asset, IComet(address(0)), dust);
+
             params.supplyAmount += amountOut;
 
             _supplyWithdraw(comet, user, params);
@@ -449,15 +463,21 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
         } else {
             _supplyWithdraw(comet, user, params);
 
-            amountOut = _swap(swapPlugin, params.withdrawAsset, data.asset, params.withdrawAmount, data.swapData);
+            (amountOut, dust) = _swap(
+                swapPlugin,
+                params.withdrawAsset,
+                data.asset,
+                params.withdrawAmount,
+                data.swapData
+            );
+
+            _dust(user, params.withdrawAsset, IComet(address(0)), dust);
 
             require(amountOut >= repaymentAmount, ICA.InvalidAmountOut());
 
-            uint256 dust = amountOut - repaymentAmount;
+            dust = amountOut - repaymentAmount;
 
-            if (dust > 0) {
-                _dust(user, data.asset, mode == ICS.Mode.EXCHANGE ? comet : IComet(address(0)), dust);
-            }
+            _dust(user, data.asset, mode == ICS.Mode.EXCHANGE ? comet : IComet(address(0)), dust);
 
             if (mode == ICS.Mode.COVER) {
                 emit ICE.Covered(user, address(comet), address(params.withdrawAsset), params.withdrawAmount, dust);
@@ -493,6 +513,7 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
 
     /**
      * @notice Executes a token swap using the configured swap plugin
+     * @param swapPlugin Address of the swap plugin to use
      * @param srcToken Address of the source token to swap from
      * @param dstToken Address of the destination token to swap to
      * @param amount Amount of source tokens to swap
@@ -506,8 +527,11 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
         IERC20 dstToken,
         uint256 amount,
         bytes memory swapData
-    ) internal returns (uint256 amountOut) {
+    ) internal returns (uint256 amountOut, uint256 dust) {
         require(swapPlugin != address(0), ICA.UnknownPlugin());
+
+        uint256 balanceBefore = srcToken.balanceOf(address(this));
+
         (bool ok, bytes memory data) = address(swapPlugin).delegatecall(
             abi.encodeWithSelector(
                 ICometSwapPlugin.swap.selector,
@@ -519,6 +543,12 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
             )
         );
         _catch(ok);
+
+        uint256 balanceAfter = srcToken.balanceOf(address(this));
+        uint256 delt = balanceBefore - amount;
+        if (delt < balanceAfter) {
+            dust = balanceAfter - delt;
+        }
 
         (amountOut) = abi.decode(data, (uint256));
     }
@@ -579,8 +609,8 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
         if (amount == 0) return;
 
         if (address(asset) == address(0)) {
-            // aderyn-fp-next-line(unsafe-erc20-operation)
-            payable(user).transfer(amount);
+            (bool ok, ) = payable(user).call{ value: amount }("");
+            _catch(ok);
         } else if (address(comet) == address(0)) {
             asset.safeTransfer(user, amount);
         } else {
@@ -704,12 +734,16 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
             );
     }
 
-    function _maxLeverage(IComet comet, IERC20 collateral) internal view returns (uint256) {
+    function _maxLeverage(
+        IComet comet,
+        IERC20 collateral,
+        uint256 maxHealthFactorDrop
+    ) internal view returns (uint256) {
         IComet.AssetInfo memory info = comet.getAssetInfoByAddress(collateral);
         return
             Math.mulDiv(
                 Math.mulDiv(FACTOR_SCALE, FACTOR_SCALE, FACTOR_SCALE - uint256(info.borrowCollateralFactor)),
-                PRECISION - 100,
+                PRECISION - maxHealthFactorDrop,
                 PRECISION
             );
     }

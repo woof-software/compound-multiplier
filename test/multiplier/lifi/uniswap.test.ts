@@ -15,7 +15,8 @@ import {
     getQuote,
     getUserNonce,
     getFutureExpiry,
-    signAllowBySig
+    signAllowBySig,
+    USDC_WHALE
 } from "../../helpers/helpers";
 
 const WETH_ADDRESS = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
@@ -225,8 +226,8 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
                 adapter
                     .connect(user2)
                     [
-                        "multiply((address,address,address),address,uint256,uint256,bytes)"
-                    ](market, WETH_ADDRESS, initialAmount, leveraged, "0x")
+                        "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                    ](market, WETH_ADDRESS, initialAmount, leveraged, 100, "0x")
             ).to.be.reverted;
         });
 
@@ -242,8 +243,8 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
                 adapter
                     .connect(user)
                     [
-                        "multiply((address,address,address),address,uint256,uint256,bytes)"
-                    ](market, WETH_ADDRESS, initialAmount, leveraged, "0x")
+                        "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                    ](market, WETH_ADDRESS, initialAmount, leveraged, 100, "0x")
             ).to.be.reverted;
         });
 
@@ -258,8 +259,8 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
                 adapter
                     .connect(user)
                     [
-                        "multiply((address,address,address),address,uint256,uint256,bytes)"
-                    ](market, WETH_ADDRESS, initialAmount, leveraged, "0x")
+                        "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                    ](market, WETH_ADDRESS, initialAmount, leveraged, 100, "0x")
             ).to.be.reverted;
         });
 
@@ -274,8 +275,8 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
                 adapter
                     .connect(user)
                     [
-                        "multiply((address,address,address),address,uint256,uint256,bytes)"
-                    ](market, WETH_ADDRESS, initialAmount, leveraged, "0x")
+                        "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                    ](market, WETH_ADDRESS, initialAmount, leveraged, 100, "0x")
             ).to.be.reverted;
         });
         it("should execute with msg.value (native ETH) and 1.5x leverage", async function () {
@@ -305,8 +306,8 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
             const tx = await adapter
                 .connect(user)
                 [
-                    "multiply((address,address,address),address,uint256,uint256,bytes)"
-                ](market, WETH_ADDRESS, 0, leveraged, quote.swapCalldata, {
+                    "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                ](market, WETH_ADDRESS, 0, leveraged, 100, quote.swapCalldata, {
                     ...opts,
                     value: initialAmount
                 });
@@ -352,8 +353,8 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
             await adapter
                 .connect(user2)
                 [
-                    "multiply((address,address,address),address,uint256,uint256,bytes)"
-                ](market, WETH_ADDRESS, 0, leveraged, quote.swapCalldata, {
+                    "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                ](market, WETH_ADDRESS, 0, leveraged, 100, quote.swapCalldata, {
                     ...opts,
                     value: initialAmount
                 });
@@ -390,8 +391,8 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
             await adapter
                 .connect(user)
                 [
-                    "multiply((address,address,address),address,uint256,uint256,bytes)"
-                ](market, WETH_ADDRESS, 0, leveraged, quote.swapCalldata, {
+                    "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                ](market, WETH_ADDRESS, 0, leveraged, 100, quote.swapCalldata, {
                     ...opts,
                     value: initialAmount
                 });
@@ -415,8 +416,8 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
                 adapter
                     .connect(user)
                     [
-                        "multiply((address,address,address),address,uint256,uint256,bytes)"
-                    ](market, fakeToken, 0, leveraged, "0x", { ...opts, value: initialAmount })
+                        "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                    ](market, fakeToken, 0, leveraged, 100, "0x", { ...opts, value: initialAmount })
             ).to.be.revertedWithCustomError(adapter, "InvalidWeth");
         });
     });
@@ -815,8 +816,8 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
             await adapter
                 .connect(user3)
                 [
-                    "multiply((address,address,address),address,uint256,uint256,bytes,(uint256,uint256,bytes32,bytes32,uint8))"
-                ](market, WETH_ADDRESS, initialAmount, leverage, swapData, allowParams, opts);
+                    "multiply((address,address,address),address,uint256,uint256,uint256,bytes,(uint256,uint256,bytes32,bytes32,uint8))"
+                ](market, WETH_ADDRESS, initialAmount, leverage, 100, swapData, allowParams, opts);
 
             const finalCol = await comet.collateralBalanceOf(user3.address, WETH_ADDRESS);
             const finalDebt = await comet.borrowBalanceOf(user3.address);
@@ -895,6 +896,71 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
             expect(healthFactor).to.be.gt(finalDebt);
 
             expect(await cometExt.isAllowed(user3.address, adapterAddress)).to.be.true;
+        });
+    });
+
+    describe("Rescue", function () {
+        beforeEach(async function () {
+            await ethers.provider.send("evm_revert", [initialSnapshot]);
+            initialSnapshot = await ethers.provider.send("evm_snapshot");
+        });
+
+        it("Should rescue ERC20 tokens to treasury", async function () {
+            const rescueAmount = ethers.parseUnits("100", 6); // 100 USDC
+            const usdcWhale = await ethers.getImpersonatedSigner(USDC_WHALE);
+            await ethers.provider.send("hardhat_setBalance", [USDC_WHALE, "0x1000000000000000000"]);
+            await usdc.connect(usdcWhale).transfer(await adapter.getAddress(), rescueAmount);
+
+            const treasuryBalanceBefore = await usdc.balanceOf(await treasury.getAddress());
+            const adapterBalanceBefore = await usdc.balanceOf(await adapter.getAddress());
+
+            expect(adapterBalanceBefore).to.equal(rescueAmount);
+
+            await adapter.rescue(usdc, opts);
+
+            const treasuryBalanceAfter = await usdc.balanceOf(await treasury.getAddress());
+            const adapterBalanceAfter = await usdc.balanceOf(await adapter.getAddress());
+
+            expect(adapterBalanceAfter).to.equal(0);
+            expect(treasuryBalanceAfter - treasuryBalanceBefore).to.equal(rescueAmount);
+        });
+
+        it("Should rescue native ETH to treasury", async function () {
+            const rescueAmount = ethers.parseEther("1.0");
+
+            // Send ETH to adapter
+            await owner.sendTransaction({
+                to: await adapter.getAddress(),
+                value: rescueAmount
+            });
+
+            const treasuryBalanceBefore = await ethers.provider.getBalance(await treasury.getAddress());
+            const adapterBalanceBefore = await ethers.provider.getBalance(await adapter.getAddress());
+
+            expect(adapterBalanceBefore).to.equal(rescueAmount);
+
+            await adapter.rescue(ethers.ZeroAddress, opts);
+
+            const treasuryBalanceAfter = await ethers.provider.getBalance(await treasury.getAddress());
+            const adapterBalanceAfter = await ethers.provider.getBalance(await adapter.getAddress());
+
+            expect(adapterBalanceAfter).to.equal(0);
+            expect(treasuryBalanceAfter - treasuryBalanceBefore).to.equal(rescueAmount);
+        });
+
+        it("Should handle rescue with zero balance", async function () {
+            const treasuryBalanceBefore = await usdc.balanceOf(await treasury.getAddress());
+            const adapterBalanceBefore = await usdc.balanceOf(await adapter.getAddress());
+
+            expect(adapterBalanceBefore).to.equal(0);
+
+            await adapter.rescue(usdc, opts);
+
+            const treasuryBalanceAfter = await usdc.balanceOf(await treasury.getAddress());
+            const adapterBalanceAfter = await usdc.balanceOf(await adapter.getAddress());
+
+            expect(adapterBalanceAfter).to.equal(0);
+            expect(treasuryBalanceAfter).to.equal(treasuryBalanceBefore);
         });
     });
 });

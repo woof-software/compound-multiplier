@@ -221,8 +221,8 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV4", function () {
                 adapter
                     .connect(user2)
                     [
-                        "multiply((address,address,address),address,uint256,uint256,bytes)"
-                    ](market, WETH_ADDRESS, initialAmount, leveraged, "0x")
+                        "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                    ](market, WETH_ADDRESS, initialAmount, leveraged, 100, "0x")
             ).to.be.reverted;
         });
 
@@ -238,8 +238,8 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV4", function () {
                 adapter
                     .connect(user)
                     [
-                        "multiply((address,address,address),address,uint256,uint256,bytes)"
-                    ](market, WETH_ADDRESS, initialAmount, leveraged, "0x")
+                        "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                    ](market, WETH_ADDRESS, initialAmount, leveraged, 100, "0x")
             ).to.be.reverted;
         });
 
@@ -255,8 +255,8 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV4", function () {
                 adapter
                     .connect(user)
                     [
-                        "multiply((address,address,address),address,uint256,uint256,bytes)"
-                    ](market, WETH_ADDRESS, initialAmount, leveraged, "0x")
+                        "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                    ](market, WETH_ADDRESS, initialAmount, leveraged, 100, "0x")
             ).to.be.reverted;
         });
 
@@ -270,8 +270,8 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV4", function () {
                 adapter
                     .connect(user)
                     [
-                        "multiply((address,address,address),address,uint256,uint256,bytes)"
-                    ](comet, WETH_ADDRESS, initialAmount, leverage, "0x")
+                        "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                    ](comet, WETH_ADDRESS, initialAmount, leverage, 100, "0x")
             ).to.be.reverted;
         });
         it("should execute with msg.value (native ETH) and 1.5x leverage", async function () {
@@ -301,8 +301,8 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV4", function () {
             const tx = await adapter
                 .connect(user)
                 [
-                    "multiply((address,address,address),address,uint256,uint256,bytes)"
-                ](market, WETH_ADDRESS, 0, leveraged, quote.swapCalldata, {
+                    "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                ](market, WETH_ADDRESS, 0, leveraged, 100, quote.swapCalldata, {
                     ...opts,
                     value: initialAmount
                 });
@@ -348,8 +348,8 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV4", function () {
             await adapter
                 .connect(user2)
                 [
-                    "multiply((address,address,address),address,uint256,uint256,bytes)"
-                ](market, WETH_ADDRESS, 0, leveraged, quote.swapCalldata, {
+                    "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                ](market, WETH_ADDRESS, 0, leveraged, 100, quote.swapCalldata, {
                     ...opts,
                     value: initialAmount
                 });
@@ -386,8 +386,8 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV4", function () {
             await adapter
                 .connect(user)
                 [
-                    "multiply((address,address,address),address,uint256,uint256,bytes)"
-                ](market, WETH_ADDRESS, 0, leveraged, quote.swapCalldata, {
+                    "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                ](market, WETH_ADDRESS, 0, leveraged, 100, quote.swapCalldata, {
                     ...opts,
                     value: initialAmount
                 });
@@ -411,8 +411,8 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV4", function () {
                 adapter
                     .connect(user)
                     [
-                        "multiply((address,address,address),address,uint256,uint256,bytes)"
-                    ](market, fakeToken, 0, leveraged, "0x", { ...opts, value: initialAmount })
+                        "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                    ](market, fakeToken, 0, leveraged, 100, "0x", { ...opts, value: initialAmount })
             ).to.be.revertedWithCustomError(adapter, "InvalidWeth");
         });
     });
@@ -811,8 +811,8 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV4", function () {
             await adapter
                 .connect(user3)
                 [
-                    "multiply((address,address,address),address,uint256,uint256,bytes,(uint256,uint256,bytes32,bytes32,uint8))"
-                ](market, WETH_ADDRESS, initialAmount, leveraged, swapData, allowParams, opts);
+                    "multiply((address,address,address),address,uint256,uint256,uint256,bytes,(uint256,uint256,bytes32,bytes32,uint8))"
+                ](market, WETH_ADDRESS, initialAmount, leveraged, 100, swapData, allowParams, opts);
 
             const finalCol = await comet.collateralBalanceOf(user3.address, WETH_ADDRESS);
             const finalDebt = await comet.borrowBalanceOf(user3.address);
