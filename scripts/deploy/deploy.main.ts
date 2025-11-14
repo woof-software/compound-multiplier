@@ -148,6 +148,18 @@ async function main() {
         console.log("Skipping 1inch plugin (not configured in config file)");
     }
 
+    // OKX Plugin
+    if (deploymentData.swapPlugins.okx && config.plugins?.swapPlugins?.okx) {
+        const okxConfig = encodePluginConfig(config.plugins.swapPlugins.okx);
+        pluginArray.push({
+            endpoint: deploymentData.swapPlugins.okx.endpoint,
+            config: okxConfig
+        });
+        console.log("Added OKX plugin:", deploymentData.swapPlugins.okx.endpoint);
+    } else if (deploymentData.swapPlugins.okx) {
+        console.log("Skipping OKX plugin (not configured in config file)");
+    }
+
     // WstETH Plugin (no config needed)
     if (deploymentData.swapPlugins.wsteth) {
         pluginArray.push({
@@ -171,7 +183,22 @@ async function main() {
 
     console.log("\nCometFoundation deployed:", adapterAddress);
 
-    console.log("\nVerifying contract on Etherscan...");
+    // Wait for contract to be confirmed on-chain before verification
+    console.log("Waiting for contract deployment to be confirmed...");
+    const deploymentTx = adapter.deploymentTransaction();
+    if (deploymentTx) {
+        const receipt = await deploymentTx.wait(5); // Wait for 5 confirmations
+        console.log(`Contract confirmed in block: ${receipt?.blockNumber}`);
+    }
+
+    const code = await ethers.provider.getCode(adapterAddress);
+    if (code === "0x") {
+        console.warn("WARNING: Contract has no bytecode! Deployment may have failed.");
+    } else {
+        console.log("Contract bytecode verified on-chain");
+    }
+
+    console.log("\nVerifying contract on block explorer...");
     try {
         await verify(adapterAddress, [pluginArray, config.weth, config.treasury]);
         console.log("Contract verified");

@@ -22,8 +22,14 @@
     "swapPlugins": {
         "lifi": {
             "endpoint": "0xb5829F800b1a4f8135104188487B238F8B3a2EAa"
+        },
+        "okx": {
+            "endpoint": "0xCC6f53a9DD2A748073Bd708eB728aA0C3F24bF24"
+        },
+        "wsteth": {
+            "endpoint": "0x713077FD3B251316a1e9134E5A669e03b42A916A"
         }
     },
-    "CometFoundation": "0x055C2e70dd011C4ADEEfB795Ab77D74437be6D33",
-    "foundationDeployedAt": "2025-11-04T02:21:16.387Z"
+    "CometFoundation": "0x365c2316a2150621a01A2D24E091dA6Dd21CD8f5",
+    "foundationDeployedAt": "2025-11-14T00:42:28.019Z"
 }

@@ -230,6 +230,7 @@ constants.set(Network.Arbitrum, {
         aave: "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
         balancer: "0xBA12222222228d8Ba445958a75a0704d566BF2C8",
         lifi: "0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE",
+        okx: "0x2bD541Ab3b704F7d4c9DFf79EfaDeaa85EC034f1",
         uniswapV4: "0x360e68faccca8ca495c1b759fd9eee466db9fb32"
     },
     pools: {
