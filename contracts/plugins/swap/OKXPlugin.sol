@@ -97,11 +97,13 @@ contract OKXPlugin is ICometSwapPlugin {
     ) internal view {
         require(receiver == address(this), ICA.InvalidReceiver());
         require(paths.length != 0 && baseRequest.minReturnAmount != 0, ICA.InvalidSwapParameters());
+        uint256 fromToken = paths[0].fromToken;
         require(
-            uint160(baseRequest.fromToken) ^ uint160(paths[0].fromToken) ^ uint160(srcToken) == 0,
+            baseRequest.fromToken == fromToken &&
+                uint160(fromToken) == uint160(srcToken) &&
+                baseRequest.toToken == dstToken,
             ICA.InvalidTokens()
         );
-        require(baseRequest.toToken == dstToken, ICA.InvalidTokens());
         require(baseRequest.fromTokenAmount == amountIn, ICA.InvalidSwapParameters());
     }
 
