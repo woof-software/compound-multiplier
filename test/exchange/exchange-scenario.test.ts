@@ -53,6 +53,7 @@ describe("CometExchange Scenarios", function () {
     let wstETHWhale: HardhatEthersSigner;
     let wbtcWhale: HardhatEthersSigner;
     let rsETHWhale: HardhatEthersSigner;
+    let rETHWhale: HardhatEthersSigner;
 
     let treasury: HardhatEthersSigner;
 
@@ -97,7 +98,8 @@ describe("CometExchange Scenarios", function () {
 
         comet = await getComet();
         ({ weth, wstETH, rETH, wbtc } = await tokensInstances());
-        ({ wethWhale, wstETHWhale, wbtcWhale, rsETHWhale } = await getWhales());
+        ({ wethWhale, wstETHWhale, rETHWhale, wbtcWhale, rsETHWhale } = await getWhales());
+        await rETH.connect(rETHWhale).transfer(alice, SUPPLY_AMOUNT);
 
         await wstETH.connect(wstETHWhale).transfer(alice, SUPPLY_AMOUNT);
         await wbtc.connect(wbtcWhale).transfer(alice, exp(1, 8));

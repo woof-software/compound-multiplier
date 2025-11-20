@@ -207,9 +207,7 @@ export async function getQuote(
                 toToken,
                 fromAmount,
                 fromAddress,
-                options: {
-                    slippage: 10
-                }
+                slippage: 0.001
             }
         })
     ).data;
