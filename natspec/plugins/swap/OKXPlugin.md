@@ -12,6 +12,60 @@ _Implements ICometSwapPlugin interface for OKX dagSwap routing_
 bytes4 SWAP_SELECTOR
 ```
 
+### DAG_SWAP_SELECTOR
+
+```solidity
+bytes4 DAG_SWAP_SELECTOR
+```
+
+### DAG_SWAP_BY_ORDER_ID_SELECTOR
+
+```solidity
+bytes4 DAG_SWAP_BY_ORDER_ID_SELECTOR
+```
+
+### SMART_SWAP_TO_SELECTOR
+
+```solidity
+bytes4 SMART_SWAP_TO_SELECTOR
+```
+
+### SMART_SWAP_BY_ORDER_ID_SELECTOR
+
+```solidity
+bytes4 SMART_SWAP_BY_ORDER_ID_SELECTOR
+```
+
+### UNIV3_SWAP_SELECTOR
+
+```solidity
+bytes4 UNIV3_SWAP_SELECTOR
+```
+
+### UNIV3_SWAP_TO_WITH_BASE_REQUEST_SELECTOR
+
+```solidity
+bytes4 UNIV3_SWAP_TO_WITH_BASE_REQUEST_SELECTOR
+```
+
+### UNXSWAP_TO_SELECTOR
+
+```solidity
+bytes4 UNXSWAP_TO_SELECTOR
+```
+
+### UNXSWAP_BY_ORDER_ID_SELECTOR
+
+```solidity
+bytes4 UNXSWAP_BY_ORDER_ID_SELECTOR
+```
+
+### UNXSWAP_TO_WITH_BASE_REQUEST_SELECTOR
+
+```solidity
+bytes4 UNXSWAP_TO_WITH_BASE_REQUEST_SELECTOR
+```
+
 ### swap
 
 ```solidity
@@ -36,46 +90,135 @@ Executes a token swap between two assets
 | --------- | ------- | -------------------------------------------------------------- |
 | amountOut | uint256 | The actual amount of destination tokens received from the swap |
 
-### \_decodeSwapData
+### \_decodeAndValidateSwapData
 
 ```solidity
-function _decodeSwapData(bytes swapData) internal view returns (address receiver, struct IOKX.BaseRequest baseRequest, struct IOKX.RouterPath[] paths)
+function _decodeAndValidateSwapData(bytes4 selector, bytes swapData, address srcToken, address dstToken, uint256 amountIn, address self) internal pure returns (uint256 minReturnAmount)
 ```
 
-Decodes the swapData for OKX dagSwap
+Decodes and validates swap data based on the function selector
+
+_Routes to the appropriate decoder/validator based on the selector_
 
 #### Parameters
 
-| Name     | Type  | Description                    |
-| -------- | ----- | ------------------------------ |
-| swapData | bytes | Encoded swap data from OKX API |
+| Name     | Type    | Description                                        |
+| -------- | ------- | -------------------------------------------------- |
+| selector | bytes4  | Function selector from swapData                    |
+| swapData | bytes   | Encoded swap data from OKX API                     |
+| srcToken | address | Expected source token address                      |
+| dstToken | address | Expected destination token address                 |
+| amountIn | uint256 | Expected input amount                              |
+| self     | address | Address of this contract (for receiver validation) |
 
 #### Return Values
 
-| Name        | Type                     | Description                             |
-| ----------- | ------------------------ | --------------------------------------- |
-| receiver    | address                  | Address to receive swapped tokens       |
-| baseRequest | struct IOKX.BaseRequest  | Base request with token and amount info |
-| paths       | struct IOKX.RouterPath[] | Array of routing paths                  |
+| Name            | Type    | Description                                   |
+| --------------- | ------- | --------------------------------------------- |
+| minReturnAmount | uint256 | Minimum return amount extracted from swapData |
 
-### \_validateSwapParams
+### \_decodeAndValidateDagSwap
 
 ```solidity
-function _validateSwapParams(address receiver, struct IOKX.BaseRequest baseRequest, struct IOKX.RouterPath[] paths, address srcToken, address dstToken, uint256 amountIn) internal view
+function _decodeAndValidateDagSwap(bytes4 selector, bytes swapData, address srcToken, address dstToken, uint256 amountIn, address self) internal pure returns (uint256 minReturnAmount)
 ```
 
-Validates the swap parameters
+Decodes and validates DAG swap parameters
+
+_Validates receiver, amounts, paths, and token addresses for DAG swaps_
 
 #### Parameters
 
-| Name        | Type                     | Description                             |
-| ----------- | ------------------------ | --------------------------------------- |
-| receiver    | address                  | Address to receive tokens               |
-| baseRequest | struct IOKX.BaseRequest  | Base request with token and amount info |
-| paths       | struct IOKX.RouterPath[] | Array of routing paths                  |
-| srcToken    | address                  | Expected source token                   |
-| dstToken    | address                  | Expected destination token              |
-| amountIn    | uint256                  | Expected input amount                   |
+| Name     | Type    | Description                                                            |
+| -------- | ------- | ---------------------------------------------------------------------- |
+| selector | bytes4  | Function selector (DAG_SWAP_SELECTOR or DAG_SWAP_BY_ORDER_ID_SELECTOR) |
+| swapData | bytes   | Encoded swap data from OKX API                                         |
+| srcToken | address | Expected source token address                                          |
+| dstToken | address | Expected destination token address                                     |
+| amountIn | uint256 | Expected input amount                                                  |
+| self     | address | Address of this contract (for receiver validation)                     |
+
+#### Return Values
+
+| Name            | Type    | Description                            |
+| --------------- | ------- | -------------------------------------- |
+| minReturnAmount | uint256 | Minimum return amount from baseRequest |
+
+### \_decodeAndValidateSmartSwap
+
+```solidity
+function _decodeAndValidateSmartSwap(bytes4 selector, bytes swapData, uint256 amountIn, address self) internal pure returns (uint256 minReturnAmount)
+```
+
+Decodes and validates Smart swap parameters
+
+_Validates receiver, amounts for Smart swaps_
+
+#### Parameters
+
+| Name     | Type    | Description                                                                   |
+| -------- | ------- | ----------------------------------------------------------------------------- |
+| selector | bytes4  | Function selector (SMART_SWAP_TO_SELECTOR or SMART_SWAP_BY_ORDER_ID_SELECTOR) |
+| swapData | bytes   | Encoded swap data from OKX API                                                |
+| amountIn | uint256 | Expected input amount                                                         |
+| self     | address | Address of this contract (for receiver validation)                            |
+
+#### Return Values
+
+| Name            | Type    | Description                            |
+| --------------- | ------- | -------------------------------------- |
+| minReturnAmount | uint256 | Minimum return amount from baseRequest |
+
+### \_decodeAndValidateUniV3Swap
+
+```solidity
+function _decodeAndValidateUniV3Swap(bytes4 selector, bytes swapData, uint256 amountIn, address self) internal pure returns (uint256 minReturnAmount)
+```
+
+Decodes and validates Uniswap V3 swap parameters
+
+_Validates receiver, amounts for Uniswap V3 swaps. For UNIV3_SWAP_SELECTOR,
+receiver is encoded as uint256 and must be converted to address._
+
+#### Parameters
+
+| Name     | Type    | Description                                                                         |
+| -------- | ------- | ----------------------------------------------------------------------------------- |
+| selector | bytes4  | Function selector (UNIV3_SWAP_SELECTOR or UNIV3_SWAP_TO_WITH_BASE_REQUEST_SELECTOR) |
+| swapData | bytes   | Encoded swap data from OKX API                                                      |
+| amountIn | uint256 | Expected input amount                                                               |
+| self     | address | Address of this contract (for receiver validation)                                  |
+
+#### Return Values
+
+| Name            | Type    | Description                                |
+| --------------- | ------- | ------------------------------------------ |
+| minReturnAmount | uint256 | Minimum return amount from swap parameters |
+
+### \_decodeAndValidateUnxSwap
+
+```solidity
+function _decodeAndValidateUnxSwap(bytes4 selector, bytes swapData, uint256 amountIn, address self) internal pure returns (uint256 minReturnAmount)
+```
+
+Decodes and validates Unxswap parameters
+
+_Validates receiver, amounts for Unxswap operations_
+
+#### Parameters
+
+| Name     | Type    | Description                                                                                                     |
+| -------- | ------- | --------------------------------------------------------------------------------------------------------------- |
+| selector | bytes4  | Function selector (UNXSWAP_TO_SELECTOR, UNXSWAP_BY_ORDER_ID_SELECTOR, or UNXSWAP_TO_WITH_BASE_REQUEST_SELECTOR) |
+| swapData | bytes   | Encoded swap data from OKX API                                                                                  |
+| amountIn | uint256 | Expected input amount                                                                                           |
+| self     | address | Address of this contract (for receiver validation)                                                              |
+
+#### Return Values
+
+| Name            | Type    | Description                                |
+| --------------- | ------- | ------------------------------------------ |
+| minReturnAmount | uint256 | Minimum return amount from swap parameters |
 
 ### supportsInterface
 
