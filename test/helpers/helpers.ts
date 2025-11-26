@@ -46,6 +46,7 @@ export const WETH_ADDRESS = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
 export const USDC_ADDRESS = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
 export const COMET_USDC_MARKET = "0xc3d688B66703497DAA19211EEdff47f25384cdc3";
 export const ONE_INCH_ROUTER_V6 = "0x111111125421cA6dc452d289314280a0f8842A65";
+export const OKX_ROUTER = "0xF6801D319497789f934ec7F83E142a9536312B08"; // OKX DEX Aggregator Router (Ethereum)
 export const USDC_EVAULT = "0x797DD80692c3b2dAdabCe8e30C07fDE5307D48a9";
 export const MORPHO = "0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb";
 export const UNI_V3_USDC_WETH_005 = "0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640";
@@ -108,7 +109,14 @@ export async function getCometByAddress(cometAddress: string) {
 
 export async function getSwapPlugins() {
     return {
-        lifiPlugin: { endpoint: await ethers.deployContract("LiFiPlugin", []), config: "0x" }
+        lifiPlugin: {
+            endpoint: await ethers.deployContract("LiFiPlugin", []),
+            config: ethers.AbiCoder.defaultAbiCoder().encode(["address"], [LIFI_ROUTER])
+        },
+        okxPlugin: {
+            endpoint: await ethers.deployContract("OKXPlugin", []),
+            config: ethers.AbiCoder.defaultAbiCoder().encode(["address"], [OKX_ROUTER])
+        }
     };
 }
 
@@ -221,9 +229,6 @@ export async function getQuote(
     };
 }
 
-/**
- * Get quote from OKX DEX (same as 1inch quote)
- */
 export async function getOKXQuote(
     fromToken: string,
     toToken: string,
@@ -232,24 +237,52 @@ export async function getOKXQuote(
 ): Promise<string> {
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
+    const fromTokenChecksum = ethers.getAddress(fromToken);
+    const toTokenChecksum = ethers.getAddress(toToken);
+
     const url = `https://web3.okx.com/api/v6/dex/aggregator/quote`;
     const params = {
         chainIndex: "1",
-        fromTokenAddress: fromToken,
-        toTokenAddress: toToken,
+        fromTokenAddress: fromTokenChecksum,
+        toTokenAddress: toTokenChecksum,
         amount
     };
 
-    const res = await axios.get(url, { params, headers: getOKXHeaders("GET", "/api/v6/dex/aggregator/quote", params) });
+    try {
+        const res = await axios.get(url, {
+            params,
+            headers: getOKXHeaders("GET", "/api/v6/dex/aggregator/quote", params)
+        });
 
-    if (res.data.code !== "0") throw new Error(`OKX Quote Error: ${res.data.msg}`);
+        if (res.data.code !== "0") {
+            throw new Error(`OKX Quote Error: ${res.data.msg || res.data.message || JSON.stringify(res.data)}`);
+        }
 
-    return res.data.data[0].routerResult.toTokenAmount;
+        if (
+            !res.data.data ||
+            !res.data.data[0] ||
+            !res.data.data[0].routerResult ||
+            !res.data.data[0].routerResult.toTokenAmount
+        ) {
+            throw new Error(`OKX Quote Error: Invalid response structure. Response: ${JSON.stringify(res.data)}`);
+        }
+
+        return res.data.data[0].routerResult.toTokenAmount;
+    } catch (error: any) {
+        if (error.response) {
+            const errorMsg =
+                error.response.data?.msg || error.response.data?.message || JSON.stringify(error.response.data);
+            throw new Error(
+                `OKX Quote API Error (${error.response.status}): ${errorMsg}. Params: ${JSON.stringify(params)}`
+            );
+        } else if (error.request) {
+            throw new Error(`OKX Quote API Error: No response received. ${error.message}`);
+        } else {
+            throw new Error(`OKX Quote API Error: ${error.message}`);
+        }
+    }
 }
 
-/**
- * Get swap calldata from OKX DEX (same as 1inch swap)
- */
 export async function getOKXSwapData(
     fromToken: string,
     toToken: string,
@@ -259,21 +292,48 @@ export async function getOKXSwapData(
 ): Promise<string> {
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
+    const fromTokenChecksum = ethers.getAddress(fromToken);
+    const toTokenChecksum = ethers.getAddress(toToken);
+    const userAddressChecksum = ethers.getAddress(userAddress);
+
     const url = `https://web3.okx.com/api/v6/dex/aggregator/swap`;
     const params = {
         chainIndex: "1",
-        fromTokenAddress: fromToken,
-        toTokenAddress: toToken,
+        fromTokenAddress: fromTokenChecksum,
+        toTokenAddress: toTokenChecksum,
         amount,
-        userWalletAddress: userAddress,
-        slippage
+        userWalletAddress: userAddressChecksum,
+        slippagePercent: slippage
     };
 
-    const res = await axios.get(url, { params, headers: getOKXHeaders("GET", "/api/v6/dex/aggregator/swap", params) });
+    try {
+        const res = await axios.get(url, {
+            params,
+            headers: getOKXHeaders("GET", "/api/v6/dex/aggregator/swap", params)
+        });
 
-    if (res.data.code !== "0") throw new Error(`OKX Swap Error: ${res.data.msg}`);
+        if (res.data.code !== "0") {
+            throw new Error(`OKX Swap Error: ${res.data.msg || res.data.message || JSON.stringify(res.data)}`);
+        }
 
-    return res.data.data[0].tx.data;
+        if (!res.data.data || !res.data.data[0] || !res.data.data[0].tx || !res.data.data[0].tx.data) {
+            throw new Error(`OKX Swap Error: Invalid response structure. Response: ${JSON.stringify(res.data)}`);
+        }
+
+        return res.data.data[0].tx.data;
+    } catch (error: any) {
+        if (error.response) {
+            const errorMsg =
+                error.response.data?.msg || error.response.data?.message || JSON.stringify(error.response.data);
+            throw new Error(
+                `OKX Swap API Error (${error.response.status}): ${errorMsg}. Params: ${JSON.stringify(params)}`
+            );
+        } else if (error.request) {
+            throw new Error(`OKX Swap API Error: No response received. ${error.message}`);
+        } else {
+            throw new Error(`OKX Swap API Error: ${error.message}`);
+        }
+    }
 }
 
 function getOKXHeaders(method: string, requestPath: string, params?: any): Record<string, string> {
@@ -396,7 +456,7 @@ export async function executeMultiplier1Inch(
             .connect(signer)
             [
                 "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
-            ](market, WETH_ADDRESS, collateralAmount, leverage, 100, swapData);
+            ](market, WETH_ADDRESS, collateralAmount, baseAmount, 100, swapData);
     });
 }
 
@@ -477,6 +537,63 @@ export async function coverLiFi(
                           : requestedCollateral.toString(),
                       await adapter.getAddress()
                   ).then((q) => q.swapCalldata);
+
+        return adapter
+            .connect(signer)
+            [
+                "cover((address,address,address),address,uint256,bytes)"
+            ](market, WETH_ADDRESS, requestedCollateral, swapData);
+    });
+}
+
+export async function executeMultiplierOKX(
+    weth: IERC20,
+    market: any,
+    comet: IComet,
+    adapter: ICometMultiplier,
+    signer: SignerWithAddress,
+    collateralAmount: bigint,
+    leverage: number
+) {
+    await weth.connect(signer).approve(await adapter.getAddress(), collateralAmount);
+
+    const baseAmount = await calculateLeveragedAmount(comet, collateralAmount, leverage);
+
+    return executeWithRetry(async () => {
+        const swapData = await getOKXSwapData(
+            USDC_ADDRESS,
+            WETH_ADDRESS,
+            baseAmount.toString(),
+            await adapter.getAddress()
+        );
+
+        return adapter
+            .connect(signer)
+            [
+                "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+            ](market, WETH_ADDRESS, collateralAmount, baseAmount, 100, swapData);
+    });
+}
+
+export async function coverOKX(
+    market: any,
+    adapter: ICometCover,
+    signer: SignerWithAddress,
+    requestedCollateral: bigint
+) {
+    const comet = await getCometByAddress(market.comet);
+    return await executeWithRetry(async () => {
+        const swapData =
+            requestedCollateral == 0n
+                ? "0x"
+                : await getOKXSwapData(
+                      WETH_ADDRESS,
+                      USDC_ADDRESS,
+                      requestedCollateral == ethers.MaxUint256
+                          ? (await comet.collateralBalanceOf(await signer.getAddress(), WETH_ADDRESS)).toString()
+                          : requestedCollateral.toString(),
+                      await adapter.getAddress()
+                  );
 
         return adapter
             .connect(signer)
