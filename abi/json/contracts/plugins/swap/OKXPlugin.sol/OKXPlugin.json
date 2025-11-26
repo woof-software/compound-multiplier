@@ -151,19 +151,6 @@
     },
     {
         "inputs": [],
-        "name": "UNIV3_SWAP_TO_WITH_BASE_REQUEST_SELECTOR",
-        "outputs": [
-            {
-                "internalType": "bytes4",
-                "name": "",
-                "type": "bytes4"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
         "name": "UNXSWAP_BY_ORDER_ID_SELECTOR",
         "outputs": [
             {
@@ -178,19 +165,6 @@
     {
         "inputs": [],
         "name": "UNXSWAP_TO_SELECTOR",
-        "outputs": [
-            {
-                "internalType": "bytes4",
-                "name": "",
-                "type": "bytes4"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "UNXSWAP_TO_WITH_BASE_REQUEST_SELECTOR",
         "outputs": [
             {
                 "internalType": "bytes4",
