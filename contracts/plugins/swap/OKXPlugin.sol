@@ -92,9 +92,9 @@ contract OKXPlugin is ICometSwapPlugin {
         if (selector == DAG_SWAP_SELECTOR || selector == DAG_SWAP_BY_ORDER_ID_SELECTOR) {
             return _decodeAndValidateDagSwap(selector, swapData, srcToken, dstToken, amountIn);
         } else if (selector == SMART_SWAP_TO_SELECTOR || selector == SMART_SWAP_BY_ORDER_ID_SELECTOR) {
-            return _decodeAndValidateSmartSwap(selector, swapData, amountIn);
+            return _decodeAndValidateSmartSwap(selector, swapData, srcToken, dstToken, amountIn);
         } else if (selector == UNXSWAP_TO_SELECTOR || selector == UNXSWAP_BY_ORDER_ID_SELECTOR) {
-            return _decodeAndValidateUnxSwap(selector, swapData, amountIn);
+            return _decodeAndValidateUnxSwap(selector, swapData, srcToken, amountIn);
         } else if (selector == UNIV3_SWAP_SELECTOR) {
             return _decodeAndValidateUniV3Swap(swapData, amountIn);
         } else {
@@ -159,6 +159,8 @@ contract OKXPlugin is ICometSwapPlugin {
     function _decodeAndValidateSmartSwap(
         bytes4 selector,
         bytes calldata swapData,
+        address srcToken,
+        address dstToken,
         uint256 amountIn
     ) internal view returns (uint256 minReturn) {
         IOKX.BaseRequest memory baseRequest;
@@ -177,6 +179,10 @@ contract OKXPlugin is ICometSwapPlugin {
         require(receiver == address(this), ICA.InvalidReceiver());
         require(baseRequest.minReturnAmount != 0, ICA.InvalidSwapParameters());
         require(baseRequest.fromTokenAmount == amountIn, ICA.InvalidSwapParameters());
+        require(
+            uint160(baseRequest.fromToken) == uint160(srcToken) && baseRequest.toToken == dstToken,
+            ICA.InvalidTokens()
+        );
 
         minReturn = baseRequest.minReturnAmount;
     }
@@ -217,24 +223,27 @@ contract OKXPlugin is ICometSwapPlugin {
     function _decodeAndValidateUnxSwap(
         bytes4 selector,
         bytes calldata swapData,
+        address srcToken,
         uint256 amountIn
     ) internal view returns (uint256 minReturn) {
         address receiver;
+        uint256 fromToken;
         uint256 amount;
 
         if (selector == UNXSWAP_TO_SELECTOR) {
-            (, amount, minReturn, receiver, ) = abi.decode(
+            (fromToken, amount, minReturn, receiver, ) = abi.decode(
                 swapData[4:],
                 (uint256, uint256, uint256, address, bytes32[])
             );
         } else {
-            (, amount, minReturn, ) = abi.decode(swapData[4:], (uint256, uint256, uint256, bytes32[]));
+            (fromToken, amount, minReturn, ) = abi.decode(swapData[4:], (uint256, uint256, uint256, bytes32[]));
             receiver = address(this);
         }
 
         require(receiver == address(this), ICA.InvalidReceiver());
         require(minReturn != 0, ICA.InvalidSwapParameters());
         require(amount == amountIn, ICA.InvalidSwapParameters());
+        require(uint160(fromToken) == uint160(srcToken), ICA.InvalidTokens());
     }
 
     function supportsInterface(bytes4 interfaceId) external pure returns (bool) {

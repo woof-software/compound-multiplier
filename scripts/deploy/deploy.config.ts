@@ -21,7 +21,10 @@ export interface DeployConfig {
         swapPlugins: {
             lifi: string;
             oneInch?: string;
-            okx?: string;
+            okx?: {
+                router: string;
+                approveProxy: string;
+            };
         };
     };
 }
@@ -225,7 +228,10 @@ export const deployConfig: Record<string, DeployConfig> = {
             },
             swapPlugins: {
                 lifi: ARBITRUM.protocols.lifi,
-                okx: ARBITRUM.protocols.okx
+                okx: {
+                    router: ARBITRUM.protocols.okx,
+                    approveProxy: ARBITRUM.protocols.okxApproveProxy
+                }
             }
         }
     },

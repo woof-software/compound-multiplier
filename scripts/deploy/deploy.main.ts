@@ -8,6 +8,10 @@ function encodePluginConfig(address: string): string {
     return ethers.AbiCoder.defaultAbiCoder().encode(["address"], [address]);
 }
 
+function encodeOKXConfig(router: string, approveProxy: string): string {
+    return ethers.AbiCoder.defaultAbiCoder().encode(["address", "address"], [router, approveProxy]);
+}
+
 function encodeBatchConfig(pools: { token: string; pool: string }[]): string {
     return ethers.AbiCoder.defaultAbiCoder().encode(["tuple(address token, address pool)[]"], [pools]);
 }
@@ -150,7 +154,10 @@ async function main() {
 
     // OKX Plugin
     if (deploymentData.swapPlugins.okx && config.plugins?.swapPlugins?.okx) {
-        const okxConfig = encodePluginConfig(config.plugins.swapPlugins.okx);
+        const okxConfig = encodeOKXConfig(
+            config.plugins.swapPlugins.okx.router,
+            config.plugins.swapPlugins.okx.approveProxy
+        );
         pluginArray.push({
             endpoint: deploymentData.swapPlugins.okx.endpoint,
             config: okxConfig
