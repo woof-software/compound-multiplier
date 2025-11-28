@@ -17,7 +17,7 @@ CometFoundation offers three atomic operations:
 Open or increase leveraged collateral positions in a single transaction by:
 
 1. Taking a flash loan from lending protocols (Morpho, Euler, UniswapV3, AAVE, Balancer)
-2. Swapping borrowed base assets to collateral via DEX aggregators (LiFi, 1inch)
+2. Swapping borrowed base assets to collateral via DEX aggregators (LiFi, 1inch, OKX)
 3. Depositing collateral into Compound V3 and borrowing against it
 4. Repaying the flash loan
 
@@ -56,6 +56,7 @@ CometFoundation (Unified Contract)
 └── Swap Plugins
     ├── LiFiPlugin - LiFi cross-chain aggregator
     ├── OneInchV6Plugin - 1inch v6 aggregator
+    ├── OKXPlugin - OKX DEX aggregator
     └── WstEthPlugin - Lido wstETH wrapper
 ```
 
@@ -235,7 +236,7 @@ RESULT: User's collateral successfully swapped from WETH to USDC
 - **Atomic Execution**: Each operation completes in a single transaction
 - **Health Factor Protection**: Validates position safety for exchange operations
 - **Multi-Protocol Support**: AAVE, Balancer, Uniswap V3, Morpho, Euler flash loans
-- **Optimal Routing**: 1inch and LiFi aggregators for best swap execution
+- **Optimal Routing**: 1inch, LiFi, and OKX aggregators for best swap execution
 - **Signature-Based Authorization**: EIP-712 gasless approvals for all operations
 - **Plugin Architecture**: Modular design for extensibility
 - **Native ETH Support**: Direct ETH deposits with automatic WETH wrapping
@@ -307,6 +308,12 @@ RESULT: User's collateral successfully swapped from WETH to USDC
 - ✅ Gas optimization
 - ✅ Wide token support
 
+**OKXPlugin** - OKX DEX aggregator
+
+- ✅ Multi-protocol routing (DAG, Uniswap V3, Unxswap)
+- ✅ Optimal price execution
+- ✅ Support for complex swap paths
+
 **WstEthPlugin** - Lido wstETH wrapper
 
 - ✅ Direct Lido integration
@@ -350,6 +357,10 @@ export const deployConfig: Record<string, DeployConfig> = {
       swapPlugins: {
         lifi: "0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE",
         oneInch: "0x111111125421cA6dc452d289314280a0f8842A65",
+        okx: {
+          router: "0x3608c8186fF3dCa322DeEFb8c27162162d581081",
+          approveProxy: "0x70cBb871E8f30Fc8Ce23609E9E0Ea87B6b222F58",
+        },
         wsteth: "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0",
         wstethSteth: "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84",
       },
@@ -373,6 +384,7 @@ npx hardhat run scripts/deploy/plugins/flashloan/balancer.ts --network mainnet
 # Deploy swap plugins
 npx hardhat run scripts/deploy/plugins/swap/lifi.ts --network mainnet
 npx hardhat run scripts/deploy/plugins/swap/oneinch.ts --network mainnet
+npx hardhat run scripts/deploy/plugins/swap/okx.ts --network mainnet
 npx hardhat run scripts/deploy/plugins/swap/wsteth.ts --network mainnet
 ```
 
@@ -414,6 +426,13 @@ After successful deployment, `deployments/{network}.json` contains:
     "oneInch": {
       "endpoint": "0x...",
       "config": { "aggregator": "0x111111125421cA6dc452d289314280a0f8842A65" }
+    },
+    "okx": {
+      "endpoint": "0x...",
+      "config": {
+        "router": "0x3608c8186fF3dCa322DeEFb8c27162162d581081",
+        "approveProxy": "0x70cBb871E8f30Fc8Ce23609E9E0Ea87B6b222F58"
+      }
     },
     "wsteth": {
       "endpoint": "0x...",
@@ -460,7 +479,7 @@ await weth.approve(FOUNDATION_ADDRESS, ethers.parseEther("1"));
 const comet = await ethers.getContractAt("IComet", COMET_USDC_MARKET);
 await comet.allow(FOUNDATION_ADDRESS, true);
 
-// Get swap data from LiFi API
+// Get swap data from aggregator API (LiFi, 1inch, or OKX)
 const swapData = await getLiFiSwapData(
   WETH_ADDRESS,
   USDC_ADDRESS,
@@ -472,7 +491,7 @@ await foundation.multiply(
   {
     comet: COMET_USDC_MARKET,
     loanPlugin: MORPHO_PLUGIN_ADDRESS,
-    swapPlugin: LIFI_PLUGIN_ADDRESS,
+    swapPlugin: LIFI_PLUGIN_ADDRESS, // or OKX_PLUGIN_ADDRESS, ONEINCH_PLUGIN_ADDRESS
   },
   WETH_ADDRESS,
   ethers.parseEther("1"), // 1 WETH initial

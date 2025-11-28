@@ -7,7 +7,14 @@
     "error InvalidTokens()",
     "error SafeERC20FailedOperation(address token)",
     "event Swap(address indexed router, address indexed srcToken, address indexed dstToken, uint256 amountOut)",
+    "function DAG_SWAP_BY_ORDER_ID_SELECTOR() view returns (bytes4)",
+    "function DAG_SWAP_SELECTOR() view returns (bytes4)",
+    "function SMART_SWAP_BY_ORDER_ID_SELECTOR() view returns (bytes4)",
+    "function SMART_SWAP_TO_SELECTOR() view returns (bytes4)",
     "function SWAP_SELECTOR() view returns (bytes4)",
+    "function UNIV3_SWAP_SELECTOR() view returns (bytes4)",
+    "function UNXSWAP_BY_ORDER_ID_SELECTOR() view returns (bytes4)",
+    "function UNXSWAP_TO_SELECTOR() view returns (bytes4)",
     "function supportsInterface(bytes4 interfaceId) pure returns (bool)",
     "function swap(address srcToken, address dstToken, uint256 amountIn, bytes config, bytes swapData) returns (uint256 amountOut)"
 ]
