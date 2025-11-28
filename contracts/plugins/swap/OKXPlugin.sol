@@ -91,15 +91,17 @@ contract OKXPlugin is ICometSwapPlugin {
     ) internal view returns (uint256) {
         if (selector == DAG_SWAP_SELECTOR || selector == DAG_SWAP_BY_ORDER_ID_SELECTOR) {
             return _decodeAndValidateDagSwap(selector, swapData, srcToken, dstToken, amountIn);
-        } else if (selector == SMART_SWAP_TO_SELECTOR || selector == SMART_SWAP_BY_ORDER_ID_SELECTOR) {
-            return _decodeAndValidateSmartSwap(selector, swapData, srcToken, dstToken, amountIn);
-        } else if (selector == UNXSWAP_TO_SELECTOR || selector == UNXSWAP_BY_ORDER_ID_SELECTOR) {
-            return _decodeAndValidateUnxSwap(selector, swapData, srcToken, amountIn);
-        } else if (selector == UNIV3_SWAP_SELECTOR) {
-            return _decodeAndValidateUniV3Swap(swapData, amountIn);
-        } else {
-            revert ICA.InvalidSelector();
         }
+        if (selector == SMART_SWAP_TO_SELECTOR || selector == SMART_SWAP_BY_ORDER_ID_SELECTOR) {
+            return _decodeAndValidateSmartSwap(selector, swapData, srcToken, dstToken, amountIn);
+        }
+        if (selector == UNXSWAP_TO_SELECTOR || selector == UNXSWAP_BY_ORDER_ID_SELECTOR) {
+            return _decodeAndValidateUnxSwap(selector, swapData, srcToken, amountIn);
+        }
+        if (selector == UNIV3_SWAP_SELECTOR) {
+            return _decodeAndValidateUniV3Swap(swapData, amountIn);
+        }
+        revert ICA.InvalidSelector();
     }
 
     /**
