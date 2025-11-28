@@ -133,7 +133,7 @@ _Validates receiver, amounts, paths, and token addresses for DAG swaps_
 ### \_decodeAndValidateSmartSwap
 
 ```solidity
-function _decodeAndValidateSmartSwap(bytes4 selector, bytes swapData, uint256 amountIn) internal view returns (uint256 minReturn)
+function _decodeAndValidateSmartSwap(bytes4 selector, bytes swapData, address srcToken, address dstToken, uint256 amountIn) internal view returns (uint256 minReturn)
 ```
 
 Decodes and validates Smart swap parameters
@@ -146,6 +146,8 @@ _Validates receiver, amounts for Smart swaps_
 | -------- | ------- | ----------------------------------------------------------------------------- |
 | selector | bytes4  | Function selector (SMART_SWAP_TO_SELECTOR or SMART_SWAP_BY_ORDER_ID_SELECTOR) |
 | swapData | bytes   | Encoded swap data from OKX API                                                |
+| srcToken | address |                                                                               |
+| dstToken | address |                                                                               |
 | amountIn | uint256 |                                                                               |
 
 #### Return Values
@@ -181,7 +183,7 @@ receiver is encoded as uint256 and must be converted to address._
 ### \_decodeAndValidateUnxSwap
 
 ```solidity
-function _decodeAndValidateUnxSwap(bytes4 selector, bytes swapData, uint256 amountIn) internal view returns (uint256 minReturn)
+function _decodeAndValidateUnxSwap(bytes4 selector, bytes swapData, address srcToken, uint256 amountIn) internal view returns (uint256 minReturn)
 ```
 
 Decodes and validates Unxswap parameters
@@ -194,6 +196,7 @@ _Validates receiver, amounts for Unxswap operations_
 | -------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
 | selector | bytes4  | Function selector (UNXSWAP_TO_SELECTOR, UNXSWAP_BY_ORDER_ID_SELECTOR, UNXSWAP_EXACT_OUT_SELECTOR, or UNXSWAP_EXACT_OUT_BY_ORDER_ID_SELECTOR) |
 | swapData | bytes   | Encoded swap data from OKX API                                                                                                               |
+| srcToken | address |                                                                                                                                              |
 | amountIn | uint256 | Expected input amount                                                                                                                        |
 
 #### Return Values
