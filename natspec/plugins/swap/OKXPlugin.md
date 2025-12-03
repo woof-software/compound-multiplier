@@ -138,7 +138,7 @@ function _decodeAndValidateSmartSwap(bytes4 selector, bytes swapData, address sr
 
 Decodes and validates Smart swap parameters
 
-_Validates receiver, amounts for Smart swaps_
+_Validates receiver, amounts for Smart swaps. Handles PMMSwapRequest[] extraData parameter._
 
 #### Parameters
 
