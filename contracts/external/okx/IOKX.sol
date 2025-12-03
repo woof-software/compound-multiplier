@@ -23,6 +23,21 @@ interface IOKX {
         uint256 fromToken; // Source token (encoded)
     }
 
+    // PMMSwapRequest structure from PMMLib
+    // This matches the structure used in OKX Router contract
+    struct PMMSwapRequest {
+        uint256 pathIndex;
+        address payer;
+        address fromToken;
+        address toToken;
+        uint256 fromTokenAmountMax;
+        uint256 toTokenAmountMax;
+        uint256 salt;
+        uint256 deadLine;
+        bool isPushOrder;
+        bytes extension;
+    }
+
     /**
      * @notice Executes a DAG swap to a specified receiver
      * @param orderId Unique identifier for the swap order
@@ -73,7 +88,7 @@ interface IOKX {
      * @param baseRequest Swap parameters (tokens, amounts, deadline)
      * @param batchesAmount Array of amounts for each batch
      * @param batches Array of RouterPath arrays defining the swap route for each batch
-     * @param extraData Array of PMM swap request data (encoded as bytes)
+     * @param extraData Array of PMM swap request data
      * @return returnAmount Total amount of destination tokens received
      */
     function smartSwapTo(
@@ -82,7 +97,7 @@ interface IOKX {
         BaseRequest calldata baseRequest,
         uint256[] calldata batchesAmount,
         RouterPath[][] calldata batches,
-        bytes[] calldata extraData
+        PMMSwapRequest[] calldata extraData
     ) external payable returns (uint256 returnAmount);
 
     /**
@@ -91,7 +106,7 @@ interface IOKX {
      * @param baseRequest Swap parameters (tokens, amounts, deadline)
      * @param batchesAmount Array of amounts for each batch
      * @param batches Array of RouterPath arrays defining the swap route for each batch
-     * @param extraData Array of PMM swap request data (encoded as bytes)
+     * @param extraData Array of PMM swap request data
      * @return returnAmount Total amount of destination tokens received
      */
     function smartSwapByOrderId(
@@ -99,7 +114,7 @@ interface IOKX {
         BaseRequest calldata baseRequest,
         uint256[] calldata batchesAmount,
         RouterPath[][] calldata batches,
-        bytes[] calldata extraData
+        PMMSwapRequest[] calldata extraData
     ) external payable returns (uint256 returnAmount);
 
     /**

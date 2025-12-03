@@ -171,12 +171,12 @@ contract OKXPlugin is ICometSwapPlugin {
         if (selector == SMART_SWAP_TO_SELECTOR) {
             (, receiver, baseRequest, , , ) = abi.decode(
                 swapData[4:],
-                (uint256, address, IOKX.BaseRequest, uint256[], IOKX.RouterPath[][], bytes[])
+                (uint256, address, IOKX.BaseRequest, uint256[], IOKX.RouterPath[][], IOKX.PMMSwapRequest[])
             );
         } else {
             (, baseRequest, , , ) = abi.decode(
                 swapData[4:],
-                (uint256, IOKX.BaseRequest, uint256[], IOKX.RouterPath[][], bytes[])
+                (uint256, IOKX.BaseRequest, uint256[], IOKX.RouterPath[][], IOKX.PMMSwapRequest[])
             );
             receiver = address(this);
         }
