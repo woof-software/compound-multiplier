@@ -231,7 +231,8 @@ constants.set(Network.Arbitrum, {
         balancer: "0xBA12222222228d8Ba445958a75a0704d566BF2C8",
         lifi: "0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE",
         okx: "0x3608c8186fF3dCa322DeEFb8c27162162d581081",
-        uniswapV4: "0x360e68faccca8ca495c1b759fd9eee466db9fb32"
+        uniswapV4: "0x360e68faccca8ca495c1b759fd9eee466db9fb32",
+        okxApproveProxy: "0x70cBb871E8f30Fc8Ce23609E9E0Ea87B6b222F58"
     },
     pools: {
         euler: {

@@ -23,13 +23,13 @@
         "lifi": {
             "endpoint": "0xb5829F800b1a4f8135104188487B238F8B3a2EAa"
         },
-        "okx": {
-            "endpoint": "0xDCfE2faF819c2EdF36B0e1C32747e2aA3BB84363"
-        },
         "wsteth": {
             "endpoint": "0x9eDe111CeFa25d34FEbd26b15F84c5b2dc6b7746"
+        },
+        "okx": {
+            "endpoint": "0x2192C393e29b9AE0543a7684a8d0C44e63ae25cc"
         }
     },
-    "foundationDeployedAt": "2025-11-26T15:01:07.381Z",
-    "CometFoundation": "0x8b210c70Ed00c567df5c2D5EdC719B47f5D5AEf5"
+    "foundationDeployedAt": "2025-11-28T16:45:39.062Z",
+    "CometFoundation": "0xD045eb52d508720Dc88555c3f66a02320b136Ae6"
 }

@@ -73,6 +73,7 @@ interface IOKX {
      * @param baseRequest Swap parameters (tokens, amounts, deadline)
      * @param batchesAmount Array of amounts for each batch
      * @param batches Array of RouterPath arrays defining the swap route for each batch
+     * @param extraData Array of PMM swap request data (encoded as bytes)
      * @return returnAmount Total amount of destination tokens received
      */
     function smartSwapTo(
@@ -80,7 +81,8 @@ interface IOKX {
         address receiver,
         BaseRequest calldata baseRequest,
         uint256[] calldata batchesAmount,
-        RouterPath[][] calldata batches
+        RouterPath[][] calldata batches,
+        bytes[] calldata extraData
     ) external payable returns (uint256 returnAmount);
 
     /**
@@ -89,13 +91,15 @@ interface IOKX {
      * @param baseRequest Swap parameters (tokens, amounts, deadline)
      * @param batchesAmount Array of amounts for each batch
      * @param batches Array of RouterPath arrays defining the swap route for each batch
+     * @param extraData Array of PMM swap request data (encoded as bytes)
      * @return returnAmount Total amount of destination tokens received
      */
     function smartSwapByOrderId(
         uint256 orderId,
         BaseRequest calldata baseRequest,
         uint256[] calldata batchesAmount,
-        RouterPath[][] calldata batches
+        RouterPath[][] calldata batches,
+        bytes[] calldata extraData
     ) external payable returns (uint256 returnAmount);
 
     /**

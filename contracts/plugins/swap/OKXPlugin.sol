@@ -156,7 +156,7 @@ contract OKXPlugin is ICometSwapPlugin {
      * @param selector Function selector (SMART_SWAP_TO_SELECTOR or SMART_SWAP_BY_ORDER_ID_SELECTOR)
      * @param swapData Encoded swap data from OKX API
      * @return minReturn Minimum return amount from baseRequest
-     * @dev Validates receiver, amounts for Smart swaps
+     * @dev Validates receiver, amounts for Smart swaps. Handles PMMSwapRequest[] extraData parameter.
      */
     function _decodeAndValidateSmartSwap(
         bytes4 selector,
@@ -169,12 +169,15 @@ contract OKXPlugin is ICometSwapPlugin {
         address receiver;
 
         if (selector == SMART_SWAP_TO_SELECTOR) {
-            (, receiver, baseRequest, , ) = abi.decode(
+            (, receiver, baseRequest, , , ) = abi.decode(
                 swapData[4:],
-                (uint256, address, IOKX.BaseRequest, uint256[], IOKX.RouterPath[][])
+                (uint256, address, IOKX.BaseRequest, uint256[], IOKX.RouterPath[][], bytes[])
             );
         } else {
-            (, baseRequest, , ) = abi.decode(swapData[4:], (uint256, IOKX.BaseRequest, uint256[], IOKX.RouterPath[][]));
+            (, baseRequest, , , ) = abi.decode(
+                swapData[4:],
+                (uint256, IOKX.BaseRequest, uint256[], IOKX.RouterPath[][], bytes[])
+            );
             receiver = address(this);
         }
 
