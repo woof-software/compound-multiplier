@@ -243,9 +243,10 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
         ICS.Options calldata opts,
         IERC20 collateral,
         uint256 collateralAmount,
+        uint16 slippageBps,
         bytes calldata swapData
     ) external nonReentrant {
-        _cover(opts, collateral, collateralAmount, swapData);
+        _cover(opts, collateral, collateralAmount, swapData, slippageBps);
     }
 
     /**
@@ -256,11 +257,12 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
         ICS.Options calldata opts,
         IERC20 collateral,
         uint256 collateralAmount,
+        uint16 slippageBps,
         bytes calldata swapData,
         ICS.AllowParams calldata allowParams
     ) external nonReentrant {
         _allow(opts.comet, allowParams);
-        _cover(opts, collateral, collateralAmount, swapData);
+        _cover(opts, collateral, collateralAmount, swapData, slippageBps);
     }
 
     /**
@@ -381,7 +383,8 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
         ICS.Options calldata opts,
         IERC20 collateral,
         uint256 collateralAmount,
-        bytes calldata swapData
+        bytes calldata swapData,
+        uint16 slippageBps
     ) internal {
         IComet comet = opts.comet;
         require(address(comet) != address(0), ICA.InvalidComet());
@@ -395,7 +398,7 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
             collateralAmount = comet.collateralBalanceOf(msg.sender, collateral);
         } else {
             require(collateralAmount <= comet.collateralBalanceOf(msg.sender, collateral), ICA.InvalidAmountIn());
-            loanDebt = Math.min(_convert(comet, collateral, collateralAmount), repayAmount);
+            loanDebt = Math.min(_convert(comet, collateral, collateralAmount, slippageBps), repayAmount);
         }
         require(loanDebt > 0, ICA.InvalidLeverage());
 
@@ -753,18 +756,26 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
      * @param comet The Comet comet interface
      * @param collateral Address of the collateral token
      * @param collateralAmount Amount to convert
+     * @param slippageBps Slippage in basis points (10000 = 100%) to apply as discount. If 0, no discount is applied.
      * @return Converted amount in the target denomination
      * @dev Accounts for collateral factors and price feed decimals in conversions
      */
-    function _convert(IComet comet, IERC20 collateral, uint256 collateralAmount) private view returns (uint256) {
+    function _convert(
+        IComet comet,
+        IERC20 collateral,
+        uint256 collateralAmount,
+        uint16 slippageBps
+    ) private view returns (uint256) {
         IComet.AssetInfo memory info = comet.getAssetInfoByAddress(collateral);
         address priceFeed = info.priceFeed;
 
-        uint256 num = comet.getPrice(priceFeed) * comet.baseScale() * uint256(info.borrowCollateralFactor);
-        // aderyn-fp-next-line(literal-instead-of-constant)
-        uint256 den = (10 ** AggregatorV3Interface(priceFeed).decimals() * info.scale) * FACTOR_SCALE;
+        uint256 raw = Math.mulDiv(
+            Math.mulDiv(collateralAmount, comet.getPrice(priceFeed), 10 ** AggregatorV3Interface(priceFeed).decimals()),
+            comet.baseScale(),
+            info.scale
+        );
 
-        return Math.mulDiv(collateralAmount, num, den);
+        return Math.mulDiv(raw, PRECISION - slippageBps, PRECISION);
     }
 
     /**

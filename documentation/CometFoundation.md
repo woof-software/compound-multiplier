@@ -90,6 +90,7 @@ function cover(
   ICS.Options calldata opts,
   IERC20 collateral,
   uint256 collateralAmount,
+  uint16 slippageBps,
   bytes calldata swapData
 ) external nonReentrant;
 
@@ -98,6 +99,7 @@ function cover(
   ICS.Options calldata opts,
   IERC20 collateral,
   uint256 collateralAmount,
+  uint16 slippageBps,
   bytes calldata swapData,
   ICS.AllowParams calldata allowParams
 ) external nonReentrant;

@@ -14,6 +14,7 @@ interface ICometCover {
      * @param opts Configuration options including market, selectors, and flash loan provider
      * @param collateral Address of the collateral token to withdraw
      * @param collateralAmount Amount of collateral tokens to withdraw (or type(uint256).max for maximum)
+     * @param slippageBps Slippage in basis points (10000 = 100%) to apply as discount in _convert.
      * @param swapData Encoded swap parameters for converting collateral to base asset
      * @dev This function:
      * 1. Checks that the user has an outstanding borrow balance
@@ -25,6 +26,7 @@ interface ICometCover {
         ICS.Options memory opts,
         IERC20 collateral,
         uint256 collateralAmount,
+        uint16 slippageBps,
         bytes calldata swapData
     ) external;
 
@@ -33,6 +35,7 @@ interface ICometCover {
      * @param opts Configuration options including market, selectors, and flash loan provider
      * @param collateral Address of the collateral token to withdraw
      * @param collateralAmount Amount of collateral tokens to withdraw (or type(uint256).max for maximum)
+     * @param slippageBps Slippage in basis points (10000 = 100%) to apply as discount in _convert.
      * @param swapData Encoded swap parameters for converting collateral to base asset
      * @param allowParams EIP-712 signature parameters for Comet authorization
      * @dev This function first authorizes the adapter via allowBySig, then withdraws the position
@@ -42,6 +45,7 @@ interface ICometCover {
         ICS.Options memory opts,
         IERC20 collateral,
         uint256 collateralAmount,
+        uint16 slippageBps,
         bytes calldata swapData,
         ICS.AllowParams calldata allowParams
     ) external;

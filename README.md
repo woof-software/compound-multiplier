@@ -519,6 +519,7 @@ await foundation.cover(
   },
   WETH_ADDRESS,
   ethers.MaxUint256, // Withdraw all
+  slippageBps
   swapData,
 );
 ```

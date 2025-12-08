@@ -480,8 +480,8 @@ export async function cover1Inch(
         return adapter
             .connect(signer)
             [
-                "cover((address,address,address),address,uint256,bytes)"
-            ](market, WETH_ADDRESS, requestedCollateral, swapData);
+                "cover((address,address,address),address,uint256,uint16,bytes)"
+            ](market, WETH_ADDRESS, requestedCollateral, 100, swapData);
     });
 }
 
@@ -541,8 +541,8 @@ export async function coverLiFi(
         return adapter
             .connect(signer)
             [
-                "cover((address,address,address),address,uint256,bytes)"
-            ](market, WETH_ADDRESS, requestedCollateral, swapData);
+                "cover((address,address,address),address,uint256,uint16,bytes)"
+            ](market, WETH_ADDRESS, requestedCollateral, 100, swapData);
     });
 }
 
@@ -598,8 +598,8 @@ export async function coverOKX(
         return adapter
             .connect(signer)
             [
-                "cover((address,address,address),address,uint256,bytes)"
-            ](market, WETH_ADDRESS, requestedCollateral, swapData);
+                "cover((address,address,address),address,uint256,uint16,bytes)"
+            ](market, WETH_ADDRESS, requestedCollateral, 100, swapData);
     });
 }
 
