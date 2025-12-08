@@ -257,7 +257,7 @@ _This function first authorizes the adapter via allowBySig, then executes the po
 ### cover
 
 ```solidity
-function cover(struct ICometStructs.Options opts, contract IERC20 collateral, uint256 collateralAmount, bytes swapData) external
+function cover(struct ICometStructs.Options opts, contract IERC20 collateral, uint256 collateralAmount, uint16 slippageBps, bytes swapData) external
 ```
 
 Reduces or closes a leveraged position by withdrawing collateral and repaying debt
@@ -275,12 +275,13 @@ Reduces or closes a leveraged position by withdrawing collateral and repaying de
 | opts             | struct ICometStructs.Options | Configuration options including market, selectors, and flash loan provider |
 | collateral       | contract IERC20              | Address of the collateral token to withdraw                                |
 | collateralAmount | uint256                      | Amount of collateral tokens to withdraw (or type(uint256).max for maximum) |
+| slippageBps      | uint16                       | Slippage in basis points (10000 = 100%) to apply as discount in \_convert. |
 | swapData         | bytes                        | Encoded swap parameters for converting collateral to base asset            |
 
 ### cover
 
 ```solidity
-function cover(struct ICometStructs.Options opts, contract IERC20 collateral, uint256 collateralAmount, bytes swapData, struct ICometStructs.AllowParams allowParams) external
+function cover(struct ICometStructs.Options opts, contract IERC20 collateral, uint256 collateralAmount, uint16 slippageBps, bytes swapData, struct ICometStructs.AllowParams allowParams) external
 ```
 
 Reduces or closes a leveraged position with EIP-712 signature authorization
@@ -294,6 +295,7 @@ _This function first authorizes the adapter via allowBySig, then withdraws the p
 | opts             | struct ICometStructs.Options     | Configuration options including market, selectors, and flash loan provider |
 | collateral       | contract IERC20                  | Address of the collateral token to withdraw                                |
 | collateralAmount | uint256                          | Amount of collateral tokens to withdraw (or type(uint256).max for maximum) |
+| slippageBps      | uint16                           | Slippage in basis points (10000 = 100%) to apply as discount in \_convert. |
 | swapData         | bytes                            | Encoded swap parameters for converting collateral to base asset            |
 | allowParams      | struct ICometStructs.AllowParams | EIP-712 signature parameters for Comet authorization                       |
 
@@ -330,7 +332,7 @@ Internal implementation of multiply
 ### \_cover
 
 ```solidity
-function _cover(struct ICometStructs.Options opts, contract IERC20 collateral, uint256 collateralAmount, bytes swapData) internal
+function _cover(struct ICometStructs.Options opts, contract IERC20 collateral, uint256 collateralAmount, bytes swapData, uint16 slippageBps) internal
 ```
 
 Internal implementation of cover
