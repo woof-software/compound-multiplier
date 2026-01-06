@@ -3,21 +3,21 @@ pragma solidity =0.8.30;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import { IMorpho } from "../../external/morpho/IMorpho.sol";
-import { ICometFlashLoanPlugin } from "../../interfaces/ICometFlashLoanPlugin.sol";
-import { ICometStructs as ICS } from "../../interfaces/ICometStructs.sol";
-import { ICometAlerts as ICA } from "../../interfaces/ICometAlerts.sol";
-import { ICometEvents as ICE } from "../../interfaces/ICometEvents.sol";
+import { IMorpho } from "../../../external/morpho/IMorpho.sol";
+import { IFlashLoanPlugin } from "../../interfaces/IFlashLoanPlugin.sol";
+import { IStructs as IS } from "../../interfaces/IStructs.sol";
+import { IAlerts as IA } from "../../interfaces/IAlerts.sol";
+import { IEvents as IE } from "../../interfaces/IEvents.sol";
 
 /**
  * @title MorphoPlugin
  * @author WOOF! Software
  * @custom:security-contact dmitriy@woof.software
  * @notice Flash loan plugin for integrating Morpho protocol with CometMultiplier
- * @dev Implements ICometFlashLoanPlugin interface to provide standardized flash loan functionality
+ * @dev Implements IFlashLoanPlugin interface to provide standardized flash loan functionality
  */
 // aderyn-fp-next-line(contract-locks-ether)
-contract MorphoPlugin is ICometFlashLoanPlugin {
+contract MorphoPlugin is IFlashLoanPlugin {
     using SafeERC20 for IERC20;
     /// @notice Callback function selector for Morpho flash loans
     bytes4 public constant CALLBACK_SELECTOR = MorphoPlugin.onMorphoFlashLoan.selector;
@@ -26,9 +26,9 @@ contract MorphoPlugin is ICometFlashLoanPlugin {
     bytes32 public constant SLOT_PLUGIN = bytes32(uint256(keccak256("MorphoPlugin.plugin")) - 1);
 
     /**
-     * @inheritdoc ICometFlashLoanPlugin
+     * @inheritdoc IFlashLoanPlugin
      */
-    function takeFlashLoan(ICS.CallbackData memory data, bytes memory config) external payable {
+    function takeFlashLoan(IS.CallbackData memory data, bytes memory config) external payable {
         address flp = abi.decode(config, (address));
         bytes32 slot = SLOT_PLUGIN;
         assembly {
@@ -38,7 +38,7 @@ contract MorphoPlugin is ICometFlashLoanPlugin {
     }
 
     /**
-     * @inheritdoc ICometFlashLoanPlugin
+     * @inheritdoc IFlashLoanPlugin
      */
     function repayFlashLoan(address flp, address baseAsset, uint256 amount) external {
         IERC20(baseAsset).safeIncreaseAllowance(flp, amount);
@@ -50,17 +50,17 @@ contract MorphoPlugin is ICometFlashLoanPlugin {
      * @return _data Decoded callback data for adapter processing
      * @dev Validates flash loan ID and sender authorization before processing
      */
-    function onMorphoFlashLoan(uint256, bytes calldata data) external returns (ICS.CallbackData memory _data) {
+    function onMorphoFlashLoan(uint256, bytes calldata data) external returns (IS.CallbackData memory _data) {
         address flp;
         bytes32 slot = SLOT_PLUGIN;
         assembly {
             flp := tload(slot)
             tstore(slot, 0)
         }
-        require(flp == msg.sender, ICA.UnauthorizedCallback());
-        _data = abi.decode(data, (ICS.CallbackData));
+        require(flp == msg.sender, IA.UnauthorizedCallback());
+        _data = abi.decode(data, (IS.CallbackData));
         _data.flp = flp;
-        emit ICE.FlashLoan(flp, address(_data.asset), _data.debt, 0);
+        emit IE.FlashLoan(flp, address(_data.asset), _data.debt, 0);
     }
 
     /**
@@ -69,11 +69,11 @@ contract MorphoPlugin is ICometFlashLoanPlugin {
      * @return True if the interface is supported, false otherwise
      */
     function supportsInterface(bytes4 interfaceId) external pure returns (bool) {
-        return interfaceId == type(ICometFlashLoanPlugin).interfaceId;
+        return interfaceId == type(IFlashLoanPlugin).interfaceId;
     }
 
     /**
-     * @inheritdoc ICometFlashLoanPlugin
+     * @inheritdoc IFlashLoanPlugin
      */
     function hook() external pure returns (bytes memory) {}
 }

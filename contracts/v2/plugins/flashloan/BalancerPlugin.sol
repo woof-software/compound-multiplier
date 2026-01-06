@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import { IBalancerVault, IERC20, IFlashLoanRecipient } from "contracts/external/balancer/IBalancerVault.sol";
-import { ICometFlashLoanPlugin } from "contracts/interfaces/ICometFlashLoanPlugin.sol";
+import { IBalancerVaultV2 } from "../../interfaces/IBalancerVaultV2.sol";
+import { IBalancerFlashLoanRecipient } from "../../interfaces/IBalancerFlashLoanRecipient.sol";
+import { IFlashLoanPlugin } from "../../interfaces/IFlashLoanPlugin.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import { ICometStructs as ICS } from "contracts/interfaces/ICometStructs.sol";
-import { ICometAlerts as ICA } from "contracts/interfaces/ICometAlerts.sol";
-import { ICometEvents as ICE } from "contracts/interfaces/ICometEvents.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IStructs as IS } from "../../interfaces/IStructs.sol";
+import { IAlerts as IA } from "../../interfaces/IAlerts.sol";
+import { IEvents as IE } from "../../interfaces/IEvents.sol";
 
 /**
  * @title Balancer Flash Loan Plugin
@@ -18,15 +20,15 @@ import { ICometEvents as ICE } from "contracts/interfaces/ICometEvents.sol";
  * processed. It is designed to be used as part of a larger system that supports composable flash loan plugins.
  */
 // aderyn-fp-next-line(contract-locks-ether)
-contract BalancerPlugin is IFlashLoanRecipient, ICometFlashLoanPlugin {
+contract BalancerPlugin is IBalancerFlashLoanRecipient, IFlashLoanPlugin {
     using SafeERC20 for IERC20;
-    /// @inheritdoc ICometFlashLoanPlugin
+    /// @inheritdoc IFlashLoanPlugin
     bytes4 public constant CALLBACK_SELECTOR = BalancerPlugin.receiveFlashLoan.selector;
-    /// @inheritdoc ICometFlashLoanPlugin
+    /// @inheritdoc IFlashLoanPlugin
     bytes32 public constant SLOT_PLUGIN = bytes32(uint256(keccak256("BalancerPlugin.plugin")) - 1);
 
-    /// @inheritdoc ICometFlashLoanPlugin
-    function takeFlashLoan(ICS.CallbackData memory data, bytes memory config) external payable {
+    /// @inheritdoc IFlashLoanPlugin
+    function takeFlashLoan(IS.CallbackData memory data, bytes memory config) external payable {
         bytes memory _data = abi.encode(data);
         address flp = abi.decode(config, (address));
         bytes32 slot = SLOT_PLUGIN;
@@ -40,7 +42,7 @@ contract BalancerPlugin is IFlashLoanRecipient, ICometFlashLoanPlugin {
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = data.debt;
 
-        IBalancerVault(flp).flashLoan(this, tokens, amounts, _data);
+        IBalancerVaultV2(flp).flashLoan(this, tokens, amounts, _data);
     }
 
     /**
@@ -55,7 +57,7 @@ contract BalancerPlugin is IFlashLoanRecipient, ICometFlashLoanPlugin {
         uint256[] memory amounts,
         uint256[] memory feeAmounts,
         bytes memory userData
-    ) external returns (ICS.CallbackData memory _data) {
+    ) external returns (IS.CallbackData memory _data) {
         address flp;
         bytes32 slot = SLOT_PLUGIN;
         assembly {
@@ -63,18 +65,18 @@ contract BalancerPlugin is IFlashLoanRecipient, ICometFlashLoanPlugin {
             tstore(slot, 0)
         }
 
-        _data = abi.decode(userData, (ICS.CallbackData));
+        _data = abi.decode(userData, (IS.CallbackData));
 
-        require(flp == msg.sender, ICA.UnauthorizedCallback());
+        require(flp == msg.sender, IA.UnauthorizedCallback());
 
-        require(address(_data.asset) == address(tokens[0]) && _data.debt == amounts[0], ICA.InvalidFlashLoanData());
+        require(address(_data.asset) == address(tokens[0]) && _data.debt == amounts[0], IA.InvalidFlashLoanData());
 
         _data.fee = feeAmounts[0];
         _data.flp = flp;
-        emit ICE.FlashLoan(flp, address(tokens[0]), amounts[0], feeAmounts[0]);
+        emit IE.FlashLoan(flp, address(tokens[0]), amounts[0], feeAmounts[0]);
     }
 
-    /// @inheritdoc ICometFlashLoanPlugin
+    /// @inheritdoc IFlashLoanPlugin
     function repayFlashLoan(address flp, address asset, uint256 amount) external {
         IERC20(asset).safeTransfer(flp, amount);
     }
@@ -85,11 +87,11 @@ contract BalancerPlugin is IFlashLoanRecipient, ICometFlashLoanPlugin {
      * @return True if the interface is supported, false otherwise
      */
     function supportsInterface(bytes4 interfaceId) external pure returns (bool) {
-        return interfaceId == type(ICometFlashLoanPlugin).interfaceId;
+        return interfaceId == type(IFlashLoanPlugin).interfaceId;
     }
 
     /**
-     * @inheritdoc ICometFlashLoanPlugin
+     * @inheritdoc IFlashLoanPlugin
      */
     function hook() external pure returns (bytes memory) {}
 }

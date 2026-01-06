@@ -1,27 +1,26 @@
 // SPDX-License-Identifier: MIT
 pragma solidity =0.8.30;
 
-import { ICometSwapPlugin } from "../../interfaces/ICometSwapPlugin.sol";
-
-import { ILiFi } from "../../external/lifi/ILiFi.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { ICometSwapPlugin } from "../../interfaces/ICometSwapPlugin.sol";
+import { IOneInchV6 } from "../../../external/oneinch/IOneInchV6.sol";
 
 import { ICometAlerts as ICA } from "../../interfaces/ICometAlerts.sol";
 import { ICometEvents as ICE } from "../../interfaces/ICometEvents.sol";
 
 /**
- * @title LiFiPlugin
+ * @title OneInchV6SwapPlugin
  * @author WOOF! Software
  * @custom:security-contact dmitriy@woof.software
- * @notice Swap plugin for integrating LiFi aggregator with CometMultiplier
+ * @notice Swap plugin for integrating 1inch V6 aggregator with CometMultiplier
  * @dev Implements ICometSwapPlugin interface to provide standardized token swap functionality
- *      using the LiFi aggregation router for optimal swap execution
+ *      using the 1inch V6 aggregation router for optimal swap execution
  */
-contract LiFiPlugin is ICometSwapPlugin {
+contract OneInchV6SwapPlugin is ICometSwapPlugin {
     using SafeERC20 for IERC20;
 
-    bytes4 public constant SWAP_SELECTOR = ILiFi.swapTokensMultipleV3ERC20ToERC20.selector;
+    bytes4 public constant SWAP_SELECTOR = IOneInchV6.swap.selector;
 
     /**
      * @inheritdoc ICometSwapPlugin
@@ -36,12 +35,11 @@ contract LiFiPlugin is ICometSwapPlugin {
         require(srcToken != address(0) && dstToken != address(0) && srcToken != dstToken, ICA.InvalidTokens());
         require(amountIn > 0, ICA.InvalidAmountIn());
 
-        (address payable receiver, uint256 minAmountOut, ILiFi.SwapData[] memory swaps) = _decodeSwapData(swapData);
+        IOneInchV6.SwapDescription memory desc = _decodeSwapData(swapData);
 
-        _validateSwapParams(receiver, swaps, srcToken, dstToken, amountIn, minAmountOut);
+        _validateSwapParams(desc, srcToken, dstToken, amountIn);
 
         address router = abi.decode(config, (address));
-
         IERC20(srcToken).safeIncreaseAllowance(router, amountIn);
 
         uint256 balBefore = IERC20(dstToken).balanceOf(address(this));
@@ -56,61 +54,49 @@ contract LiFiPlugin is ICometSwapPlugin {
         }
 
         amountOut = IERC20(dstToken).balanceOf(address(this)) - balBefore;
-        require(amountOut >= minAmountOut, ICA.InvalidAmountOut());
+        require(amountOut >= desc.minReturnAmount, ICA.InvalidAmountOut());
 
         emit ICE.Swap(router, srcToken, dstToken, amountOut);
     }
 
     /**
-     * @notice Decodes the swapData for LiFi swap
-     * @param swapData Encoded swap data from LiFi API
-     * @return receiver Address to receive swapped tokens
-     * @return minAmountOut Minimum amount expected from swap
-     * @return swaps Array of swap steps
+     * @notice Decodes swapData for 1inch V6 swap
+     * @param swapData Encoded swap data from 1inch API
+     * @return desc Swap description with all parameters
      */
-    function _decodeSwapData(
-        bytes calldata swapData
-    ) internal pure returns (address payable receiver, uint256 minAmountOut, ILiFi.SwapData[] memory swaps) {
+    function _decodeSwapData(bytes calldata swapData) internal pure returns (IOneInchV6.SwapDescription memory desc) {
         // aderyn-fp-next-line(literal-instead-of-constant)
         require(swapData.length > 4, ICA.InvalidSwapParameters());
         // aderyn-fp-next-line(literal-instead-of-constant)
         require(bytes4(swapData[:4]) == SWAP_SELECTOR, ICA.InvalidSelector());
         (
             ,
-            ,
-            ,
-            // bytes32 transactionId
-            // string memory integrator
-            // string memory referrer
-            receiver,
-            minAmountOut,
-            swaps
-        ) = abi.decode(swapData[4:], (bytes32, string, string, address, uint256, ILiFi.SwapData[])); // aderyn-fp-next-line(literal-instead-of-constant)
+            // address executor
+            desc,
+
+        ) = abi.decode(
+                // aderyn-fp-next-line(literal-instead-of-constant)
+                swapData[4:],
+                (address, IOneInchV6.SwapDescription, bytes)
+            );
     }
 
     /**
      * @notice Validates the swap parameters
-     * @param receiver Address to receive tokens
-     * @param minAmountOut Minimum expected output amount
-     * @param swaps Array of swap steps
+     * @param desc Swap description from 1inch
      * @param srcToken Expected source token
      * @param dstToken Expected destination token
-     * @param amount Expected input amount
+     * @param amount Expected swap amount
      */
     function _validateSwapParams(
-        address receiver,
-        ILiFi.SwapData[] memory swaps,
+        IOneInchV6.SwapDescription memory desc,
         address srcToken,
         address dstToken,
-        uint256 amount,
-        uint256 minAmountOut
+        uint256 amount
     ) internal view {
-        require(receiver == address(this), ICA.InvalidReceiver());
-        require(swaps.length != 0 && swaps[0].fromAmount == amount && minAmountOut != 0, ICA.InvalidSwapParameters());
-        require(
-            swaps[0].sendingAssetId == srcToken && swaps[swaps.length - 1].receivingAssetId == dstToken,
-            ICA.InvalidTokens()
-        );
+        require(address(desc.srcToken) == srcToken && address(desc.dstToken) == dstToken, ICA.InvalidTokens());
+        require(desc.dstReceiver == address(this), ICA.InvalidReceiver());
+        require(desc.amount == amount && desc.minReturnAmount != 0, ICA.InvalidSwapParameters());
     }
 
     function supportsInterface(bytes4 interfaceId) external pure returns (bool) {

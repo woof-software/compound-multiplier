@@ -94,8 +94,17 @@ export async function tokensInstances() {
 
 export async function getPlugins() {
     return {
-        aavePlugin: { endpoint: await ethers.deployContract("AAVEPlugin", []), config: "0x" },
-        balancerPlugin: { endpoint: await ethers.deployContract("BalancerPlugin", []), config: "0x" }
+        aavePlugin: {
+            endpoint: await ethers.deployContract("contracts/v1/plugins/flashloan/AAVEPlugin.sol:AAVEPlugin", []),
+            config: "0x"
+        },
+        balancerPlugin: {
+            endpoint: await ethers.deployContract(
+                "contracts/v1/plugins/flashloan/BalancerPlugin.sol:BalancerPlugin",
+                []
+            ),
+            config: "0x"
+        }
     };
 }
 
@@ -110,11 +119,11 @@ export async function getCometByAddress(cometAddress: string) {
 export async function getSwapPlugins() {
     return {
         lifiPlugin: {
-            endpoint: await ethers.deployContract("LiFiPlugin", []),
+            endpoint: await ethers.deployContract("contracts/v1/plugins/swap/LiFiPlugin.sol:LiFiPlugin", []),
             config: ethers.AbiCoder.defaultAbiCoder().encode(["address"], [LIFI_ROUTER])
         },
         okxPlugin: {
-            endpoint: await ethers.deployContract("OKXPlugin", []),
+            endpoint: await ethers.deployContract("contracts/v1/plugins/swap/OKXPlugin.sol:OKXPlugin", []),
             config: ethers.AbiCoder.defaultAbiCoder().encode(["address"], [OKX_ROUTER])
         }
     };

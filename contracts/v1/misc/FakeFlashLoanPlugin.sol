@@ -3,7 +3,7 @@ pragma solidity =0.8.30;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import { IComet } from "../external/compound/IComet.sol";
+import { IComet } from "../../external/compound/IComet.sol";
 import { ICometStructs as ICS } from "../interfaces/ICometStructs.sol";
 import { ICometFlashLoanPlugin } from "../interfaces/ICometFlashLoanPlugin.sol";
 
@@ -13,7 +13,7 @@ contract FakeFlashLoanPlugin is ICometFlashLoanPlugin {
 
     address constant WHALE = 0xEe7aE85f2Fe2239E27D9c1E23fFFe168D63b4055;
 
-    bytes32 public constant SLOT_PLUGIN = bytes32(uint256(keccak256("FakeFalshLoanPlugin.plugin")) - 1);
+    bytes32 public constant SLOT_PLUGIN = bytes32(uint256(keccak256("FakeflashloanPlugin.plugin")) - 1);
 
     function takeFlashLoan(ICS.CallbackData memory data, bytes memory) public payable {
         bytes memory _data = abi.encode(data);

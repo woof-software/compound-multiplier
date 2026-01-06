@@ -2,7 +2,7 @@
 pragma solidity =0.8.30;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { IComet } from "../external/compound/IComet.sol";
+import { IComet } from "../../external/compound/IComet.sol";
 
 interface ICometStructs {
     /**

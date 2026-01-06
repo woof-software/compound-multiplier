@@ -58,10 +58,16 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
 
         [owner, user, user2, user3, treasury] = await ethers.getSigners();
 
-        const LoanFactory = await ethers.getContractFactory("UniswapV3Plugin", owner);
+        const LoanFactory = await ethers.getContractFactory(
+            "contracts/v1/plugins/flashloan/UniswapV3Plugin.sol:UniswapV3Plugin",
+            owner
+        );
         loanPlugin = await LoanFactory.deploy(opts);
 
-        const SwapFactory = await ethers.getContractFactory("LiFiPlugin", owner);
+        const SwapFactory = await ethers.getContractFactory(
+            "contracts/v1/plugins/swap/LiFiPlugin.sol:LiFiPlugin.sol:LiFiPlugin",
+            owner
+        );
         swapPlugin = await SwapFactory.deploy(opts);
 
         const plugins = [
@@ -882,7 +888,7 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
             await adapter
                 .connect(user3)
                 [
-                    "cover((address,address,address),address,uint256,bytes,(uint256,uint256,bytes32,bytes32,uint8))"
+                    "cover((address,address,address),address,uint256,uint16,bytes,(uint256,uint256,bytes32,bytes32,uint8))"
                 ](market, WETH_ADDRESS, collateralToWithdraw, swapData, allowParams, opts);
 
             const finalCol = await comet.collateralBalanceOf(user3.address, WETH_ADDRESS);

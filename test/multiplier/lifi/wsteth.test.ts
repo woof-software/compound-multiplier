@@ -85,7 +85,7 @@ describe("Comet Multiplier Adapter / LiFI / wstETH", function () {
             return adapter
                 .connect(signer)
                 [
-                    "cover((address,address,address),address,uint256,bytes)"
+                    "cover((address,address,address),address,uint256,uint16,bytes)"
                 ](market, WSTETH_ADDRESS, collateralAmount, swapData);
         });
     }

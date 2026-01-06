@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import { IPool } from "contracts/external/aave/IPool.sol";
+import { IPool } from "../../../external/aave/IPool.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import { ICometFlashLoanPlugin } from "contracts/interfaces/ICometFlashLoanPlugin.sol";
-import { ICometStructs as ICS } from "contracts/interfaces/ICometStructs.sol";
-import { ICometAlerts as ICA } from "contracts/interfaces/ICometAlerts.sol";
-import { ICometEvents as ICE } from "contracts/interfaces/ICometEvents.sol";
+import { IFlashLoanPlugin } from "../../interfaces/IFlashLoanPlugin.sol";
+import { IStructs as IS } from "../../interfaces/IStructs.sol";
+import { IAlerts as IA } from "../../interfaces/IAlerts.sol";
+import { IEvents as IE } from "../../interfaces/IEvents.sol";
 
 /**
  * @title AAVE Flash Loan Plugin
@@ -19,18 +19,18 @@ import { ICometEvents as ICE } from "contracts/interfaces/ICometEvents.sol";
  * processed. It is designed to be used as part of a larger system that supports composable flash loan plugins.\
  */
 // aderyn-fp-next-line(contract-locks-ether)
-contract AAVEPlugin is ICometFlashLoanPlugin {
+contract AAVEPlugin is IFlashLoanPlugin {
     using SafeERC20 for IERC20;
 
-    /// @inheritdoc ICometFlashLoanPlugin
+    /// @inheritdoc IFlashLoanPlugin
     bytes4 public constant CALLBACK_SELECTOR = AAVEPlugin.executeOperation.selector;
-    /// @inheritdoc ICometFlashLoanPlugin
+    /// @inheritdoc IFlashLoanPlugin
     bytes32 public constant SLOT_PLUGIN = bytes32(uint256(keccak256("AAVEPlugin.plugin")) - 1);
     /// @notice Referral code for AAVE flash loans, unused and set to 0
     uint16 private constant REFERAL_CODE = 0;
 
-    /// @inheritdoc ICometFlashLoanPlugin
-    function takeFlashLoan(ICS.CallbackData memory data, bytes memory config) external payable {
+    /// @inheritdoc IFlashLoanPlugin
+    function takeFlashLoan(IS.CallbackData memory data, bytes memory config) external payable {
         bytes memory _data = abi.encode(data);
         bytes32 slot = SLOT_PLUGIN;
         address flp = abi.decode(config, (address));
@@ -56,7 +56,7 @@ contract AAVEPlugin is ICometFlashLoanPlugin {
         uint256 premium,
         address initiator,
         bytes calldata params
-    ) external returns (ICS.CallbackData memory _data) {
+    ) external returns (IS.CallbackData memory _data) {
         address flp;
         bytes32 slot = SLOT_PLUGIN;
         assembly {
@@ -64,22 +64,22 @@ contract AAVEPlugin is ICometFlashLoanPlugin {
             tstore(slot, 0)
         }
 
-        _data = abi.decode(params, (ICS.CallbackData));
+        _data = abi.decode(params, (IS.CallbackData));
 
-        require(flp == msg.sender, ICA.UnauthorizedCallback());
+        require(flp == msg.sender, IA.UnauthorizedCallback());
 
         require(
             _data.debt == amount && address(_data.asset) == asset && initiator == address(this),
-            ICA.InvalidFlashLoanData()
+            IA.InvalidFlashLoanData()
         );
 
         _data.fee = premium;
         _data.flp = flp;
 
-        emit ICE.FlashLoan(flp, asset, amount, premium);
+        emit IE.FlashLoan(flp, asset, amount, premium);
     }
 
-    /// @inheritdoc ICometFlashLoanPlugin
+    /// @inheritdoc IFlashLoanPlugin
     function repayFlashLoan(address flp, address asset, uint256 amount) external {
         IERC20(asset).safeIncreaseAllowance(flp, amount);
     }
@@ -90,11 +90,11 @@ contract AAVEPlugin is ICometFlashLoanPlugin {
      * @return True if the interface is supported, false otherwise
      */
     function supportsInterface(bytes4 interfaceId) external pure returns (bool) {
-        return interfaceId == type(ICometFlashLoanPlugin).interfaceId;
+        return interfaceId == type(IFlashLoanPlugin).interfaceId;
     }
 
     /**
-     * @inheritdoc ICometFlashLoanPlugin
+     * @inheritdoc IFlashLoanPlugin
      */
     function hook() external pure returns (bytes memory) {
         bytes memory data = new bytes(32);

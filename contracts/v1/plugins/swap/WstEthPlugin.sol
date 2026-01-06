@@ -7,9 +7,9 @@ import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.s
 import { ICometSwapPlugin } from "../../interfaces/ICometSwapPlugin.sol";
 import { ICometFoundation } from "../../interfaces/ICometFoundation.sol";
 
-import { IWstEth } from "../../external/lido/IWstEth.sol";
-import { IStEth } from "../../external/lido/IStEth.sol";
-import { IWEth } from "../../external/weth/IWEth.sol";
+import { IWstEth } from "../../../external/lido/IWstEth.sol";
+import { IStEth } from "../../../external/lido/IStEth.sol";
+import { IWEth } from "../../../external/weth/IWEth.sol";
 
 import { ICometAlerts as ICA } from "../../interfaces/ICometAlerts.sol";
 import { ICometEvents as ICE } from "../../interfaces/ICometEvents.sol";

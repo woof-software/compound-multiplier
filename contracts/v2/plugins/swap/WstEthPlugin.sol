@@ -1,0 +1,75 @@
+// SPDX-License-Identifier: MIT
+pragma solidity =0.8.30;
+
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
+import { ISwapPlugin } from "../../interfaces/ISwapPlugin.sol";
+import { IFoundation } from "../../interfaces/IFoundation.sol";
+
+import { IWstEth } from "../../../external/lido/IWstEth.sol";
+import { IStEth } from "../../../external/lido/IStEth.sol";
+import { IWEth } from "../../../external/weth/IWEth.sol";
+
+import { IAlerts as IA } from "../../interfaces/IAlerts.sol";
+import { IEvents as IE } from "../../interfaces/IEvents.sol";
+
+/**
+ * @title WstEthPlugin
+ * @author WOOF! Software
+ * @custom:security-contact dmitriy@woof.software
+ * @notice Swap plugin for converting between WETH and wstETH via Lido staking
+ * @dev Implements ISwapPlugin interface to provide specialized WETH / wstETH conversion
+ */
+contract WstEthPlugin is ISwapPlugin {
+    using SafeERC20 for IERC20;
+
+    bytes4 public constant SWAP_SELECTOR = IWstEth.wrap.selector;
+
+    /// @notice Address of the wstETH token contract
+    address public constant WSTETH_ADDRESS = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
+
+    /// @notice Address of the stETH token contract
+    address public constant STETH_ADDRESS = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
+
+    /**
+     * @inheritdoc ISwapPlugin
+     */
+    function swap(
+        address srcToken,
+        address dstToken,
+        uint256 amountIn,
+        bytes calldata,
+        bytes calldata swapData
+    ) external returns (uint256 amountOut) {
+        uint256 minAmountOut = abi.decode(swapData, (uint256));
+        address wEth = IFoundation(address(this)).wEth();
+        require(
+            srcToken != dstToken && amountIn > 0 && srcToken == wEth && minAmountOut > 0 && dstToken == WSTETH_ADDRESS,
+            IA.InvalidSwapParameters()
+        );
+
+        return _lidoSwap(wEth, WSTETH_ADDRESS, STETH_ADDRESS, amountIn, minAmountOut);
+    }
+
+    function _lidoSwap(
+        address wEth,
+        address wstEth,
+        address stEth,
+        uint256 amountIn,
+        uint256 minAmountOut
+    ) internal returns (uint256 amountOut) {
+        uint256 initial = IERC20(wstEth).balanceOf(address(this));
+        IWEth(wEth).withdraw(amountIn);
+        uint256 stAmount = IStEth(stEth).submit{ value: amountIn }(address(this));
+        IERC20(stEth).safeIncreaseAllowance(wstEth, stAmount);
+        require(IWstEth(wstEth).wrap(stAmount) > 0, IA.InvalidAmountOut());
+        amountOut = IERC20(wstEth).balanceOf(address(this)) - initial;
+        require(amountOut >= minAmountOut, IA.InvalidAmountOut());
+        emit IE.Swap(wstEth, wEth, wstEth, amountOut);
+    }
+
+    function supportsInterface(bytes4 interfaceId) external pure returns (bool) {
+        return interfaceId == type(ISwapPlugin).interfaceId;
+    }
+}

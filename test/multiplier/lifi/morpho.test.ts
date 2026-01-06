@@ -61,10 +61,16 @@ describe("Comet Multiplier Adapter / LiFi / Morpho", function () {
         // Create a NEW wallet for treasury instead of using a signer
         treasury = ethers.Wallet.createRandom().connect(ethers.provider);
 
-        const LoanFactory = await ethers.getContractFactory("MorphoPlugin", owner);
+        const LoanFactory = await ethers.getContractFactory(
+            "contracts/v1/plugins/flashloan/MorphoPlugin.sol:MorphoPlugin",
+            owner
+        );
         loanPlugin = await LoanFactory.deploy(opts);
 
-        const SwapFactory = await ethers.getContractFactory("LiFiPlugin", owner);
+        const SwapFactory = await ethers.getContractFactory(
+            "contracts/v1/plugins/swap/LiFiPlugin.sol:LiFiPlugin",
+            owner
+        );
         swapPlugin = await SwapFactory.deploy(opts);
 
         const plugins = [
@@ -657,7 +663,7 @@ describe("Comet Multiplier Adapter / LiFi / Morpho", function () {
                 adapter
                     .connect(user3)
                     [
-                        "cover((address,address,address),address,uint256,bytes)"
+                        "cover((address,address,address),address,uint256,uint16,bytes)"
                     ](market, WETH_ADDRESS, collateralToWithdraw, "0x", opts)
             ).to.be.revertedWithCustomError(adapter, "NothingToDeleverage");
         });
@@ -674,7 +680,7 @@ describe("Comet Multiplier Adapter / LiFi / Morpho", function () {
                 adapter
                     .connect(user2)
                     [
-                        "cover((address,address,address),address,uint256,bytes)"
+                        "cover((address,address,address),address,uint256,uint16,bytes)"
                     ](market, WETH_ADDRESS, tinyAmount, "0x", opts)
             ).to.be.revertedWithCustomError(adapter, "InvalidLeverage");
         });
@@ -941,7 +947,7 @@ describe("Comet Multiplier Adapter / LiFi / Morpho", function () {
             await adapter
                 .connect(user3)
                 [
-                    "cover((address,address,address),address,uint256,bytes,(uint256,uint256,bytes32,bytes32,uint8))"
+                    "cover((address,address,address),address,uint256,uint16,bytes,(uint256,uint256,bytes32,bytes32,uint8))"
                 ](market, WETH_ADDRESS, collateralToWithdraw, swapData, allowParams, opts);
             const finalCol = await comet.collateralBalanceOf(user3.address, WETH_ADDRESS);
             const finalDebt = await comet.borrowBalanceOf(user3.address);
