@@ -18,6 +18,7 @@ import { ICometFlashLoanPlugin } from "./interfaces/ICometFlashLoanPlugin.sol";
 import { ICometExchange } from "./interfaces/ICometExchange.sol";
 import { ICometMultiplier } from "./interfaces/ICometMultiplier.sol";
 import { ICometCover } from "./interfaces/ICometCover.sol";
+import { ICometAdjust } from "./interfaces/ICometAdjust.sol";
 
 import { ICometStructs as ICS } from "./interfaces/ICometStructs.sol";
 import { ICometAlerts as ICA } from "./interfaces/ICometAlerts.sol";
@@ -33,7 +34,14 @@ import { ICometFoundation } from "./interfaces/ICometFoundation.sol";
  * The contract provides internal functions to validate and interact with these plugins, ensuring secure and modular integration with various DeFi protocols.
  */
 // aderyn-fp-next-line(locked-ether)
-contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, ICometCover, ReentrancyGuard {
+contract CometFoundation is
+    ICometFoundation,
+    ICometExchange,
+    ICometMultiplier,
+    ICometCover,
+    ICometAdjust,
+    ReentrancyGuard
+{
     using SafeERC20 for IERC20;
     /// @dev The scale for factors
     uint64 public constant FACTOR_SCALE = 1e18;
@@ -103,19 +111,22 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
         ICS.CallbackData memory data = _callback(loanPlugin, msg.data);
         require(data.asset.balanceOf(address(this)) >= snapshot + data.debt, ICA.InvalidAmountOut());
 
-        ICS.ProcessParams memory params = mode == ICS.Mode.MULTIPLY
-            ? ICS.ProcessParams({
+        ICS.ProcessParams memory params;
+        if (mode == ICS.Mode.MULTIPLY || mode == ICS.Mode.ADJUST_UP) {
+            params = ICS.ProcessParams({
                 supplyAsset: collateral,
                 supplyAmount: amount,
                 withdrawAsset: data.asset,
                 withdrawAmount: data.debt + data.fee
-            })
-            : ICS.ProcessParams({
+            });
+        } else {
+            params = ICS.ProcessParams({
                 supplyAsset: data.asset,
                 supplyAmount: data.debt,
                 withdrawAsset: collateral,
                 withdrawAmount: amount
             });
+        }
 
         _process(comet, user, params, data, loanPlugin, swapPlugin, mode);
 
@@ -263,6 +274,38 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
     ) external nonReentrant {
         _allow(opts.comet, allowParams);
         _cover(opts, collateral, collateralAmount, swapData, slippageBps);
+    }
+
+    /**
+     * @inheritdoc ICometAdjust
+     */
+    //  aderyn-fp-next-line(state-change-without-event)
+    function adjust(
+        ICS.Options calldata opts,
+        IERC20 collateral,
+        uint256 debtDelta,
+        bool isIncrease,
+        uint16 maxSlippageBps,
+        bytes calldata swapData
+    ) external nonReentrant {
+        _adjust(opts, collateral, debtDelta, isIncrease, maxSlippageBps, swapData);
+    }
+
+    /**
+     * @inheritdoc ICometAdjust
+     */
+    //  aderyn-fp-next-line(state-change-without-event)
+    function adjust(
+        ICS.Options calldata opts,
+        IERC20 collateral,
+        uint256 debtDelta,
+        bool isIncrease,
+        uint16 maxSlippageBps,
+        bytes calldata swapData,
+        ICS.AllowParams calldata allowParams
+    ) external nonReentrant {
+        _allow(opts.comet, allowParams);
+        _adjust(opts, collateral, debtDelta, isIncrease, maxSlippageBps, swapData);
     }
 
     /**
@@ -429,6 +472,82 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
     }
 
     /**
+     * @notice Internal implementation of adjust
+     * @param opts Configuration options including market and plugin addresses
+     * @param collateral Address of the collateral token in the position
+     * @param debtDelta The amount to change debt by (always positive)
+     * @param isIncrease True to increase leverage, false to decrease
+     * @param maxSlippageBps Maximum allowed slippage in basis points
+     * @param swapData Encoded swap parameters for the DEX aggregator
+     */
+    function _adjust(
+        ICS.Options calldata opts,
+        IERC20 collateral,
+        uint256 debtDelta,
+        bool isIncrease,
+        uint16 maxSlippageBps,
+        bytes calldata swapData
+    ) internal {
+        IComet comet = opts.comet;
+        require(address(comet) != address(0), ICA.InvalidComet());
+        require(maxSlippageBps < PRECISION, ICA.InvalidSwapParameters());
+        require(debtDelta > 0, ICA.NoAdjustmentNeeded());
+
+        IERC20 baseAsset = comet.baseToken();
+        address loanPlugin = opts.loanPlugin;
+
+        if (isIncrease) {
+            uint256 currentDebt = comet.borrowBalanceOf(msg.sender);
+            uint256 targetDebt = currentDebt + debtDelta;
+
+            uint256 currentCollateral = comet.collateralBalanceOf(msg.sender, collateral);
+            uint256 currentValue = _leveraged(comet, collateral, currentCollateral);
+            uint256 maxBorrow = Math.mulDiv(
+                currentValue,
+                _maxLeverage(comet, collateral, maxSlippageBps),
+                FACTOR_SCALE
+            );
+            require(targetDebt <= maxBorrow, ICA.InvalidAdjustment());
+
+            _tstore(
+                baseAsset.balanceOf(address(this)),
+                loanPlugin,
+                opts.swapPlugin,
+                comet,
+                collateral,
+                debtDelta,
+                msg.sender,
+                ICS.Mode.ADJUST_UP
+            );
+
+            _loan(
+                loanPlugin,
+                ICS.CallbackData({ debt: debtDelta, fee: 0, flp: address(0), asset: baseAsset, swapData: swapData })
+            );
+        } else {
+            uint256 collateralToWithdraw = _convertInv(comet, collateral, debtDelta, maxSlippageBps);
+            uint256 userCollateral = comet.collateralBalanceOf(msg.sender, collateral);
+            require(collateralToWithdraw <= userCollateral, ICA.InvalidAdjustment());
+
+            _tstore(
+                baseAsset.balanceOf(address(this)),
+                loanPlugin,
+                opts.swapPlugin,
+                comet,
+                collateral,
+                collateralToWithdraw,
+                msg.sender,
+                ICS.Mode.ADJUST_DOWN
+            );
+
+            _loan(
+                loanPlugin,
+                ICS.CallbackData({ debt: debtDelta, fee: 0, flp: address(0), asset: baseAsset, swapData: swapData })
+            );
+        }
+    }
+
+    /**
      * @notice Processes a flash loan operation including optional token swaps and collateral management
      * @param comet The Comet market instance
      * @param user The address of the user performing the operation
@@ -463,6 +582,52 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
             _supplyWithdraw(comet, user, params);
 
             emit ICE.Multiplied(user, address(comet), address(params.supplyAsset), params.supplyAmount, data.debt);
+        } else if (mode == ICS.Mode.ADJUST_UP) {
+            (amountOut, dust) = _swap(swapPlugin, data.asset, params.supplyAsset, data.debt, data.swapData);
+            _dust(user, data.asset, IComet(address(0)), dust);
+
+            params.supplyAsset.safeIncreaseAllowance(address(comet), amountOut);
+            comet.supplyTo(user, params.supplyAsset, amountOut);
+            comet.withdrawFrom(user, address(this), data.asset, repaymentAmount);
+
+            uint256 previousDebt = comet.borrowBalanceOf(user) - repaymentAmount; // Approximate previous debt
+            emit ICE.Adjusted(
+                user,
+                address(comet),
+                address(params.supplyAsset),
+                previousDebt,
+                comet.borrowBalanceOf(user),
+                int256(amountOut)
+            );
+        } else if (mode == ICS.Mode.ADJUST_DOWN) {
+            data.asset.safeIncreaseAllowance(address(comet), data.debt);
+            comet.supplyTo(user, data.asset, data.debt);
+
+            comet.withdrawFrom(user, address(this), params.withdrawAsset, params.withdrawAmount);
+
+            (amountOut, dust) = _swap(
+                swapPlugin,
+                params.withdrawAsset,
+                data.asset,
+                params.withdrawAmount,
+                data.swapData
+            );
+
+            _dust(user, params.withdrawAsset, IComet(address(0)), dust);
+
+            require(amountOut >= repaymentAmount, ICA.InvalidAmountOut());
+            dust = amountOut - repaymentAmount;
+            _dust(user, data.asset, IComet(address(0)), dust);
+
+            uint256 newDebt = comet.borrowBalanceOf(user);
+            emit ICE.Adjusted(
+                user,
+                address(comet),
+                address(params.withdrawAsset),
+                newDebt + data.debt,
+                newDebt,
+                -int256(params.withdrawAmount)
+            );
         } else {
             _supplyWithdraw(comet, user, params);
 
@@ -776,6 +941,32 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
         );
 
         return Math.mulDiv(raw, PRECISION - slippageBps, PRECISION);
+    }
+
+    /**
+     * @notice Converts base asset amount to collateral amount using comet prices
+     * @param comet The Comet comet interface
+     * @param collateral Address of the collateral token
+     * @param baseAmount Amount of base asset to convert
+     * @param slippageBps Slippage in basis points (10000 = 100%) to apply as buffer
+     * @return Converted amount in collateral denomination
+     * @dev Inverse of _convert, used for leverage down calculations
+     */
+    function _convertInv(
+        IComet comet,
+        IERC20 collateral,
+        uint256 baseAmount,
+        uint16 slippageBps
+    ) private view returns (uint256) {
+        IComet.AssetInfo memory info = comet.getAssetInfoByAddress(collateral);
+        address priceFeed = info.priceFeed;
+
+        uint256 raw = Math.mulDiv(
+            Math.mulDiv(baseAmount, info.scale, comet.baseScale()),
+            10 ** AggregatorV3Interface(priceFeed).decimals(),
+            comet.getPrice(priceFeed)
+        );
+        return Math.mulDiv(raw, PRECISION + slippageBps, PRECISION);
     }
 
     /**

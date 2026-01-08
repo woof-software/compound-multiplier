@@ -24,7 +24,7 @@ const WETH_WHALE = "0xF04a5cC80B1E94C69B48f5ee68a08CD2F09A7c3E";
 
 const opts = { maxFeePerGas: 5_000_000_000 };
 
-describe.only("Comet Multiplier Adapter / OKX / UniswapV3", function () {
+describe("Comet Multiplier Adapter / OKX / UniswapV3", function () {
     let adapter: CometFoundation;
     let loanPlugin: UniswapV3Plugin;
     let swapPlugin: OKXPlugin;

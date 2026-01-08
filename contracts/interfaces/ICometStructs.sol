@@ -100,7 +100,9 @@ interface ICometStructs {
     enum Mode {
         MULTIPLY,
         COVER,
-        EXCHANGE
+        EXCHANGE,
+        ADJUST_UP,
+        ADJUST_DOWN
     }
 
     /// @notice Parameters for gasless approvals using EIP-2612 signatures
