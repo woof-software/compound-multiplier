@@ -302,45 +302,44 @@ _This function first authorizes the adapter via allowBySig, then withdraws the p
 ### adjust
 
 ```solidity
-function adjust(struct ICometStructs.Options opts, contract IERC20 collateral, uint256 debtDelta, bool isIncrease, uint16 maxSlippageBps, bytes swapData) external
+function adjust(struct ICometStructs.Options opts, contract IERC20 collateral, uint256 debtDelta, uint256 maxHealthFactorDrop, bytes swapData) external
 ```
 
-Adjusts the leverage of an existing position by a specific debt delta
+Increases the leverage of an existing position by borrowing additional debt
 
-_Operations: - If isIncrease=true: Leverage UP (flash loan base → swap to collateral → supply → borrow to repay) - If isIncrease=false: Leverage DOWN (flash loan base → repay debt → withdraw collateral → swap to base → repay flash loan)_
+_Flow: flash loan base → swap to collateral → supply collateral → borrow to repay flash loan
+To decrease leverage, users should use cover() or repay debt directly via comet.supply()_
 
 #### Parameters
 
-| Name           | Type                         | Description                                                             |
-| -------------- | ---------------------------- | ----------------------------------------------------------------------- |
-| opts           | struct ICometStructs.Options | Configuration options including market and plugin addresses             |
-| collateral     | contract IERC20              | Address of the collateral token in the position                         |
-| debtDelta      | uint256                      | The amount to change debt by (always positive)                          |
-| isIncrease     | bool                         | True to increase leverage (borrow more), false to decrease (repay debt) |
-| maxSlippageBps | uint16                       | Maximum allowed slippage in basis points (10000 = 100%)                 |
-| swapData       | bytes                        | Encoded swap parameters for the DEX aggregator                          |
+| Name                | Type                         | Description                                                       |
+| ------------------- | ---------------------------- | ----------------------------------------------------------------- |
+| opts                | struct ICometStructs.Options | Configuration options including market and plugin addresses       |
+| collateral          | contract IERC20              | Address of the collateral token in the position                   |
+| debtDelta           | uint256                      |                                                                   |
+| maxHealthFactorDrop | uint256                      | Maximum allowed health factor drop in basis points (10000 = 100%) |
+| swapData            | bytes                        | Encoded swap parameters for the DEX aggregator                    |
 
 ### adjust
 
 ```solidity
-function adjust(struct ICometStructs.Options opts, contract IERC20 collateral, uint256 debtDelta, bool isIncrease, uint16 maxSlippageBps, bytes swapData, struct ICometStructs.AllowParams allowParams) external
+function adjust(struct ICometStructs.Options opts, contract IERC20 collateral, uint256 debtDelta, uint256 maxHealthFactorDrop, bytes swapData, struct ICometStructs.AllowParams allowParams) external
 ```
 
-Adjusts the leverage of an existing position with EIP-712 signature authorization
+Increases leverage with EIP-712 signature authorization
 
 _This function first authorizes the adapter via allowBySig, then executes the adjustment_
 
 #### Parameters
 
-| Name           | Type                             | Description                                                             |
-| -------------- | -------------------------------- | ----------------------------------------------------------------------- |
-| opts           | struct ICometStructs.Options     | Configuration options including market and plugin addresses             |
-| collateral     | contract IERC20                  | Address of the collateral token in the position                         |
-| debtDelta      | uint256                          | The amount to change debt by (always positive)                          |
-| isIncrease     | bool                             | True to increase leverage (borrow more), false to decrease (repay debt) |
-| maxSlippageBps | uint16                           | Maximum allowed slippage in basis points (10000 = 100%)                 |
-| swapData       | bytes                            | Encoded swap parameters for the DEX aggregator                          |
-| allowParams    | struct ICometStructs.AllowParams | EIP-712 signature parameters for Comet authorization                    |
+| Name                | Type                             | Description                                                       |
+| ------------------- | -------------------------------- | ----------------------------------------------------------------- |
+| opts                | struct ICometStructs.Options     | Configuration options including market and plugin addresses       |
+| collateral          | contract IERC20                  | Address of the collateral token in the position                   |
+| debtDelta           | uint256                          |                                                                   |
+| maxHealthFactorDrop | uint256                          | Maximum allowed health factor drop in basis points (10000 = 100%) |
+| swapData            | bytes                            | Encoded swap parameters for the DEX aggregator                    |
+| allowParams         | struct ICometStructs.AllowParams | EIP-712 signature parameters for Comet authorization              |
 
 ### rescue
 
@@ -383,21 +382,20 @@ Internal implementation of cover
 ### \_adjust
 
 ```solidity
-function _adjust(struct ICometStructs.Options opts, contract IERC20 collateral, uint256 debtDelta, bool isIncrease, uint16 maxSlippageBps, bytes swapData) internal
+function _adjust(struct ICometStructs.Options opts, contract IERC20 collateral, uint256 debtDelta, uint256 maxHealthFactorDrop, bytes swapData) internal
 ```
 
-Internal implementation of adjust
+Internal implementation of adjust (leverage increase only)
 
 #### Parameters
 
-| Name           | Type                         | Description                                                 |
-| -------------- | ---------------------------- | ----------------------------------------------------------- |
-| opts           | struct ICometStructs.Options | Configuration options including market and plugin addresses |
-| collateral     | contract IERC20              | Address of the collateral token in the position             |
-| debtDelta      | uint256                      | The amount to change debt by (always positive)              |
-| isIncrease     | bool                         | True to increase leverage, false to decrease                |
-| maxSlippageBps | uint16                       | Maximum allowed slippage in basis points                    |
-| swapData       | bytes                        | Encoded swap parameters for the DEX aggregator              |
+| Name                | Type                         | Description                                                 |
+| ------------------- | ---------------------------- | ----------------------------------------------------------- |
+| opts                | struct ICometStructs.Options | Configuration options including market and plugin addresses |
+| collateral          | contract IERC20              | Address of the collateral token in the position             |
+| debtDelta           | uint256                      | The additional amount of base asset to borrow               |
+| maxHealthFactorDrop | uint256                      | Maximum allowed health factor drop in basis points          |
+| swapData            | bytes                        | Encoded swap parameters for the DEX aggregator              |
 
 ### \_process
 
