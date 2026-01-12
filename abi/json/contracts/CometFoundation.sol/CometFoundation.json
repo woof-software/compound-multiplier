@@ -153,9 +153,9 @@
             },
             {
                 "indexed": false,
-                "internalType": "int256",
+                "internalType": "uint256",
                 "name": "collateralDelta",
-                "type": "int256"
+                "type": "uint256"
             }
         ],
         "name": "Adjusted",
@@ -399,14 +399,9 @@
                 "type": "uint256"
             },
             {
-                "internalType": "bool",
-                "name": "isIncrease",
-                "type": "bool"
-            },
-            {
-                "internalType": "uint16",
-                "name": "maxSlippageBps",
-                "type": "uint16"
+                "internalType": "uint256",
+                "name": "maxHealthFactorDrop",
+                "type": "uint256"
             },
             {
                 "internalType": "bytes",
@@ -454,14 +449,9 @@
                 "type": "uint256"
             },
             {
-                "internalType": "bool",
-                "name": "isIncrease",
-                "type": "bool"
-            },
-            {
-                "internalType": "uint16",
-                "name": "maxSlippageBps",
-                "type": "uint16"
+                "internalType": "uint256",
+                "name": "maxHealthFactorDrop",
+                "type": "uint256"
             },
             {
                 "internalType": "bytes",
