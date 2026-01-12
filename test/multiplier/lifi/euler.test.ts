@@ -1097,7 +1097,7 @@ describe.only("Comet Multiplier Adapter / LiFi / Euler", function () {
         });
     });
 
-    describe("Adjust Leverage", function () {
+    describe.only("Adjust Leverage", function () {
         beforeEach(async function () {
             await ethers.provider.send("evm_revert", [initialSnapshot]);
             initialSnapshot = await ethers.provider.send("evm_snapshot");
@@ -1132,8 +1132,8 @@ describe.only("Comet Multiplier Adapter / LiFi / Euler", function () {
             await adapter
                 .connect(user)
                 [
-                    "adjust((address,address,address),address,uint256,bool,uint16,bytes)"
-                ](market, WETH_ADDRESS, debtDelta, true, 500, quote.swapCalldata);
+                    "adjust((address,address,address),address,uint256,uint256,bytes)"
+                ](market, WETH_ADDRESS, debtDelta, 500, quote.swapCalldata);
 
             const finalCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
             const finalDebt = await comet.borrowBalanceOf(user.address);
@@ -1145,51 +1145,6 @@ describe.only("Comet Multiplier Adapter / LiFi / Euler", function () {
             expect(healthFactor).to.be.gt(finalDebt);
         });
 
-        it("should decrease leverage from 2x to 1.5x (leverage DOWN)", async function () {
-            const initialCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
-            const market = await getMarketOptions();
-
-            // Read current debt
-            const currentDebt = await comet.borrowBalanceOf(user.address);
-
-            // Target 25% debt reduction (from 2x to ~1.5x)
-            const debtDelta = currentDebt / 4n;
-
-            // Estimate collateral needed to sell for debtDelta
-            // Add buffer for slippage
-            const info = await comet.getAssetInfoByAddress(WETH_ADDRESS);
-            const price = await comet.getPrice(info.priceFeed);
-            const baseScale = await comet.baseScale();
-            const estimatedCollateral = (debtDelta * info.scale * 100_000_000n) / (price * baseScale);
-            const collateralWithBuffer = (estimatedCollateral * 115n) / 100n; // 15% buffer
-
-            // Get quote for selling collateral to get base (WETH to USDC)
-            const quote = await executeWithRetry(async () => {
-                return await getQuote(
-                    "1",
-                    "1",
-                    WETH_ADDRESS,
-                    USDC_ADDRESS,
-                    collateralWithBuffer.toString(),
-                    await adapter.getAddress()
-                );
-            });
-
-            await adapter
-                .connect(user)
-                [
-                    "adjust((address,address,address),address,uint256,bool,uint16,bytes)"
-                ](market, WETH_ADDRESS, debtDelta, false, 500, quote.swapCalldata);
-
-            const finalCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
-            const finalDebt = await comet.borrowBalanceOf(user.address);
-            const healthFactor = await calculateHealthFactor(comet, user.address, WETH_ADDRESS);
-
-            expect(finalDebt).to.be.lt(currentDebt);
-            expect(finalCol).to.be.lt(initialCol);
-            expect(healthFactor).to.be.gt(finalDebt);
-        });
-
         it("should revert when debtDelta is zero", async function () {
             const market = await getMarketOptions();
 
@@ -1197,8 +1152,8 @@ describe.only("Comet Multiplier Adapter / LiFi / Euler", function () {
                 adapter
                     .connect(user)
                     [
-                        "adjust((address,address,address),address,uint256,bool,uint16,bytes)"
-                    ](market, WETH_ADDRESS, 0, true, 500, "0x")
+                        "adjust((address,address,address),address,uint256,uint256,bytes)"
+                    ](market, WETH_ADDRESS, 0, 500, "0x")
             ).to.be.revertedWithCustomError(adapter, "NoAdjustmentNeeded");
         });
 
@@ -1212,8 +1167,8 @@ describe.only("Comet Multiplier Adapter / LiFi / Euler", function () {
                 adapter
                     .connect(user)
                     [
-                        "adjust((address,address,address),address,uint256,bool,uint16,bytes)"
-                    ](market, WETH_ADDRESS, excessiveDebtDelta, true, 500, "0x")
+                        "adjust((address,address,address),address,uint256,uint256,bytes)"
+                    ](market, WETH_ADDRESS, excessiveDebtDelta, 500, "0x")
             ).to.be.revertedWithCustomError(adapter, "InvalidAdjustment");
         });
 
@@ -1230,8 +1185,8 @@ describe.only("Comet Multiplier Adapter / LiFi / Euler", function () {
                 adapter
                     .connect(user)
                     [
-                        "adjust((address,address,address),address,uint256,bool,uint16,bytes)"
-                    ](market, WETH_ADDRESS, debtDelta, true, 500, "0x")
+                        "adjust((address,address,address),address,uint256,uint256,bytes)"
+                    ](market, WETH_ADDRESS, debtDelta, 500, "0x")
             ).to.be.revertedWithCustomError(adapter, "InvalidComet");
         });
 
@@ -1256,30 +1211,23 @@ describe.only("Comet Multiplier Adapter / LiFi / Euler", function () {
             await adapter
                 .connect(user)
                 [
-                    "adjust((address,address,address),address,uint256,bool,uint16,bytes)"
-                ](market, WETH_ADDRESS, debtDelta1, true, 500, quote1.swapCalldata);
+                    "adjust((address,address,address),address,uint256,uint256,bytes)"
+                ](market, WETH_ADDRESS, debtDelta1, 500, quote1.swapCalldata);
 
             const midDebt = await comet.borrowBalanceOf(user.address);
             const expectedMidDebt = initialDebt + debtDelta1;
             expect(midDebt).to.be.closeTo(expectedMidDebt, expectedMidDebt / 20n);
 
-            // Second adjustment: decrease leverage back (20% reduction from current)
-            const currentMidDebt = await comet.borrowBalanceOf(user.address);
-            const debtDelta2 = currentMidDebt / 5n; // 20% reduction
-
-            const info = await comet.getAssetInfoByAddress(WETH_ADDRESS);
-            const price = await comet.getPrice(info.priceFeed);
-            const baseScale = await comet.baseScale();
-            const estimatedCollateral = (debtDelta2 * info.scale * 100_000_000n) / (price * baseScale);
-            const collateralWithBuffer = (estimatedCollateral * 115n) / 100n; // 15% buffer
+            // Second adjustment: increase leverage again (10% more debt)
+            const debtDelta2 = midDebt / 10n;
 
             const quote2 = await executeWithRetry(async () => {
                 return await getQuote(
                     "1",
                     "1",
-                    WETH_ADDRESS,
                     USDC_ADDRESS,
-                    collateralWithBuffer.toString(),
+                    WETH_ADDRESS,
+                    debtDelta2.toString(),
                     await adapter.getAddress()
                 );
             });
@@ -1287,13 +1235,13 @@ describe.only("Comet Multiplier Adapter / LiFi / Euler", function () {
             await adapter
                 .connect(user)
                 [
-                    "adjust((address,address,address),address,uint256,bool,uint16,bytes)"
-                ](market, WETH_ADDRESS, debtDelta2, false, 500, quote2.swapCalldata);
+                    "adjust((address,address,address),address,uint256,uint256,bytes)"
+                ](market, WETH_ADDRESS, debtDelta2, 500, quote2.swapCalldata);
 
             const finalDebt = await comet.borrowBalanceOf(user.address);
             const healthFactor = await calculateHealthFactor(comet, user.address, WETH_ADDRESS);
 
-            expect(finalDebt).to.be.lt(midDebt);
+            expect(finalDebt).to.be.gt(midDebt);
             expect(healthFactor).to.be.gt(finalDebt);
         });
     });

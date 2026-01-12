@@ -101,8 +101,7 @@ interface ICometStructs {
         MULTIPLY,
         COVER,
         EXCHANGE,
-        ADJUST_UP,
-        ADJUST_DOWN
+        ADJUST
     }
 
     /// @notice Parameters for gasless approvals using EIP-2612 signatures

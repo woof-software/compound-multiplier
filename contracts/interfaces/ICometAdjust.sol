@@ -8,39 +8,35 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  * @title ICometAdjust
  * @author WOOF! Software
  * @custom:security-contact dmitriy@woof.software
- * @notice Interface for adjusting leverage on existing positions without closing them
- * @dev Allows users to increase or decrease their position leverage atomically
+ * @notice Interface for increasing leverage on existing positions without adding capital
+ * @dev Allows users to atomically increase position leverage using existing equity
  */
 interface ICometAdjust {
     /**
-     * @notice Adjusts the leverage of an existing position by a specific debt delta
+     * @notice Increases the leverage of an existing position by borrowing additional debt
      * @param opts Configuration options including market and plugin addresses
      * @param collateral Address of the collateral token in the position
-     * @param debtDelta The amount to change debt by (always positive)
-     * @param isIncrease True to increase leverage (borrow more), false to decrease (repay debt)
-     * @param maxSlippageBps Maximum allowed slippage in basis points (10000 = 100%)
+     * @param additionalDebt The additional amount of base asset to borrow
+     * @param maxHealthFactorDrop Maximum allowed health factor drop in basis points (10000 = 100%)
      * @param swapData Encoded swap parameters for the DEX aggregator
-     * @dev Operations:
-     *      - If isIncrease=true: Leverage UP (flash loan base → swap to collateral → supply → borrow to repay)
-     *      - If isIncrease=false: Leverage DOWN (flash loan base → repay debt → withdraw collateral → swap to base → repay flash loan)
+     * @dev Flow: flash loan base → swap to collateral → supply collateral → borrow to repay flash loan
+     *      To decrease leverage, users should use cover() or repay debt directly via comet.supply()
      * @custom:security Protected by reentrancy guard and requires valid plugin selectors
      */
     function adjust(
         ICS.Options calldata opts,
         IERC20 collateral,
-        uint256 debtDelta,
-        bool isIncrease,
-        uint16 maxSlippageBps,
+        uint256 additionalDebt,
+        uint256 maxHealthFactorDrop,
         bytes calldata swapData
     ) external;
 
     /**
-     * @notice Adjusts the leverage of an existing position with EIP-712 signature authorization
+     * @notice Increases leverage with EIP-712 signature authorization
      * @param opts Configuration options including market and plugin addresses
      * @param collateral Address of the collateral token in the position
-     * @param debtDelta The amount to change debt by (always positive)
-     * @param isIncrease True to increase leverage (borrow more), false to decrease (repay debt)
-     * @param maxSlippageBps Maximum allowed slippage in basis points (10000 = 100%)
+     * @param additionalDebt The additional amount of base asset to borrow
+     * @param maxHealthFactorDrop Maximum allowed health factor drop in basis points (10000 = 100%)
      * @param swapData Encoded swap parameters for the DEX aggregator
      * @param allowParams EIP-712 signature parameters for Comet authorization
      * @dev This function first authorizes the adapter via allowBySig, then executes the adjustment
@@ -49,9 +45,8 @@ interface ICometAdjust {
     function adjust(
         ICS.Options calldata opts,
         IERC20 collateral,
-        uint256 debtDelta,
-        bool isIncrease,
-        uint16 maxSlippageBps,
+        uint256 additionalDebt,
+        uint256 maxHealthFactorDrop,
         bytes calldata swapData,
         ICS.AllowParams calldata allowParams
     ) external;

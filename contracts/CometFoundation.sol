@@ -112,10 +112,17 @@ contract CometFoundation is
         require(data.asset.balanceOf(address(this)) >= snapshot + data.debt, ICA.InvalidAmountOut());
 
         ICS.ProcessParams memory params;
-        if (mode == ICS.Mode.MULTIPLY || mode == ICS.Mode.ADJUST_UP) {
+        if (mode == ICS.Mode.MULTIPLY) {
             params = ICS.ProcessParams({
                 supplyAsset: collateral,
                 supplyAmount: amount,
+                withdrawAsset: data.asset,
+                withdrawAmount: data.debt + data.fee
+            });
+        } else if (mode == ICS.Mode.ADJUST) {
+            params = ICS.ProcessParams({
+                supplyAsset: collateral,
+                supplyAmount: 0,
                 withdrawAsset: data.asset,
                 withdrawAmount: data.debt + data.fee
             });
@@ -284,11 +291,10 @@ contract CometFoundation is
         ICS.Options calldata opts,
         IERC20 collateral,
         uint256 debtDelta,
-        bool isIncrease,
-        uint16 maxSlippageBps,
+        uint256 maxHealthFactorDrop,
         bytes calldata swapData
     ) external nonReentrant {
-        _adjust(opts, collateral, debtDelta, isIncrease, maxSlippageBps, swapData);
+        _adjust(opts, collateral, debtDelta, maxHealthFactorDrop, swapData);
     }
 
     /**
@@ -299,13 +305,12 @@ contract CometFoundation is
         ICS.Options calldata opts,
         IERC20 collateral,
         uint256 debtDelta,
-        bool isIncrease,
-        uint16 maxSlippageBps,
+        uint256 maxHealthFactorDrop,
         bytes calldata swapData,
         ICS.AllowParams calldata allowParams
     ) external nonReentrant {
         _allow(opts.comet, allowParams);
-        _adjust(opts, collateral, debtDelta, isIncrease, maxSlippageBps, swapData);
+        _adjust(opts, collateral, debtDelta, maxHealthFactorDrop, swapData);
     }
 
     /**
@@ -389,7 +394,7 @@ contract CometFoundation is
         uint256 leveraged = _leveraged(comet, collateral, collateralAmount);
 
         require(
-            _leveraged(comet, collateral, collateralAmount) + baseAmount <=
+            leveraged + baseAmount <=
                 Math.mulDiv(leveraged, _maxLeverage(comet, collateral, maxHealthFactorDrop), FACTOR_SCALE),
             ICA.InvalidLeverage()
         );
@@ -472,79 +477,49 @@ contract CometFoundation is
     }
 
     /**
-     * @notice Internal implementation of adjust
+     * @notice Internal implementation of adjust (leverage increase only)
      * @param opts Configuration options including market and plugin addresses
      * @param collateral Address of the collateral token in the position
-     * @param debtDelta The amount to change debt by (always positive)
-     * @param isIncrease True to increase leverage, false to decrease
-     * @param maxSlippageBps Maximum allowed slippage in basis points
+     * @param debtDelta The additional amount of base asset to borrow
+     * @param maxHealthFactorDrop Maximum allowed health factor drop in basis points
      * @param swapData Encoded swap parameters for the DEX aggregator
      */
     function _adjust(
         ICS.Options calldata opts,
         IERC20 collateral,
         uint256 debtDelta,
-        bool isIncrease,
-        uint16 maxSlippageBps,
+        uint256 maxHealthFactorDrop,
         bytes calldata swapData
     ) internal {
         IComet comet = opts.comet;
         require(address(comet) != address(0), ICA.InvalidComet());
-        require(maxSlippageBps < PRECISION, ICA.InvalidSwapParameters());
+        require(maxHealthFactorDrop < PRECISION, ICA.InvalidMultiplyParameters());
         require(debtDelta > 0, ICA.NoAdjustmentNeeded());
+        uint256 leveraged = _leveraged(comet, collateral, comet.collateralBalanceOf(msg.sender, collateral));
+        require(
+            comet.borrowBalanceOf(msg.sender) + debtDelta <=
+                Math.mulDiv(leveraged, _maxLeverage(comet, collateral, maxHealthFactorDrop), FACTOR_SCALE),
+            ICA.InvalidAdjustment()
+        );
 
         IERC20 baseAsset = comet.baseToken();
         address loanPlugin = opts.loanPlugin;
 
-        if (isIncrease) {
-            uint256 currentDebt = comet.borrowBalanceOf(msg.sender);
-            uint256 targetDebt = currentDebt + debtDelta;
+        _tstore(
+            baseAsset.balanceOf(address(this)),
+            loanPlugin,
+            opts.swapPlugin,
+            comet,
+            collateral,
+            debtDelta,
+            msg.sender,
+            ICS.Mode.ADJUST
+        );
 
-            uint256 currentCollateral = comet.collateralBalanceOf(msg.sender, collateral);
-            uint256 currentValue = _leveraged(comet, collateral, currentCollateral);
-            uint256 maxBorrow = Math.mulDiv(
-                currentValue,
-                _maxLeverage(comet, collateral, maxSlippageBps),
-                FACTOR_SCALE
-            );
-            require(targetDebt <= maxBorrow, ICA.InvalidAdjustment());
-
-            _tstore(
-                baseAsset.balanceOf(address(this)),
-                loanPlugin,
-                opts.swapPlugin,
-                comet,
-                collateral,
-                debtDelta,
-                msg.sender,
-                ICS.Mode.ADJUST_UP
-            );
-
-            _loan(
-                loanPlugin,
-                ICS.CallbackData({ debt: debtDelta, fee: 0, flp: address(0), asset: baseAsset, swapData: swapData })
-            );
-        } else {
-            uint256 collateralToWithdraw = _convertInv(comet, collateral, debtDelta, maxSlippageBps);
-            uint256 userCollateral = comet.collateralBalanceOf(msg.sender, collateral);
-            require(collateralToWithdraw <= userCollateral, ICA.InvalidAdjustment());
-
-            _tstore(
-                baseAsset.balanceOf(address(this)),
-                loanPlugin,
-                opts.swapPlugin,
-                comet,
-                collateral,
-                collateralToWithdraw,
-                msg.sender,
-                ICS.Mode.ADJUST_DOWN
-            );
-
-            _loan(
-                loanPlugin,
-                ICS.CallbackData({ debt: debtDelta, fee: 0, flp: address(0), asset: baseAsset, swapData: swapData })
-            );
-        }
+        _loan(
+            loanPlugin,
+            ICS.CallbackData({ debt: debtDelta, fee: 0, flp: address(0), asset: baseAsset, swapData: swapData })
+        );
     }
 
     /**
@@ -573,61 +548,29 @@ contract CometFoundation is
         uint256 amountOut;
         uint256 dust;
 
-        if (mode == ICS.Mode.MULTIPLY) {
+        if (mode == ICS.Mode.MULTIPLY || mode == ICS.Mode.ADJUST) {
             (amountOut, dust) = _swap(swapPlugin, data.asset, params.supplyAsset, data.debt, data.swapData);
             _dust(user, data.asset, IComet(address(0)), dust);
 
-            params.supplyAmount += amountOut;
+            uint256 totalSupply = params.supplyAmount + amountOut;
 
-            _supplyWithdraw(comet, user, params);
-
-            emit ICE.Multiplied(user, address(comet), address(params.supplyAsset), params.supplyAmount, data.debt);
-        } else if (mode == ICS.Mode.ADJUST_UP) {
-            (amountOut, dust) = _swap(swapPlugin, data.asset, params.supplyAsset, data.debt, data.swapData);
-            _dust(user, data.asset, IComet(address(0)), dust);
-
-            params.supplyAsset.safeIncreaseAllowance(address(comet), amountOut);
-            comet.supplyTo(user, params.supplyAsset, amountOut);
+            params.supplyAsset.safeIncreaseAllowance(address(comet), totalSupply);
+            comet.supplyTo(user, params.supplyAsset, totalSupply);
             comet.withdrawFrom(user, address(this), data.asset, repaymentAmount);
 
-            uint256 previousDebt = comet.borrowBalanceOf(user) - repaymentAmount; // Approximate previous debt
-            emit ICE.Adjusted(
-                user,
-                address(comet),
-                address(params.supplyAsset),
-                previousDebt,
-                comet.borrowBalanceOf(user),
-                int256(amountOut)
-            );
-        } else if (mode == ICS.Mode.ADJUST_DOWN) {
-            data.asset.safeIncreaseAllowance(address(comet), data.debt);
-            comet.supplyTo(user, data.asset, data.debt);
-
-            comet.withdrawFrom(user, address(this), params.withdrawAsset, params.withdrawAmount);
-
-            (amountOut, dust) = _swap(
-                swapPlugin,
-                params.withdrawAsset,
-                data.asset,
-                params.withdrawAmount,
-                data.swapData
-            );
-
-            _dust(user, params.withdrawAsset, IComet(address(0)), dust);
-
-            require(amountOut >= repaymentAmount, ICA.InvalidAmountOut());
-            dust = amountOut - repaymentAmount;
-            _dust(user, data.asset, IComet(address(0)), dust);
-
-            uint256 newDebt = comet.borrowBalanceOf(user);
-            emit ICE.Adjusted(
-                user,
-                address(comet),
-                address(params.withdrawAsset),
-                newDebt + data.debt,
-                newDebt,
-                -int256(params.withdrawAmount)
-            );
+            if (mode == ICS.Mode.MULTIPLY) {
+                emit ICE.Multiplied(user, address(comet), address(params.supplyAsset), totalSupply, data.debt);
+            } else {
+                uint256 debt = comet.borrowBalanceOf(user);
+                emit ICE.Adjusted(
+                    user,
+                    address(comet),
+                    address(params.supplyAsset),
+                    debt - repaymentAmount,
+                    debt,
+                    amountOut
+                );
+            }
         } else {
             _supplyWithdraw(comet, user, params);
 
@@ -911,7 +854,7 @@ contract CometFoundation is
         return
             Math.mulDiv(
                 Math.mulDiv(FACTOR_SCALE, FACTOR_SCALE, FACTOR_SCALE - uint256(info.borrowCollateralFactor)),
-                PRECISION - maxHealthFactorDrop,
+                PRECISION + maxHealthFactorDrop,
                 PRECISION
             );
     }
@@ -941,32 +884,6 @@ contract CometFoundation is
         );
 
         return Math.mulDiv(raw, PRECISION - slippageBps, PRECISION);
-    }
-
-    /**
-     * @notice Converts base asset amount to collateral amount using comet prices
-     * @param comet The Comet comet interface
-     * @param collateral Address of the collateral token
-     * @param baseAmount Amount of base asset to convert
-     * @param slippageBps Slippage in basis points (10000 = 100%) to apply as buffer
-     * @return Converted amount in collateral denomination
-     * @dev Inverse of _convert, used for leverage down calculations
-     */
-    function _convertInv(
-        IComet comet,
-        IERC20 collateral,
-        uint256 baseAmount,
-        uint16 slippageBps
-    ) private view returns (uint256) {
-        IComet.AssetInfo memory info = comet.getAssetInfoByAddress(collateral);
-        address priceFeed = info.priceFeed;
-
-        uint256 raw = Math.mulDiv(
-            Math.mulDiv(baseAmount, info.scale, comet.baseScale()),
-            10 ** AggregatorV3Interface(priceFeed).decimals(),
-            comet.getPrice(priceFeed)
-        );
-        return Math.mulDiv(raw, PRECISION + slippageBps, PRECISION);
     }
 
     /**

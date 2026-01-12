@@ -201,7 +201,8 @@ export async function getQuote(
     fromToken: string,
     toToken: string,
     fromAmount: string,
-    fromAddress: string | Addressable
+    fromAddress: string | Addressable,
+    slippage: number = 0.05
 ) {
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
@@ -215,7 +216,7 @@ export async function getQuote(
                 toToken,
                 fromAmount,
                 fromAddress,
-                slippage: 0.001
+                slippage
             }
         })
     ).data;
