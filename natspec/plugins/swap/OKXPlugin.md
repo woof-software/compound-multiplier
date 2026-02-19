@@ -81,7 +81,7 @@ Executes a token swap between two assets
 ### \_decodeAndValidateSwapData
 
 ```solidity
-function _decodeAndValidateSwapData(bytes4 selector, bytes swapData, address srcToken, address dstToken, uint256 amountIn) internal view returns (uint256)
+function _decodeAndValidateSwapData(bytes4 selector, bytes swapData, address srcToken, address dstToken) internal view returns (uint256)
 ```
 
 Decodes and validates swap data based on the function selector
@@ -96,7 +96,6 @@ _Routes to the appropriate decoder/validator based on the selector_
 | swapData | bytes   | Encoded swap data from OKX API     |
 | srcToken | address | Expected source token address      |
 | dstToken | address | Expected destination token address |
-| amountIn | uint256 | Expected input amount              |
 
 #### Return Values
 
@@ -107,7 +106,7 @@ _Routes to the appropriate decoder/validator based on the selector_
 ### \_decodeAndValidateDagSwap
 
 ```solidity
-function _decodeAndValidateDagSwap(bytes4 selector, bytes swapData, address srcToken, address dstToken, uint256 amountIn) internal view returns (uint256 minReturn)
+function _decodeAndValidateDagSwap(bytes4 selector, bytes swapData, address srcToken, address dstToken) internal view returns (uint256 minReturn)
 ```
 
 Decodes and validates DAG swap parameters
@@ -122,7 +121,6 @@ _Validates receiver, amounts, paths, and token addresses for DAG swaps_
 | swapData | bytes   | Encoded swap data from OKX API                                         |
 | srcToken | address | Expected source token address                                          |
 | dstToken | address | Expected destination token address                                     |
-| amountIn | uint256 | Expected input amount                                                  |
 
 #### Return Values
 
@@ -133,7 +131,7 @@ _Validates receiver, amounts, paths, and token addresses for DAG swaps_
 ### \_decodeAndValidateSmartSwap
 
 ```solidity
-function _decodeAndValidateSmartSwap(bytes4 selector, bytes swapData, address srcToken, address dstToken, uint256 amountIn) internal view returns (uint256 minReturn)
+function _decodeAndValidateSmartSwap(bytes4 selector, bytes swapData, address srcToken, address dstToken) internal view returns (uint256 minReturn)
 ```
 
 Decodes and validates Smart swap parameters
@@ -148,7 +146,6 @@ _Validates receiver, amounts for Smart swaps. Handles PMMSwapRequest[] extraData
 | swapData | bytes   | Encoded swap data from OKX API                                                |
 | srcToken | address |                                                                               |
 | dstToken | address |                                                                               |
-| amountIn | uint256 |                                                                               |
 
 #### Return Values
 
@@ -159,7 +156,7 @@ _Validates receiver, amounts for Smart swaps. Handles PMMSwapRequest[] extraData
 ### \_decodeAndValidateUniV3Swap
 
 ```solidity
-function _decodeAndValidateUniV3Swap(bytes swapData, uint256 amountIn) internal view returns (uint256 minReturn)
+function _decodeAndValidateUniV3Swap(bytes swapData) internal view returns (uint256 minReturn)
 ```
 
 Decodes and validates Uniswap V3 swap parameters
@@ -169,10 +166,9 @@ receiver is encoded as uint256 and must be converted to address._
 
 #### Parameters
 
-| Name     | Type    | Description                    |
-| -------- | ------- | ------------------------------ |
-| swapData | bytes   | Encoded swap data from OKX API |
-| amountIn | uint256 | Expected input amount          |
+| Name     | Type  | Description                    |
+| -------- | ----- | ------------------------------ |
+| swapData | bytes | Encoded swap data from OKX API |
 
 #### Return Values
 
@@ -183,7 +179,7 @@ receiver is encoded as uint256 and must be converted to address._
 ### \_decodeAndValidateUnxSwap
 
 ```solidity
-function _decodeAndValidateUnxSwap(bytes4 selector, bytes swapData, address srcToken, uint256 amountIn) internal view returns (uint256 minReturn)
+function _decodeAndValidateUnxSwap(bytes4 selector, bytes swapData, address srcToken) internal view returns (uint256 minReturn)
 ```
 
 Decodes and validates Unxswap parameters
@@ -197,7 +193,6 @@ _Validates receiver, amounts for Unxswap operations_
 | selector | bytes4  | Function selector (UNXSWAP_TO_SELECTOR, UNXSWAP_BY_ORDER_ID_SELECTOR, UNXSWAP_EXACT_OUT_SELECTOR, or UNXSWAP_EXACT_OUT_BY_ORDER_ID_SELECTOR) |
 | swapData | bytes   | Encoded swap data from OKX API                                                                                                               |
 | srcToken | address |                                                                                                                                              |
-| amountIn | uint256 | Expected input amount                                                                                                                        |
 
 #### Return Values
 
