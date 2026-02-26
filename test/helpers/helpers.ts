@@ -466,6 +466,9 @@ export async function cover1Inch(
     signer: SignerWithAddress,
     requestedCollateral: bigint
 ) {
+    const comet = await getCometByAddress(market.comet);
+    const borrowBalance = await comet.borrowBalanceOf(signer.address);
+
     return await executeWithRetry(async () => {
         const swapData =
             requestedCollateral == 0n
@@ -480,8 +483,8 @@ export async function cover1Inch(
         return adapter
             .connect(signer)
             [
-                "cover((address,address,address),address,uint256,uint16,bytes)"
-            ](market, WETH_ADDRESS, requestedCollateral, 100, swapData);
+                "cover((address,address,address),uint256,address,uint256,bytes)"
+            ](market, borrowBalance, WETH_ADDRESS, requestedCollateral, swapData);
     });
 }
 
@@ -523,6 +526,8 @@ export async function coverLiFi(
     requestedCollateral: bigint
 ) {
     const comet = await getCometByAddress(market.comet);
+    const borrowBalance = await comet.borrowBalanceOf(signer.address);
+
     return await executeWithRetry(async () => {
         const swapData =
             requestedCollateral == 0n
@@ -541,8 +546,8 @@ export async function coverLiFi(
         return adapter
             .connect(signer)
             [
-                "cover((address,address,address),address,uint256,uint16,bytes)"
-            ](market, WETH_ADDRESS, requestedCollateral, 100, swapData);
+                "cover((address,address,address),uint256,address,uint256,bytes)"
+            ](market, borrowBalance, WETH_ADDRESS, requestedCollateral, swapData);
     });
 }
 
@@ -582,6 +587,8 @@ export async function coverOKX(
     requestedCollateral: bigint
 ) {
     const comet = await getCometByAddress(market.comet);
+    const borrowBalance = await comet.borrowBalanceOf(signer.address);
+
     return await executeWithRetry(async () => {
         const swapData =
             requestedCollateral == 0n
@@ -598,8 +605,8 @@ export async function coverOKX(
         return adapter
             .connect(signer)
             [
-                "cover((address,address,address),address,uint256,uint16,bytes)"
-            ](market, WETH_ADDRESS, requestedCollateral, 100, swapData);
+                "cover((address,address,address),uint256,address,uint256,bytes)"
+            ](market, borrowBalance, WETH_ADDRESS, requestedCollateral, swapData);
     });
 }
 
