@@ -47,7 +47,7 @@ contract OKXPlugin is ICometSwapPlugin {
 
         bytes4 selector = bytes4(swapData[:4]);
 
-        uint256 minReturn = _decodeAndValidateSwapData(selector, swapData, srcToken, dstToken);
+        uint256 minReturn = _decodeAndValidateSwapData(selector, swapData, srcToken, dstToken, amountIn);
         (address router, address approveProxy) = abi.decode(config, (address, address));
 
         require(router.code.length > 0, ICA.InvalidSwapParameters());
@@ -78,6 +78,7 @@ contract OKXPlugin is ICometSwapPlugin {
      * @param swapData Encoded swap data from OKX API
      * @param srcToken Expected source token address
      * @param dstToken Expected destination token address
+     * @param amountIn Expected input amount
      * @return The minimum return amount extracted from swapData
      * @dev Routes to the appropriate decoder/validator based on the selector
      */
@@ -85,19 +86,20 @@ contract OKXPlugin is ICometSwapPlugin {
         bytes4 selector,
         bytes calldata swapData,
         address srcToken,
-        address dstToken
+        address dstToken,
+        uint256 amountIn
     ) internal view returns (uint256) {
         if (selector == DAG_SWAP_SELECTOR || selector == DAG_SWAP_BY_ORDER_ID_SELECTOR) {
-            return _decodeAndValidateDagSwap(selector, swapData, srcToken, dstToken);
+            return _decodeAndValidateDagSwap(selector, swapData, srcToken, dstToken, amountIn);
         }
         if (selector == SMART_SWAP_TO_SELECTOR || selector == SMART_SWAP_BY_ORDER_ID_SELECTOR) {
-            return _decodeAndValidateSmartSwap(selector, swapData, srcToken, dstToken);
+            return _decodeAndValidateSmartSwap(selector, swapData, srcToken, dstToken, amountIn);
         }
         if (selector == UNXSWAP_TO_SELECTOR || selector == UNXSWAP_BY_ORDER_ID_SELECTOR) {
-            return _decodeAndValidateUnxSwap(selector, swapData, srcToken);
+            return _decodeAndValidateUnxSwap(selector, swapData, srcToken, amountIn);
         }
         if (selector == UNIV3_SWAP_SELECTOR) {
-            return _decodeAndValidateUniV3Swap(swapData);
+            return _decodeAndValidateUniV3Swap(swapData, amountIn);
         }
         revert ICA.InvalidSelector();
     }
@@ -108,6 +110,7 @@ contract OKXPlugin is ICometSwapPlugin {
      * @param swapData Encoded swap data from OKX API
      * @param srcToken Expected source token address
      * @param dstToken Expected destination token address
+     * @param amountIn Expected input amount
      * @return minReturn Minimum return amount from baseRequest
      * @dev Validates receiver, amounts, paths, and token addresses for DAG swaps
      */
@@ -115,7 +118,8 @@ contract OKXPlugin is ICometSwapPlugin {
         bytes4 selector,
         bytes calldata swapData,
         address srcToken,
-        address dstToken
+        address dstToken,
+        uint256 amountIn
     ) internal view returns (uint256 minReturn) {
         IOKX.BaseRequest memory baseRequest;
         IOKX.RouterPath[] memory paths;
@@ -133,6 +137,7 @@ contract OKXPlugin is ICometSwapPlugin {
 
         require(receiver == address(this), ICA.InvalidReceiver());
         require(baseRequest.minReturnAmount != 0, ICA.InvalidSwapParameters());
+        require(baseRequest.fromTokenAmount == amountIn, ICA.InvalidSwapParameters());
         require(paths.length > 0, ICA.InvalidSwapParameters());
 
         uint256 fromToken = paths[0].fromToken;
@@ -157,7 +162,8 @@ contract OKXPlugin is ICometSwapPlugin {
         bytes4 selector,
         bytes calldata swapData,
         address srcToken,
-        address dstToken
+        address dstToken,
+        uint256 amountIn
     ) internal view returns (uint256 minReturn) {
         IOKX.BaseRequest memory baseRequest;
         address receiver;
@@ -177,6 +183,7 @@ contract OKXPlugin is ICometSwapPlugin {
 
         require(receiver == address(this), ICA.InvalidReceiver());
         require(baseRequest.minReturnAmount != 0, ICA.InvalidSwapParameters());
+        require(baseRequest.fromTokenAmount == amountIn, ICA.InvalidSwapParameters());
         require(
             uint160(baseRequest.fromToken) == uint160(srcToken) && baseRequest.toToken == dstToken,
             ICA.InvalidTokens()
@@ -188,11 +195,15 @@ contract OKXPlugin is ICometSwapPlugin {
     /**
      * @notice Decodes and validates Uniswap V3 swap parameters
      * @param swapData Encoded swap data from OKX API
+     * @param amountIn Expected input amount
      * @return minReturn Minimum return amount from swap parameters
      * @dev Validates receiver, amounts for Uniswap V3 swaps. For UNIV3_SWAP_SELECTOR,
      *      receiver is encoded as uint256 and must be converted to address.
      */
-    function _decodeAndValidateUniV3Swap(bytes calldata swapData) internal view returns (uint256 minReturn) {
+    function _decodeAndValidateUniV3Swap(
+        bytes calldata swapData,
+        uint256 amountIn
+    ) internal view returns (uint256 minReturn) {
         uint256 amount;
 
         uint256 _receiver;
@@ -201,6 +212,7 @@ contract OKXPlugin is ICometSwapPlugin {
 
         require(receiver == address(this), ICA.InvalidReceiver());
         require(minReturn != 0, ICA.InvalidSwapParameters());
+        require(amount == amountIn, ICA.InvalidSwapParameters());
 
         return minReturn;
     }
@@ -209,13 +221,15 @@ contract OKXPlugin is ICometSwapPlugin {
      * @notice Decodes and validates Unxswap parameters
      * @param selector Function selector (UNXSWAP_TO_SELECTOR, UNXSWAP_BY_ORDER_ID_SELECTOR, UNXSWAP_EXACT_OUT_SELECTOR, or UNXSWAP_EXACT_OUT_BY_ORDER_ID_SELECTOR)
      * @param swapData Encoded swap data from OKX API
+     * @param amountIn Expected input amount
      * @return minReturn Minimum return amount from swap parameters
      * @dev Validates receiver, amounts for Unxswap operations
      */
     function _decodeAndValidateUnxSwap(
         bytes4 selector,
         bytes calldata swapData,
-        address srcToken
+        address srcToken,
+        uint256 amountIn
     ) internal view returns (uint256 minReturn) {
         address receiver;
         uint256 fromToken;
@@ -233,6 +247,7 @@ contract OKXPlugin is ICometSwapPlugin {
 
         require(receiver == address(this), ICA.InvalidReceiver());
         require(minReturn != 0, ICA.InvalidSwapParameters());
+        require(amount == amountIn, ICA.InvalidSwapParameters());
         require(uint160(fromToken) == uint160(srcToken), ICA.InvalidTokens());
     }
 
