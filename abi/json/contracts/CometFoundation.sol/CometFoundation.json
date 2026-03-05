@@ -336,6 +336,11 @@
                 "type": "tuple"
             },
             {
+                "internalType": "uint256",
+                "name": "loanDebt",
+                "type": "uint256"
+            },
+            {
                 "internalType": "contract IERC20",
                 "name": "collateral",
                 "type": "address"
@@ -344,11 +349,6 @@
                 "internalType": "uint256",
                 "name": "collateralAmount",
                 "type": "uint256"
-            },
-            {
-                "internalType": "uint16",
-                "name": "slippageBps",
-                "type": "uint16"
             },
             {
                 "internalType": "bytes",
@@ -386,6 +386,11 @@
                 "type": "tuple"
             },
             {
+                "internalType": "uint256",
+                "name": "loanDebt",
+                "type": "uint256"
+            },
+            {
                 "internalType": "contract IERC20",
                 "name": "collateral",
                 "type": "address"
@@ -394,11 +399,6 @@
                 "internalType": "uint256",
                 "name": "collateralAmount",
                 "type": "uint256"
-            },
-            {
-                "internalType": "uint16",
-                "name": "slippageBps",
-                "type": "uint16"
             },
             {
                 "internalType": "bytes",
