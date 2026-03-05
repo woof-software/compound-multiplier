@@ -289,7 +289,7 @@ export async function getOKXSwapData(
     amount: string,
     userAddress: string,
     slippage: string = "1"
-): Promise<string> {
+): Promise<{ swapData: string; amountOut: string }> {
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     const fromTokenChecksum = ethers.getAddress(fromToken);
@@ -319,8 +319,7 @@ export async function getOKXSwapData(
         if (!res.data.data || !res.data.data[0] || !res.data.data[0].tx || !res.data.data[0].tx.data) {
             throw new Error(`OKX Swap Error: Invalid response structure. Response: ${JSON.stringify(res.data)}`);
         }
-
-        return res.data.data[0].tx.data;
+        return { swapData: res.data.data[0].tx.data, amountOut: res.data.data[0].routerResult.toTokenAmount };
     } catch (error: any) {
         if (error.response) {
             const errorMsg =
@@ -576,7 +575,7 @@ export async function executeMultiplierOKX(
             .connect(signer)
             [
                 "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
-            ](market, WETH_ADDRESS, collateralAmount, baseAmount, 100, swapData);
+            ](market, WETH_ADDRESS, collateralAmount, baseAmount, 100, swapData.swapData);
     });
 }
 
@@ -592,21 +591,27 @@ export async function coverOKX(
     return await executeWithRetry(async () => {
         const swapData =
             requestedCollateral == 0n
-                ? "0x"
+                ? { swapData: "0x", amountOut: 0 }
                 : await getOKXSwapData(
                       WETH_ADDRESS,
                       USDC_ADDRESS,
                       requestedCollateral == ethers.MaxUint256
                           ? (await comet.collateralBalanceOf(await signer.getAddress(), WETH_ADDRESS)).toString()
                           : requestedCollateral.toString(),
-                      await adapter.getAddress()
+                      await adapter.getAddress(),
+                      "1"
                   );
-
+        // Derive loanDebt from the minimum guaranteed output (after slippage) rather than
+        // the optimistic quote. OKX swap data uses 1% slippage, so actual output >= 99% of quote.
+        // Using the optimistic amountOut leaves zero margin and fails if the on-chain swap
+        // returns even 1 wei less than quoted (due to fork state vs live API state differences).
+        const minAmountOut = (BigInt(swapData.amountOut) * 99n) / 100n;
+        const loanDebt = (minAmountOut * 1_000_000n) / (1_000_000n + 500n);
         return adapter
             .connect(signer)
             [
                 "cover((address,address,address),uint256,address,uint256,bytes)"
-            ](market, borrowBalance, WETH_ADDRESS, requestedCollateral, swapData);
+            ](market, loanDebt > borrowBalance ? borrowBalance : loanDebt, WETH_ADDRESS, requestedCollateral, swapData.swapData);
     });
 }
 
