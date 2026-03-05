@@ -388,15 +388,15 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
     ) internal {
         IComet comet = opts.comet;
         require(address(comet) != address(0), ICA.InvalidComet());
-        require(comet.borrowBalanceOf(msg.sender) > 0, ICA.NothingToDeleverage());
+        uint256 borrowBalance = comet.borrowBalanceOf(msg.sender);
+        require(borrowBalance > 0, ICA.NothingToDeleverage());
+        require(loanDebt > 0 && loanDebt <= borrowBalance, ICA.InvalidLeverage());
 
         if (collateralAmount == type(uint256).max) {
             collateralAmount = comet.collateralBalanceOf(msg.sender, collateral);
         } else {
             require(collateralAmount <= comet.collateralBalanceOf(msg.sender, collateral), ICA.InvalidAmountIn());
         }
-
-        require(loanDebt > 0, ICA.InvalidLeverage());
 
         IERC20 baseAsset = comet.baseToken();
         address loanPlugin = opts.loanPlugin;
@@ -471,7 +471,6 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
             );
 
             _dust(user, params.withdrawAsset, mode == ICS.Mode.EXCHANGE ? comet : IComet(address(0)), dust);
-
             require(amountOut >= repaymentAmount, ICA.InvalidAmountOut());
 
             dust = amountOut - repaymentAmount;
