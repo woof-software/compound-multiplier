@@ -24,7 +24,7 @@ const WETH_WHALE = "0xF04a5cC80B1E94C69B48f5ee68a08CD2F09A7c3E";
 
 const opts = { maxFeePerGas: 5_000_000_000 };
 
-describe.only("Comet Multiplier Adapter / OKX / UniswapV3", function () {
+describe("Comet Multiplier Adapter / OKX / UniswapV3", function () {
     let adapter: CometFoundation;
     let loanPlugin: UniswapV3Plugin;
     let swapPlugin: OKXPlugin;
@@ -225,7 +225,7 @@ describe.only("Comet Multiplier Adapter / OKX / UniswapV3", function () {
 
             const collateralToWithdraw = initialCol / 10n;
 
-            await cover(await getMarketOptions(), adapter, user, collateralToWithdraw);
+            await cover(await getMarketOptions(), adapter, user, collateralToWithdraw, treasury);
 
             const finalCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
             const finalDebt = await comet.borrowBalanceOf(user.address);
@@ -253,7 +253,7 @@ describe.only("Comet Multiplier Adapter / OKX / UniswapV3", function () {
 
             const collateralToWithdraw = initialCol / 4n;
 
-            await cover(await getMarketOptions(), adapter, user, collateralToWithdraw);
+            await cover(await getMarketOptions(), adapter, user, collateralToWithdraw, treasury);
 
             const finalCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
             const finalDebt = await comet.borrowBalanceOf(user.address);
@@ -274,7 +274,7 @@ describe.only("Comet Multiplier Adapter / OKX / UniswapV3", function () {
 
             const collateralToWithdraw = initialCol / 2n;
 
-            await cover(await getMarketOptions(), adapter, user, collateralToWithdraw);
+            await cover(await getMarketOptions(), adapter, user, collateralToWithdraw, treasury);
 
             const finalCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
             const finalDebt = await comet.borrowBalanceOf(user.address);
@@ -300,7 +300,7 @@ describe.only("Comet Multiplier Adapter / OKX / UniswapV3", function () {
             const debtInCollateralTerms = (initialDebt * info.scale * 100_000_000n) / (price * baseScale);
             const expectedExcessCollateral = initialCol - debtInCollateralTerms;
 
-            await cover(await getMarketOptions(), adapter, user, ethers.MaxUint256);
+            await cover(await getMarketOptions(), adapter, user, ethers.MaxUint256, treasury);
 
             const finalDebt = await comet.borrowBalanceOf(user.address);
             const finalCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);

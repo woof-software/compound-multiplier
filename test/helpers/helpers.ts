@@ -288,7 +288,9 @@ export async function getOKXSwapData(
     toToken: string,
     amount: string,
     userAddress: string,
-    slippage: string = "1"
+    slippage: string = "1",
+    feePercent: string = "0",
+    referrerAddress: string = ethers.ZeroAddress
 ): Promise<{ swapData: string; amountOut: string }> {
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
@@ -303,7 +305,8 @@ export async function getOKXSwapData(
         toTokenAddress: toTokenChecksum,
         amount,
         userWalletAddress: userAddressChecksum,
-        slippagePercent: slippage
+        slippagePercent: slippage,
+        ...(feePercent !== "0" && { feePercent, fromTokenReferrerWalletAddress: referrerAddress })
     };
 
     try {
@@ -583,7 +586,8 @@ export async function coverOKX(
     market: any,
     adapter: ICometCover,
     signer: SignerWithAddress,
-    requestedCollateral: bigint
+    requestedCollateral: bigint,
+    treasury: SignerWithAddress
 ) {
     const comet = await getCometByAddress(market.comet);
     const borrowBalance = await comet.borrowBalanceOf(signer.address);
@@ -599,7 +603,9 @@ export async function coverOKX(
                           ? (await comet.collateralBalanceOf(await signer.getAddress(), WETH_ADDRESS)).toString()
                           : requestedCollateral.toString(),
                       await adapter.getAddress(),
-                      "1"
+                      "1",
+                      "1",
+                      treasury.address
                   );
         // Derive loanDebt from the minimum guaranteed output (after slippage) rather than
         // the optimistic quote. OKX swap data uses 1% slippage, so actual output >= 99% of quote.
