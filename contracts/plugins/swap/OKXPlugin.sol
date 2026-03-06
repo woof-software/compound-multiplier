@@ -137,7 +137,7 @@ contract OKXPlugin is ICometSwapPlugin {
 
         require(receiver == address(this), ICA.InvalidReceiver());
         require(baseRequest.minReturnAmount != 0, ICA.InvalidSwapParameters());
-        require(baseRequest.fromTokenAmount == amountIn, ICA.InvalidSwapParameters());
+        require(baseRequest.fromTokenAmount <= amountIn, ICA.InvalidSwapParameters());
         require(paths.length > 0, ICA.InvalidSwapParameters());
 
         uint256 fromToken = paths[0].fromToken;
@@ -183,7 +183,7 @@ contract OKXPlugin is ICometSwapPlugin {
 
         require(receiver == address(this), ICA.InvalidReceiver());
         require(baseRequest.minReturnAmount != 0, ICA.InvalidSwapParameters());
-        require(baseRequest.fromTokenAmount == amountIn, ICA.InvalidSwapParameters());
+        require(baseRequest.fromTokenAmount <= amountIn, ICA.InvalidSwapParameters());
         require(
             uint160(baseRequest.fromToken) == uint160(srcToken) && baseRequest.toToken == dstToken,
             ICA.InvalidTokens()
@@ -212,7 +212,7 @@ contract OKXPlugin is ICometSwapPlugin {
 
         require(receiver == address(this), ICA.InvalidReceiver());
         require(minReturn != 0, ICA.InvalidSwapParameters());
-        require(amount == amountIn, ICA.InvalidSwapParameters());
+        require(amount <= amountIn, ICA.InvalidSwapParameters());
 
         return minReturn;
     }
@@ -247,7 +247,7 @@ contract OKXPlugin is ICometSwapPlugin {
 
         require(receiver == address(this), ICA.InvalidReceiver());
         require(minReturn != 0, ICA.InvalidSwapParameters());
-        require(amount == amountIn, ICA.InvalidSwapParameters());
+        require(amount <= amountIn, ICA.InvalidSwapParameters());
         require(uint160(fromToken) == uint160(srcToken), ICA.InvalidTokens());
     }
 
