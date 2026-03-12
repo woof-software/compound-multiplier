@@ -25,10 +25,11 @@ Open or increase leveraged collateral positions in a single transaction by:
 
 Reduce or close leveraged positions atomically by:
 
-1. Taking a flash loan to temporarily repay debt
-2. Withdrawing unlocked collateral
-3. Swapping collateral back to base asset
-4. Repaying the flash loan from swap proceeds
+1. Caller derives `loanDebt` from an off-chain swap quote (amount of base asset the collateral swap will produce, minus flash loan fee)
+2. Taking a flash loan of `loanDebt` base asset to partially or fully repay user's debt
+3. Withdrawing unlocked collateral
+4. Swapping collateral back to base asset
+5. Repaying the flash loan from swap proceeds, returning any excess to the user
 
 ### 3. Exchange - Swap Collateral Assets
 
@@ -110,41 +111,47 @@ RESULT: User has 2x leveraged WETH position (1.996 WETH collateral, 2507.5 USDC 
 │              LEVERAGE REDUCTION FLOW (2x → 1x WETH Position)                │
 └─────────────────────────────────────────────────────────────────────────────┘
 
+   Current position: 2 WETH collateral ($2500 each), 2500 USDC debt
+
+0. CALLER DERIVES loanDebt OFF-CHAIN
+   Get swap quote: 1 WETH → ~2490 USDC
+   loanDebt = 2490 / (1 + flashLoanFeeRate) ≈ 2488.76 USDC
+
 1. USER INITIATES DELEVERAGE
-   User ──► CometFoundation.cover(1 WETH withdraw)
-   Current position: 2 WETH collateral, 2500 USDC debt
+   User ──► CometFoundation.cover(loanDebt: 2488.76 USDC, 1 WETH withdraw)
 
 2. FLASH LOAN REQUEST
-   CometFoundation ──► FlashLoanPlugin.takeFlashLoan(2507.5 USDC)
-   FlashLoanPlugin ──► Morpho/Euler/Uniswap.flashLoan(2507.5 USDC)
+   CometFoundation ──► FlashLoanPlugin.takeFlashLoan(2488.76 USDC)
+   FlashLoanPlugin ──► Morpho/Euler/Uniswap.flashLoan(2488.76 USDC)
 
 3. FLASH LOAN CALLBACK
    Morpho/Euler/Uniswap ──► CometFoundation.fallback()
-   ✅ Contract Balance: 2507.5 USDC
+   ✅ Contract Balance: 2488.76 USDC
 
-4. REPAY USER'S DEBT
-   CometFoundation ──► Comet.supplyTo(user, 2507.5 USDC)
-   ✅ User's debt: 0 USDC (paid off)
+4. REPAY USER'S DEBT (partially)
+   CometFoundation ──► Comet.supplyTo(user, 2488.76 USDC)
+   ✅ User's debt: 2500 - 2488.76 = 11.24 USDC remaining
 
-5. COVER COLLATERAL
+5. WITHDRAW COLLATERAL
    CometFoundation ──► Comet.withdrawFrom(user, 1 WETH)
    ✅ Contract Balance: 1 WETH
+   ✅ User's position: 1 WETH collateral, 11.24 USDC debt (healthy)
 
 6. SWAP COLLATERAL TO BASE
    CometFoundation ──► SwapPlugin.swap(1 WETH → USDC)
-   SwapPlugin ──► 1inch/LiFi.swap(1 WETH → 2490 USDC)
-   ✅ Contract Balance: 2490 USDC
+   SwapPlugin ──► 1inch/LiFi/OKX.swap(1 WETH → ~2490 USDC)
+   ✅ Contract Balance: ~2490 USDC
 
 7. REPAY FLASH LOAN
-   CometFoundation ──► FlashLoanPlugin.repayFlashLoan(2515 USDC)
-   FlashLoanPlugin ──► Morpho/Euler/Uniswap.repay(2507.5 + 7.5 fee)
-   ✅ Contract Balance: -25 USDC (covered by remaining collateral value)
+   CometFoundation ──► FlashLoanPlugin.repayFlashLoan(~2490 USDC)
+   FlashLoanPlugin ──► Morpho/Euler/Uniswap.repay(2488.76 + 1.24 fee)
+   ✅ Contract Balance: ~0 USDC
 
 8. RETURN REMAINDER TO USER
-   CometFoundation ──► Transfer remaining tokens to user
-   ✅ User receives any excess USDC
+   CometFoundation ──► Transfer any excess USDC dust to user
 
-RESULT: User deleveraged from 2x to 1x. Remaining 1 WETH collateral + no debt
+RESULT: User deleveraged from 2x to ~1x. Remaining 1 WETH collateral, ~11 USDC debt
+        For full close, pass loanDebt = borrowBalance and collateralAmount = MaxUint256
 ```
 
 ### Exchange Flow (Swap Collateral)
@@ -208,15 +215,17 @@ RESULT: User's collateral successfully swapped from WETH to USDC
 
 #### Cover Token Flow
 
-| Stage           | Contract Balance | User Position                        | Action                   | External Call                    |
-| --------------- | ---------------- | ------------------------------------ | ------------------------ | -------------------------------- |
-| **Initial**     | 0                | 2 WETH collateral<br/>2500 USDC debt | User calls `cover()`     | -                                |
-| **Flash Loan**  | +2500 USDC       | 2 WETH collateral<br/>2500 USDC debt | Flash loan received      | `FlashProvider.flashLoan()`      |
-| **Repay Debt**  | 0                | 2 WETH collateral<br/>0 debt         | Repay user's debt        | `Comet.supplyTo(user, USDC)`     |
-| **Withdraw**    | +1 WETH          | 1 WETH collateral<br/>0 debt         | Withdraw collateral      | `Comet.withdrawFrom(user, WETH)` |
-| **Swap**        | ~2500 USDC       | 1 WETH collateral<br/>0 debt         | Swap WETH to USDC        | `DEX.swap(WETH → USDC)`          |
-| **Repay Flash** | ~0               | 1 WETH collateral<br/>0 debt         | Repay flash loan + fee   | `FlashProvider.repay(2505 USDC)` |
-| **Return Dust** | 0                | 1 WETH collateral<br/>0 debt         | Return remainder to user | Transfer remaining to user       |
+The caller derives `loanDebt` off-chain from the swap quote: `loanDebt = swapAmountOut / (1 + flashFeeRate)`, capped at the user's borrow balance.
+
+| Stage           | Contract Balance | User Position                        | Action                        | External Call                    |
+| --------------- | ---------------- | ------------------------------------ | ----------------------------- | -------------------------------- |
+| **Initial**     | 0                | 2 WETH collateral<br/>2500 USDC debt | User calls `cover(loanDebt)`  | -                                |
+| **Flash Loan**  | +loanDebt USDC   | 2 WETH collateral<br/>2500 USDC debt | Flash loan received           | `FlashProvider.flashLoan()`      |
+| **Repay Debt**  | 0                | 2 WETH collateral<br/>reduced debt   | Repay loanDebt of user's debt | `Comet.supplyTo(user, USDC)`     |
+| **Withdraw**    | +1 WETH          | 1 WETH collateral<br/>reduced debt   | Withdraw collateral           | `Comet.withdrawFrom(user, WETH)` |
+| **Swap**        | ~amountOut USDC  | 1 WETH collateral<br/>reduced debt   | Swap WETH to USDC             | `DEX.swap(WETH → USDC)`          |
+| **Repay Flash** | ~dust USDC       | 1 WETH collateral<br/>reduced debt   | Repay flash loan + fee        | `FlashProvider.repay()`          |
+| **Return Dust** | 0                | 1 WETH collateral<br/>reduced debt   | Return remainder to user      | Transfer remaining to user       |
 
 #### Exchange Token Flow
 
@@ -249,12 +258,12 @@ RESULT: User's collateral successfully swapped from WETH to USDC
 
 **Multiply Operations**
 
-- `multiply()` - Create/increase leveraged position
+- `multiply(opts, collateral, collateralAmount, baseAmount, maxHealthFactorDrop, swapData)` - Create/increase leveraged position
 - `multiply(..., allowParams)` - With signature-based authorization
 
 **Cover Operations**
 
-- `cover()` - Reduce/close leveraged position
+- `cover(opts, loanDebt, collateral, collateralAmount, swapData)` - Reduce/close leveraged position. `loanDebt` is the amount of base asset to flash loan, derived from the off-chain swap quote.
 - `cover(..., allowParams)` - With signature-based authorization
 
 **Exchange Operations**
@@ -471,19 +480,28 @@ const foundation = await ethers.getContractAt(
   FOUNDATION_ADDRESS,
 );
 const weth = await ethers.getContractAt("IERC20", WETH_ADDRESS);
+const comet = await ethers.getContractAt("IComet", COMET_USDC_MARKET);
 
 // Approve collateral
 await weth.approve(FOUNDATION_ADDRESS, ethers.parseEther("1"));
 
 // Authorize foundation on Comet
-const comet = await ethers.getContractAt("IComet", COMET_USDC_MARKET);
 await comet.allow(FOUNDATION_ADDRESS, true);
 
+// Calculate the base asset amount to borrow (e.g., for 2x leverage)
+const collateralAmount = ethers.parseEther("1");
+const baseAmount = await calculateLeveragedAmount(
+  comet,
+  collateralAmount,
+  20000, // 2x leverage in basis points
+);
+
 // Get swap data from aggregator API (LiFi, 1inch, or OKX)
-const swapData = await getLiFiSwapData(
-  WETH_ADDRESS,
-  USDC_ADDRESS,
-  flashLoanAmount,
+const swapData = await getSwapQuote(
+  USDC_ADDRESS, // swap from base asset
+  WETH_ADDRESS, // to collateral
+  baseAmount,
+  FOUNDATION_ADDRESS,
 );
 
 // Execute multiply
@@ -493,9 +511,10 @@ await foundation.multiply(
     loanPlugin: MORPHO_PLUGIN_ADDRESS,
     swapPlugin: LIFI_PLUGIN_ADDRESS, // or OKX_PLUGIN_ADDRESS, ONEINCH_PLUGIN_ADDRESS
   },
-  WETH_ADDRESS,
-  ethers.parseEther("1"), // 1 WETH initial
-  20000, // 2x leverage (basis points)
+  WETH_ADDRESS, // collateral
+  collateralAmount, // 1 WETH initial deposit
+  baseAmount, // amount of base asset to borrow
+  100, // maxHealthFactorDrop (1% = 100 bps)
   swapData,
 );
 ```
@@ -503,24 +522,38 @@ await foundation.multiply(
 ### Close Leveraged Position
 
 ```typescript
-// Get swap data for reverse swap
-const swapData = await getLiFiSwapData(
+const comet = await ethers.getContractAt("IComet", COMET_USDC_MARKET);
+const borrowBalance = await comet.borrowBalanceOf(userAddress);
+const collateralBalance = await comet.collateralBalanceOf(
+  userAddress,
+  WETH_ADDRESS,
+);
+
+// Get swap quote for collateral → base asset
+const { swapCalldata, amountOut } = await getSwapQuote(
   WETH_ADDRESS,
   USDC_ADDRESS,
-  withdrawAmount,
+  collateralBalance, // swap all collateral
+  FOUNDATION_ADDRESS,
 );
+
+// Derive loanDebt: the flash loan amount the swap output can repay
+// For full close, cap at borrowBalance
+const flashFeeRate = 500n; // 0.05% for Uniswap V3
+const loanDebt = (BigInt(amountOut) * 1_000_000n) / (1_000_000n + flashFeeRate);
+const cappedLoanDebt = loanDebt > borrowBalance ? borrowBalance : loanDebt;
 
 // Close entire position
 await foundation.cover(
   {
     comet: COMET_USDC_MARKET,
-    loanPlugin: MORPHO_PLUGIN_ADDRESS,
+    loanPlugin: UNISWAP_V3_PLUGIN_ADDRESS,
     swapPlugin: LIFI_PLUGIN_ADDRESS,
   },
-  WETH_ADDRESS,
-  ethers.MaxUint256, // Withdraw all
-  slippageBps
-  swapData,
+  cappedLoanDebt, // Amount of base asset to flash loan
+  WETH_ADDRESS, // Collateral to withdraw
+  ethers.MaxUint256, // Withdraw all collateral
+  swapCalldata,
 );
 ```
 

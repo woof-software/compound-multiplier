@@ -5,7 +5,7 @@ interface ICometAlerts {
     //FOUNDATION
 
     /**
-     * @notice Emitted if comet address is invalid
+     * @notice Thrown when comet address is invalid
      */
     error InvalidComet();
 
@@ -15,22 +15,22 @@ interface ICometAlerts {
     error UnknownPlugin();
 
     /**
-     * @notice Emitted if input options are invalid
+     * @notice Thrown when input options are invalid
      */
     error InvalidOpts();
 
     /**
-     * @notice Emitted if wEth address is invalid
+     * @notice Thrown when wEth address is invalid
      */
     error InvalidWeth();
 
     /**
-     * @notice Emitted if treasury address is invalid
+     * @notice Thrown when treasury address is invalid
      */
     error InvalidTreasury();
 
     /**
-     * @notice Emitted if max health factor drop is invalid
+     * @notice Thrown when max health factor drop is invalid
      */
     error InvalidMultiplyParameters();
 
@@ -39,74 +39,74 @@ interface ICometAlerts {
     //MULTIPLIER
 
     /**
-     *  @notice Emitted if leverage value is invalid
+     *  @notice Thrown when leverage value is invalid
      */
     error InvalidLeverage();
 
     /**
-     * @notice Emitted if mode on fallback is invalid
+     * @notice Thrown when mode on fallback is invalid
      */
     error InvalidMode();
 
     /**
-     * @notice Emitted if there is nothing to deleverage
+     * @notice Thrown when there is nothing to deleverage
      */
     error NothingToDeleverage();
 
     //COLLATERAL SWAP
 
     /**
-     * @notice Emitted if insufficient liquidity for the swap
+     * @notice Thrown when insufficient liquidity for the swap
      */
     error InsufficientLiquidity();
 
     //SWAP PLUGINS
 
     /**
-     * @notice Emitted if swap parameters are invalid
+     * @notice Thrown when swap parameters are invalid
      */
     error InvalidSwapParameters();
 
     /**
-     * @notice Emitted if receiver address is invalid
+     * @notice Thrown when receiver address is invalid
      */
     error InvalidReceiver();
 
     /**
-     * @notice Emitted if tokens address validation fails
+     * @notice Thrown when tokens address validation fails
      */
     error InvalidTokens();
 
     /**
-     * @notice Emitted if swap data includes invalid selector
+     * @notice Thrown when swap data includes invalid selector
      */
     error InvalidSelector();
 
     //FLASH LOAN PLUGINS
 
     /**
-     * @notice Emitted if flash loan callback is unauthorized
+     * @notice Thrown when flash loan callback is unauthorized
      */
     error UnauthorizedCallback();
 
     /**
-     * @notice Emitted if flash loan provider address is invalid
+     * @notice Thrown when flash loan provider address is invalid
      */
     error InvalidFlashLoanProvider();
 
     /**
-     * @notice Emitted if flash loan data is invalid
+     * @notice Thrown when flash loan data is invalid
      */
     error InvalidFlashLoanData();
 
     //COMMON
     /**
-     * @notice Emitted if amount out is less than expected
+     * @notice Thrown when amount out is less than expected
      */
     error InvalidAmountOut();
 
     /**
-     * @notice Emitted if amount in is zero
+     * @notice Thrown when amount in is zero
      */
     error InvalidAmountIn();
 

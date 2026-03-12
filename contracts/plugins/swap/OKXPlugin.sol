@@ -32,6 +32,19 @@ contract OKXPlugin is ICometSwapPlugin {
     bytes4 public constant UNXSWAP_TO_SELECTOR = IOKX.unxswapTo.selector;
     bytes4 public constant UNXSWAP_BY_ORDER_ID_SELECTOR = IOKX.unxswapByOrderId.selector;
 
+    uint256 private constant _COMMISSION_FLAG_MASK = 0xffffffffffff0000000000000000000000000000000000000000000000000000;
+    uint256 private constant _COMMISSION_RATE_MASK = 0x000000000000ffffffffffff0000000000000000000000000000000000000000;
+    uint256 private constant _COMMISSION_LENGTH_MASK =
+        0x00ff000000000000000000000000000000000000000000000000000000000000;
+    uint256 private constant _FROM_TOKEN_COMMISSION =
+        0x3ca20afc2aaa0000000000000000000000000000000000000000000000000000;
+    uint256 private constant _FROM_TOKEN_COMMISSION_DUAL =
+        0x22220afc2aaa0000000000000000000000000000000000000000000000000000;
+    uint256 private constant _FROM_TOKEN_COMMISSION_MULTIPLE =
+        0x88880afc2aaa0000000000000000000000000000000000000000000000000000;
+    uint256 private constant _COMMISSION_DENOMINATOR = 1e9;
+    uint256 private constant _COMMISSION_RATE_LIMIT = 30_000_000;
+
     /**
      * @inheritdoc ICometSwapPlugin
      */
@@ -47,7 +60,13 @@ contract OKXPlugin is ICometSwapPlugin {
 
         bytes4 selector = bytes4(swapData[:4]);
 
-        uint256 minReturn = _decodeAndValidateSwapData(selector, swapData, srcToken, dstToken, amountIn);
+        // Apply custom fee to the amountIn for validation that amountIn equals to the amount from quote
+        uint256 commissionRate = _extractFromTokenCommissionRate(swapData);
+        uint256 effectiveAmountIn = commissionRate > 0
+            ? (amountIn * (_COMMISSION_DENOMINATOR - commissionRate)) / _COMMISSION_DENOMINATOR
+            : amountIn;
+
+        uint256 minReturn = _decodeAndValidateSwapData(selector, swapData, srcToken, dstToken, effectiveAmountIn);
         (address router, address approveProxy) = abi.decode(config, (address, address));
 
         require(router.code.length > 0, ICA.InvalidSwapParameters());
@@ -249,6 +268,52 @@ contract OKXPlugin is ICometSwapPlugin {
         require(minReturn != 0, ICA.InvalidSwapParameters());
         require(amount == amountIn, ICA.InvalidSwapParameters());
         require(uint160(fromToken) == uint160(srcToken), ICA.InvalidTokens());
+    }
+
+    /**
+     * @notice Extracts the total from-token commission rate from OKX-appended calldata
+     * @dev OKX appends commission data at the end of swap calldata. This function
+     *      reads the trailing bytes to detect and sum all from-token commission rates.
+     *      The commission rate is in units of DENOMINATOR (1e9), e.g. 10_000_000 = 1%.
+     * @param swapData The full swap calldata including any appended commission bytes
+     * @return totalRate The sum of all from-token commission rates (0 if no commission)
+     */
+    function _extractFromTokenCommissionRate(bytes calldata swapData) internal pure returns (uint256 totalRate) {
+        if (swapData.length < 0x44) return 0;
+
+        uint256 lastWord;
+        assembly {
+            lastWord := calldataload(add(swapData.offset, sub(swapData.length, 0x20)))
+        }
+
+        uint256 flag = lastWord & _COMMISSION_FLAG_MASK;
+        uint256 referrerNum;
+        // TO_TOKEN commssion detection is omitted since it doesn't affect the input amount
+        if (flag == _FROM_TOKEN_COMMISSION) {
+            referrerNum = 1;
+        } else if (flag == _FROM_TOKEN_COMMISSION_DUAL) {
+            referrerNum = 2;
+        } else if (flag == _FROM_TOKEN_COMMISSION_MULTIPLE) {
+            uint256 tokenWord;
+            assembly {
+                tokenWord := calldataload(add(swapData.offset, sub(swapData.length, 0x40)))
+            }
+            referrerNum = (tokenWord & _COMMISSION_LENGTH_MASK) >> 240;
+        } else {
+            return 0;
+        }
+
+        totalRate = (lastWord & _COMMISSION_RATE_MASK) >> 160;
+
+        for (uint256 i = 1; i < referrerNum; ++i) {
+            uint256 refWord;
+            assembly {
+                refWord := calldataload(add(swapData.offset, sub(swapData.length, add(0x40, mul(i, 0x20)))))
+            }
+            totalRate += (refWord & _COMMISSION_RATE_MASK) >> 160;
+        }
+
+        require(totalRate <= _COMMISSION_RATE_LIMIT, ICA.InvalidSwapParameters());
     }
 
     function supportsInterface(bytes4 interfaceId) external pure returns (bool) {

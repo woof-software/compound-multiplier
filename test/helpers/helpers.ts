@@ -289,8 +289,10 @@ export async function getOKXSwapData(
     toToken: string,
     amount: string,
     userAddress: string,
-    slippage: string = "1"
-): Promise<string> {
+    slippage: string = "1",
+    feePercent: string = "0",
+    referrerAddress: string = ethers.ZeroAddress
+): Promise<{ swapData: string; amountOut: string }> {
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     const fromTokenChecksum = ethers.getAddress(fromToken);
@@ -304,7 +306,8 @@ export async function getOKXSwapData(
         toTokenAddress: toTokenChecksum,
         amount,
         userWalletAddress: userAddressChecksum,
-        slippagePercent: slippage
+        slippagePercent: slippage,
+        ...(feePercent !== "0" && { feePercent, fromTokenReferrerWalletAddress: referrerAddress })
     };
 
     try {
@@ -320,8 +323,7 @@ export async function getOKXSwapData(
         if (!res.data.data || !res.data.data[0] || !res.data.data[0].tx || !res.data.data[0].tx.data) {
             throw new Error(`OKX Swap Error: Invalid response structure. Response: ${JSON.stringify(res.data)}`);
         }
-
-        return res.data.data[0].tx.data;
+        return { swapData: res.data.data[0].tx.data, amountOut: res.data.data[0].routerResult.toTokenAmount };
     } catch (error: any) {
         if (error.response) {
             const errorMsg =
@@ -467,6 +469,9 @@ export async function cover1Inch(
     signer: SignerWithAddress,
     requestedCollateral: bigint
 ) {
+    const comet = await getCometByAddress(market.comet);
+    const borrowBalance = await comet.borrowBalanceOf(signer.address);
+
     return await executeWithRetry(async () => {
         const swapData =
             requestedCollateral == 0n
@@ -481,8 +486,8 @@ export async function cover1Inch(
         return adapter
             .connect(signer)
             [
-                "cover((address,address,address),address,uint256,uint16,bytes)"
-            ](market, WETH_ADDRESS, requestedCollateral, 100, swapData);
+                "cover((address,address,address),uint256,address,uint256,bytes)"
+            ](market, borrowBalance, WETH_ADDRESS, requestedCollateral, swapData);
     });
 }
 
@@ -524,6 +529,8 @@ export async function coverLiFi(
     requestedCollateral: bigint
 ) {
     const comet = await getCometByAddress(market.comet);
+    const borrowBalance = await comet.borrowBalanceOf(signer.address);
+
     return await executeWithRetry(async () => {
         const swapData =
             requestedCollateral == 0n
@@ -542,8 +549,8 @@ export async function coverLiFi(
         return adapter
             .connect(signer)
             [
-                "cover((address,address,address),address,uint256,uint16,bytes)"
-            ](market, WETH_ADDRESS, requestedCollateral, 100, swapData);
+                "cover((address,address,address),uint256,address,uint256,bytes)"
+            ](market, borrowBalance, WETH_ADDRESS, requestedCollateral, swapData);
     });
 }
 
@@ -572,7 +579,7 @@ export async function executeMultiplierOKX(
             .connect(signer)
             [
                 "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
-            ](market, WETH_ADDRESS, collateralAmount, baseAmount, 100, swapData);
+            ](market, WETH_ADDRESS, collateralAmount, baseAmount, 100, swapData.swapData);
     });
 }
 
@@ -580,27 +587,38 @@ export async function coverOKX(
     market: any,
     adapter: ICometCover,
     signer: SignerWithAddress,
-    requestedCollateral: bigint
+    requestedCollateral: bigint,
+    treasury: SignerWithAddress
 ) {
     const comet = await getCometByAddress(market.comet);
+    const borrowBalance = await comet.borrowBalanceOf(signer.address);
+
     return await executeWithRetry(async () => {
         const swapData =
             requestedCollateral == 0n
-                ? "0x"
+                ? { swapData: "0x", amountOut: 0 }
                 : await getOKXSwapData(
                       WETH_ADDRESS,
                       USDC_ADDRESS,
                       requestedCollateral == ethers.MaxUint256
                           ? (await comet.collateralBalanceOf(await signer.getAddress(), WETH_ADDRESS)).toString()
                           : requestedCollateral.toString(),
-                      await adapter.getAddress()
+                      await adapter.getAddress(),
+                      "1",
+                      "1",
+                      treasury.address
                   );
-
+        // Derive loanDebt from the minimum guaranteed output (after slippage) rather than
+        // the optimistic quote. OKX swap data uses 1% slippage, so actual output >= 99% of quote.
+        // Using the optimistic amountOut leaves zero margin and fails if the on-chain swap
+        // returns even 1 wei less than quoted (due to fork state vs live API state differences).
+        const minAmountOut = (BigInt(swapData.amountOut) * 99n) / 100n;
+        const loanDebt = (minAmountOut * 1_000_000n) / (1_000_000n + 500n);
         return adapter
             .connect(signer)
             [
-                "cover((address,address,address),address,uint256,uint16,bytes)"
-            ](market, WETH_ADDRESS, requestedCollateral, 100, swapData);
+                "cover((address,address,address),uint256,address,uint256,bytes)"
+            ](market, loanDebt > borrowBalance ? borrowBalance : loanDebt, WETH_ADDRESS, requestedCollateral, swapData.swapData);
     });
 }
 

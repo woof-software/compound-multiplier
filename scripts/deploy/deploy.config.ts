@@ -186,29 +186,15 @@ export const deployConfig: Record<string, DeployConfig> = {
                 morpho: ARBITRUM.protocols.morpho,
                 euler: [
                     { token: ARBITRUM.tokens.USDC, pool: ARBITRUM.pools.euler.USDC }, // USDC
-                    // {
-                    //     token: ARBITRUM.tokens.USDCe
-                    //     pool: LOW LIQUIDITY
-                    // },
-                    // {
-                    //     token: ARBITRUM.tokens.ARB
-                    //     pool: LOW LIQUIDITY
-                    // },
-                    // {
-                    //     token: ARBITRUM.tokens.GMX
-                    //     pool: NO ACTIVE POOL
-                    // }
+                    { token: ARBITRUM.tokens.ARB, pool: ARBITRUM.pools.euler.ARB }, // ARB
+                    { token: ARBITRUM.tokens.USDT, pool: ARBITRUM.pools.euler.USDT }, // USDT
                     { token: ARBITRUM.tokens.WETH, pool: ARBITRUM.pools.euler.WETH }, // WETH
                     { token: ARBITRUM.tokens.WBTC, pool: ARBITRUM.pools.euler.WBTC }, // WBTC
-                    { token: ARBITRUM.tokens.wstETH, pool: ARBITRUM.pools.euler.wstETH } // wstETH
-                    // {
-                    //     token: ARBITRUM.tokens.weETH,
-                    //     pool: LOW LIQUIDITY
-                    // },
-                    // {
-                    //     token: ARBITRUM.tokens.rETH,
-                    //     pool: LOW LIQUIDITY
-                    // }
+                    { token: ARBITRUM.tokens.wstETH, pool: ARBITRUM.pools.euler.wstETH }, // wstETH
+                    { token: ARBITRUM.tokens.ezETH, pool: ARBITRUM.pools.euler.ezETH }, // ezETH
+                    { token: ARBITRUM.tokens.rsETH, pool: ARBITRUM.pools.euler.rsETH }, // rsETH
+                    { token: ARBITRUM.tokens.weETH, pool: ARBITRUM.pools.euler.weETH }, // weETH
+                    { token: ARBITRUM.tokens.rETH, pool: ARBITRUM.pools.euler.rETH } // rETH (under 200k)
                 ],
                 uniswapV3: [
                     { token: ARBITRUM.tokens.USDC, pool: ARBITRUM.pools.uniswapV3.USDC }, // USDC / WETH 0.05%
