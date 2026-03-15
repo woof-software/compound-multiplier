@@ -6,11 +6,11 @@
 [![Solidity](https://img.shields.io/badge/solidity-0.8.30+-lightgrey.svg)](https://soliditylang.org/)
 [![Hardhat](https://img.shields.io/badge/Built%20with-Hardhat-yellow.svg)](https://hardhat.org/)
 
-A unified smart contract system for DeFi operations on Compound V3 (Comet) markets using flash loans and DEX aggregators. CometFoundation provides three core functionalities in a single, gas-efficient contract: leveraged position creation, position reduction, and collateral swapping.
+A unified smart contract system for DeFi operations on Compound V3 (Comet) markets using flash loans and DEX aggregators. CometFoundation provides four core functionalities in a single, gas-efficient contract: leveraged position creation, leverage adjustment, position reduction, and collateral swapping.
 
 ## Overview
 
-CometFoundation offers three atomic operations:
+CometFoundation offers four atomic operations:
 
 ### 1. Multiply - Create Leveraged Positions
 
@@ -21,7 +21,16 @@ Open or increase leveraged collateral positions in a single transaction by:
 3. Depositing collateral into Compound V3 and borrowing against it
 4. Repaying the flash loan
 
-### 2. Cover - Reduce Leveraged Positions
+### 2. Adjust - Increase Leverage on Existing Positions
+
+Increase the leverage of an existing position without adding new capital by:
+
+1. Taking a flash loan of the desired additional debt amount in base asset
+2. Swapping the borrowed base asset to collateral via DEX aggregators (LiFi, 1inch, OKX)
+3. Supplying the swapped collateral into the user's Comet position
+4. Borrowing base asset against the user's increased collateral to repay the flash loan
+
+### 3. Cover - Reduce Leveraged Positions
 
 Reduce or close leveraged positions atomically by:
 
@@ -31,7 +40,7 @@ Reduce or close leveraged positions atomically by:
 4. Swapping collateral back to base asset
 5. Repaying the flash loan from swap proceeds, returning any excess to the user
 
-### 3. Exchange - Swap Collateral Assets
+### 4. Exchange - Swap Collateral Assets
 
 Swap one collateral type for another within existing positions while maintaining debt:
 
@@ -102,6 +111,54 @@ CometFoundation (Unified Contract)
    ✅ Contract Balance: 0
 
 RESULT: User has 2x leveraged WETH position (1.996 WETH collateral, 2507.5 USDC debt)
+```
+
+### Adjust Flow (Increase Leverage on Existing Position)
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│            LEVERAGE ADJUSTMENT FLOW (1.5x → 2x WETH Position)             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+   Current position: 1.5 WETH collateral ($2500 each), 1250 USDC debt (~1.5x)
+
+1. USER INITIATES ADJUSTMENT
+   User ──► CometFoundation.adjust(additionalDebt: 1250 USDC)
+   ✅ No new capital deposited
+
+2. VALIDATION
+   CometFoundation ──► Validates new debt stays within health factor limits
+   ✅ borrowBalance + debtDelta <= maxLeverage * collateralValue
+
+3. FLASH LOAN REQUEST
+   CometFoundation ──► FlashLoanPlugin.takeFlashLoan(1250 USDC)
+   FlashLoanPlugin ──► Morpho/Euler/Uniswap.flashLoan(1250 USDC)
+
+4. FLASH LOAN CALLBACK
+   Morpho/Euler/Uniswap ──► CometFoundation.fallback()
+   ✅ Contract Balance: 1250 USDC
+
+5. SWAP BORROWED ASSET
+   CometFoundation ──► SwapPlugin.swap(1250 USDC → WETH)
+   SwapPlugin ──► 1inch/LiFi/OKX.swap(1250 USDC → ~0.498 WETH)
+   ✅ Contract Balance: ~0.498 WETH
+
+6. SUPPLY COLLATERAL TO USER
+   CometFoundation ──► Comet.supplyTo(user, ~0.498 WETH)
+   ✅ User's WETH collateral: ~1.998 WETH
+
+7. BORROW AGAINST COLLATERAL
+   CometFoundation ──► Comet.withdrawFrom(user, 1253.75 USDC)
+   ✅ User's debt: 1250 + 1253.75 = 2503.75 USDC (includes flash loan fee)
+   ✅ Contract Balance: 1253.75 USDC
+
+8. REPAY FLASH LOAN
+   CometFoundation ──► FlashLoanPlugin.repayFlashLoan(1253.75 USDC)
+   FlashLoanPlugin ──► Morpho/Euler/Uniswap.repay(1250 + 3.75 fee)
+   ✅ Contract Balance: 0
+
+RESULT: User increased leverage from ~1.5x to ~2x without depositing new capital
+        (~1.998 WETH collateral, ~2503.75 USDC debt)
 ```
 
 ### Cover Flow (Reduce Leverage)
@@ -213,6 +270,17 @@ RESULT: User's collateral successfully swapped from WETH to USDC
 | **Borrow**            | +2500 USDC            | 2 WETH collateral<br/>2500 USDC debt | Borrow against collateral  | `Comet.withdrawFrom(user, USDC)` |
 | **Repay**             | 0                     | 2 WETH collateral<br/>2500 USDC debt | Repay flash loan + fee     | `FlashProvider.repay(2505 USDC)` |
 
+#### Adjust Token Flow
+
+| Stage                 | Contract Balance | User Position                                | Action                     | External Call                    |
+| --------------------- | ---------------- | -------------------------------------------- | -------------------------- | -------------------------------- |
+| **Initial**           | 0                | 1.5 WETH collateral<br/>1250 USDC debt       | User calls `adjust()`      | -                                |
+| **Flash Loan**        | +1250 USDC       | 1.5 WETH collateral<br/>1250 USDC debt       | Flash loan received        | `FlashProvider.flashLoan()`      |
+| **Swap**              | ~0.498 WETH      | 1.5 WETH collateral<br/>1250 USDC debt       | Swap borrowed USDC to WETH | `DEX.swap(USDC → WETH)`          |
+| **Supply Collateral** | 0                | ~1.998 WETH collateral<br/>1250 USDC debt    | Supply swapped collateral  | `Comet.supplyTo(user, WETH)`     |
+| **Borrow**            | +1253.75 USDC    | ~1.998 WETH collateral<br/>2503.75 USDC debt | Borrow against collateral  | `Comet.withdrawFrom(user, USDC)` |
+| **Repay**             | 0                | ~1.998 WETH collateral<br/>2503.75 USDC debt | Repay flash loan + fee     | `FlashProvider.repay(1253.75)`   |
+
 #### Cover Token Flow
 
 The caller derives `loanDebt` off-chain from the swap quote: `loanDebt = swapAmountOut / (1 + flashFeeRate)`, capped at the user's borrow balance.
@@ -241,7 +309,7 @@ The caller derives `loanDebt` off-chain from the swap quote: `loanDebt = swapAmo
 
 ## Key Features
 
-- **Unified Contract**: All three operations (multiply, cover, exchange) in one gas-efficient contract
+- **Unified Contract**: All four operations (multiply, adjust, cover, exchange) in one gas-efficient contract
 - **Atomic Execution**: Each operation completes in a single transaction
 - **Health Factor Protection**: Validates position safety for exchange operations
 - **Multi-Protocol Support**: AAVE, Balancer, Uniswap V3, Morpho, Euler flash loans
@@ -260,6 +328,11 @@ The caller derives `loanDebt` off-chain from the swap quote: `loanDebt = swapAmo
 
 - `multiply(opts, collateral, collateralAmount, baseAmount, maxHealthFactorDrop, swapData)` - Create/increase leveraged position
 - `multiply(..., allowParams)` - With signature-based authorization
+
+**Adjust Operations**
+
+- `adjust(opts, collateral, additionalDebt, maxHealthFactorDrop, swapData)` - Increase leverage on existing position without adding capital
+- `adjust(..., allowParams)` - With signature-based authorization
 
 **Cover Operations**
 
