@@ -389,11 +389,6 @@
                 "type": "tuple"
             },
             {
-                "internalType": "uint256",
-                "name": "loanDebt",
-                "type": "uint256"
-            },
-            {
                 "internalType": "contract IERC20",
                 "name": "collateral",
                 "type": "address"
@@ -524,6 +519,11 @@
                 "internalType": "struct ICometStructs.Options",
                 "name": "opts",
                 "type": "tuple"
+            },
+            {
+                "internalType": "uint256",
+                "name": "loanDebt",
+                "type": "uint256"
             },
             {
                 "internalType": "contract IERC20",
