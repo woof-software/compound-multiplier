@@ -13,7 +13,8 @@ import {
     calculateExpectedCollateral,
     calculateHealthFactor,
     calculateMaxSafeWithdrawal,
-    OKX_ROUTER
+    OKX_ROUTER,
+    USDC_ADDRESS
 } from "../../helpers/helpers";
 
 const WETH_ADDRESS = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
@@ -315,6 +316,220 @@ describe("Comet Multiplier Adapter / OKX / UniswapV3", function () {
             const expectedUsdcProfit = collateralValueInUsdc - initialDebt;
             expect(usdcReceived).to.be.closeTo(expectedUsdcProfit, expectedUsdcProfit / 10n);
             expect(finalWeth).to.be.closeTo(initialWeth, ethers.parseEther("0.01"));
+        });
+    });
+
+    describe.only("Adjust Leverage", function () {
+        beforeEach(async function () {
+            // Create initial position with 2x leverage
+            const initialAmount = ethers.parseEther("0.2");
+            const leverage = 20_000;
+            await multiply(weth, await getMarketOptions(), comet, adapter, user, initialAmount, leverage);
+        });
+
+        it("should increase leverage from 2x to ~2.5x with custom fee", async function () {
+            const initialCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
+            const market = await getMarketOptions();
+
+            const currentDebt = await comet.borrowBalanceOf(user.address);
+            // 25% increase for ~2.5x leverage
+            const debtDelta = currentDebt / 4n;
+
+            const { swapData } = await executeWithRetry(async () => {
+                return await getOKXSwapData(
+                    USDC_ADDRESS,
+                    WETH_ADDRESS,
+                    debtDelta.toString(),
+                    await adapter.getAddress(),
+                    "1",
+                    "1",
+                    treasury.address
+                );
+            });
+
+            await adapter
+                .connect(user)
+                [
+                    "adjust((address,address,address),address,uint256,uint256,bytes)"
+                ](market, WETH_ADDRESS, debtDelta, 500, swapData);
+
+            const finalCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
+            const finalDebt = await comet.borrowBalanceOf(user.address);
+            const healthFactor = await calculateHealthFactor(comet, user.address, WETH_ADDRESS);
+            const expectedDebt = currentDebt + debtDelta;
+
+            expect(finalDebt).to.be.closeTo(expectedDebt, expectedDebt / 20n);
+            expect(finalCol).to.be.gt(initialCol);
+            expect(healthFactor).to.be.gt(finalDebt);
+        });
+
+        it("should increase leverage with small debtDelta and custom fee", async function () {
+            const initialCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
+            const market = await getMarketOptions();
+
+            const currentDebt = await comet.borrowBalanceOf(user.address);
+            // 10% increase
+            const debtDelta = currentDebt / 10n;
+
+            const { swapData } = await executeWithRetry(async () => {
+                return await getOKXSwapData(
+                    USDC_ADDRESS,
+                    WETH_ADDRESS,
+                    debtDelta.toString(),
+                    await adapter.getAddress(),
+                    "1",
+                    "1",
+                    treasury.address
+                );
+            });
+
+            await adapter
+                .connect(user)
+                [
+                    "adjust((address,address,address),address,uint256,uint256,bytes)"
+                ](market, WETH_ADDRESS, debtDelta, 500, swapData);
+
+            const finalCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
+            const finalDebt = await comet.borrowBalanceOf(user.address);
+            const healthFactor = await calculateHealthFactor(comet, user.address, WETH_ADDRESS);
+            const expectedDebt = currentDebt + debtDelta;
+
+            expect(finalDebt).to.be.closeTo(expectedDebt, expectedDebt / 20n);
+            expect(finalCol).to.be.gt(initialCol);
+            expect(healthFactor).to.be.gt(finalDebt);
+        });
+
+        it("should revert when debtDelta is zero", async function () {
+            const market = await getMarketOptions();
+
+            await expect(
+                adapter
+                    .connect(user)
+                    [
+                        "adjust((address,address,address),address,uint256,uint256,bytes)"
+                    ](market, WETH_ADDRESS, 0, 500, "0x")
+            ).to.be.revertedWithCustomError(adapter, "NoAdjustmentNeeded");
+        });
+
+        it("should revert when leverage up exceeds max leverage", async function () {
+            const currentDebt = await comet.borrowBalanceOf(user.address);
+            const excessiveDebtDelta = currentDebt * 50n;
+            const market = await getMarketOptions();
+
+            await expect(
+                adapter
+                    .connect(user)
+                    [
+                        "adjust((address,address,address),address,uint256,uint256,bytes)"
+                    ](market, WETH_ADDRESS, excessiveDebtDelta, 500, "0x")
+            ).to.be.revertedWithCustomError(adapter, "InvalidAdjustment");
+        });
+
+        it("should revert with invalid comet address", async function () {
+            const currentDebt = await comet.borrowBalanceOf(user.address);
+            const debtDelta = currentDebt / 4n;
+            const market = {
+                comet: ethers.ZeroAddress,
+                loanPlugin: await loanPlugin.getAddress(),
+                swapPlugin: await swapPlugin.getAddress()
+            };
+
+            await expect(
+                adapter
+                    .connect(user)
+                    [
+                        "adjust((address,address,address),address,uint256,uint256,bytes)"
+                    ](market, WETH_ADDRESS, debtDelta, 500, "0x")
+            ).to.be.revertedWithCustomError(adapter, "InvalidComet");
+        });
+
+        it("should maintain healthy position after multiple adjustments with custom fee", async function () {
+            const market = await getMarketOptions();
+
+            // First adjustment: 20% more debt
+            const initialDebt = await comet.borrowBalanceOf(user.address);
+            const debtDelta1 = initialDebt / 5n;
+
+            const { swapData: swapData1 } = await executeWithRetry(async () => {
+                return await getOKXSwapData(
+                    USDC_ADDRESS,
+                    WETH_ADDRESS,
+                    debtDelta1.toString(),
+                    await adapter.getAddress(),
+                    "1",
+                    "1",
+                    treasury.address
+                );
+            });
+
+            await adapter
+                .connect(user)
+                [
+                    "adjust((address,address,address),address,uint256,uint256,bytes)"
+                ](market, WETH_ADDRESS, debtDelta1, 500, swapData1);
+
+            const midDebt = await comet.borrowBalanceOf(user.address);
+            const expectedMidDebt = initialDebt + debtDelta1;
+            expect(midDebt).to.be.closeTo(expectedMidDebt, expectedMidDebt / 20n);
+
+            // Second adjustment: 10% more debt
+            const debtDelta2 = midDebt / 10n;
+
+            const { swapData: swapData2 } = await executeWithRetry(async () => {
+                return await getOKXSwapData(
+                    USDC_ADDRESS,
+                    WETH_ADDRESS,
+                    debtDelta2.toString(),
+                    await adapter.getAddress(),
+                    "1",
+                    "1",
+                    treasury.address
+                );
+            });
+
+            await adapter
+                .connect(user)
+                [
+                    "adjust((address,address,address),address,uint256,uint256,bytes)"
+                ](market, WETH_ADDRESS, debtDelta2, 500, swapData2);
+
+            const finalDebt = await comet.borrowBalanceOf(user.address);
+            const healthFactor = await calculateHealthFactor(comet, user.address, WETH_ADDRESS);
+
+            expect(finalDebt).to.be.gt(midDebt);
+            expect(healthFactor).to.be.gt(finalDebt);
+        });
+
+        it("should not leave dust in the adapter after adjust", async function () {
+            const market = await getMarketOptions();
+            const adapterAddress = await adapter.getAddress();
+
+            const currentDebt = await comet.borrowBalanceOf(user.address);
+            const debtDelta = currentDebt / 4n;
+
+            const { swapData } = await executeWithRetry(async () => {
+                return await getOKXSwapData(
+                    USDC_ADDRESS,
+                    WETH_ADDRESS,
+                    debtDelta.toString(),
+                    adapterAddress,
+                    "1",
+                    "1",
+                    treasury.address
+                );
+            });
+
+            await adapter
+                .connect(user)
+                [
+                    "adjust((address,address,address),address,uint256,uint256,bytes)"
+                ](market, WETH_ADDRESS, debtDelta, 500, swapData);
+
+            const adapterWeth = await weth.balanceOf(adapterAddress);
+            const adapterUsdc = await usdc.balanceOf(adapterAddress);
+
+            expect(adapterWeth).to.be.eq(0n);
+            expect(adapterUsdc).to.be.eq(0n);
         });
     });
 });

@@ -27,7 +27,7 @@ import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 
 const opts = { maxFeePerGas: 5_000_000_000 };
 
-describe.only("Comet Multiplier Adapter / LiFi / Euler", function () {
+describe("Comet Multiplier Adapter / LiFi / Euler", function () {
     let adapter: CometFoundation;
     let loanPlugin: EulerV2Plugin;
     let swapPlugin: LiFiPlugin;
