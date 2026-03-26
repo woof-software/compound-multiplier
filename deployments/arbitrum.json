@@ -27,9 +27,9 @@
             "endpoint": "0x9eDe111CeFa25d34FEbd26b15F84c5b2dc6b7746"
         },
         "okx": {
-            "endpoint": "0x57F04b1F43ABe245a516096645879373C26cCeFE"
+            "endpoint": "0xe715acc6e333A19b41138f51E76d72b95fb88146"
         }
     },
-    "CometFoundation": "0x1A31Bbff528985551AE741e256c32235D25C6897",
-    "foundationDeployedAt": "2026-02-25T21:32:41.259Z"
+    "CometFoundation": "0xc04Af7f142F31b70244c78aE133DF28411cEAEB8",
+    "foundationDeployedAt": "2026-03-26T12:40:59.506Z"
 }
