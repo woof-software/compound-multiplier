@@ -316,10 +316,44 @@ describe("Comet Multiplier Adapter / OKX / UniswapV3", function () {
             const expectedUsdcProfit = collateralValueInUsdc - initialDebt;
             expect(usdcReceived).to.be.closeTo(expectedUsdcProfit, expectedUsdcProfit / 10n);
             expect(finalWeth).to.be.closeTo(initialWeth, ethers.parseEther("0.01"));
+            console.log("Initial col balance: ", initialCol);
+            console.log("Initial borrow balance: ", initialDebt);
+            console.log("Leftover col balance: ", finalCol);
+            console.log("Leftover borrow balance: ", finalDebt);
+        });
+
+        it("should close entire max-leverage position with MaxUint256 and custom fee", async function () {
+            // Create a separate max-leverage position for user2
+            const maxLeverage = await calculateMaxLeverage(comet);
+            const maxAmount = ethers.parseEther("0.05");
+            await multiply(weth, await getMarketOptions(), comet, adapter, user2, maxAmount, maxLeverage);
+
+            const initialCol = await comet.collateralBalanceOf(user2.address, WETH_ADDRESS);
+            const initialDebt = await comet.borrowBalanceOf(user2.address);
+            const initialUsdc = await usdc.balanceOf(user2.address);
+
+            expect(initialDebt).to.be.gt(0);
+            expect(initialCol).to.be.gt(0);
+
+            await cover(await getMarketOptions(), adapter, user2, ethers.MaxUint256, treasury);
+
+            const finalDebt = await comet.borrowBalanceOf(user2.address);
+            const finalCol = await comet.collateralBalanceOf(user2.address, WETH_ADDRESS);
+            const finalUsdc = await usdc.balanceOf(user2.address);
+
+            expect(finalDebt).to.be.eq(0n);
+            expect(finalCol).to.be.eq(0n);
+            expect(finalUsdc).to.be.gte(initialUsdc);
+
+            console.log("Max leverage used: ", maxLeverage);
+            console.log("Initial col balance: ", initialCol);
+            console.log("Initial borrow balance: ", initialDebt);
+            console.log("Leftover col balance: ", finalCol);
+            console.log("Leftover borrow balance: ", finalDebt);
         });
     });
 
-    describe.only("Adjust Leverage", function () {
+    describe("Adjust Leverage", function () {
         beforeEach(async function () {
             // Create initial position with 2x leverage
             const initialAmount = ethers.parseEther("0.2");

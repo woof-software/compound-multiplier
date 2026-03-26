@@ -1097,7 +1097,7 @@ describe("Comet Multiplier Adapter / LiFi / Euler", function () {
         });
     });
 
-    describe.only("Adjust Leverage", function () {
+    describe("Adjust Leverage", function () {
         beforeEach(async function () {
             await ethers.provider.send("evm_revert", [initialSnapshot]);
             initialSnapshot = await ethers.provider.send("evm_snapshot");
