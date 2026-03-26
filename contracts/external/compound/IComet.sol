@@ -53,4 +53,6 @@ interface IComet is ICometExt {
     function hasPermission(address owner, address manager) external view returns (bool);
 
     function userCollateral(address user, address asset) external view returns (UserCollateral memory);
+
+    function accrueAccount(address user) external;
 }
