@@ -66,27 +66,36 @@ describe("Comet Multiplier Adapter / LiFI / wstETH", function () {
             ](market, USDC_ADDRESS, collateralAmount, leverageBps, 100, ethers.AbiCoder.defaultAbiCoder().encode(["uint256"], [1]));
     }
 
-    async function cover(signer: SignerWithAddress, collateralAmount: bigint, minAmountOut: bigint = 1n) {
+    async function cover(signer: SignerWithAddress, requestedBase: bigint): Promise<bigint> {
         const market = await getMarketOptions(false);
+        const borrowBalance = await comet.borrowBalanceOf(signer.address);
+        const baseAmount = requestedBase == ethers.MaxUint256 ? borrowBalance : requestedBase;
+
+        // For wstETH/WETH market, both 18 decimals. wstETH ≈ 1.15-1.2 WETH.
+        // Use 1:1 ratio + 5% buffer to ensure enough collateral is withdrawn.
+        let expectedCollateral = baseAmount + (baseAmount * 5n) / 100n;
 
         return executeWithRetry(async () => {
-            const swapData = (
-                await getQuote(
-                    "1",
-                    "1",
-                    WSTETH_ADDRESS,
-                    WETH_ADDRESS,
-                    collateralAmount.toString(),
-                    await adapter.getAddress()
-                )
-            ).swapCalldata;
+            const swapData =
+                expectedCollateral == 0n
+                    ? "0x"
+                    : (
+                          await getQuote(
+                              "1",
+                              "1",
+                              WSTETH_ADDRESS,
+                              WETH_ADDRESS,
+                              expectedCollateral.toString(),
+                              await adapter.getAddress()
+                          )
+                      ).swapCalldata;
 
-            // @ts-ignore
-            return adapter
+            await adapter
                 .connect(signer)
                 [
-                    "cover((address,address,address),address,uint256,bytes)"
-                ](market, WSTETH_ADDRESS, collateralAmount, swapData);
+                    "cover((address,address,address),uint256,address,uint256,bytes)"
+                ](market, requestedBase, WSTETH_ADDRESS, expectedCollateral, swapData);
+            return expectedCollateral;
         });
     }
 

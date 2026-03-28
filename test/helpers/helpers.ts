@@ -53,6 +53,10 @@ export const UNI_V3_USDC_WETH_005 = "0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640"
 export const UNI_V4_MANAGER = "0x000000000004444c5dc75cB358380D2e3dE08A90";
 export const LIFI_ROUTER = "0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE";
 
+// Mainnet Chainlink / Comet Price Feeds
+export const USDC_PRICE_FEED = "0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6";
+export const WETH_PRICE_FEED = "0xc0053f3FBcCD593758258334Dfce24C2A9A673aD";
+
 export async function executeWithRetry(operation: Function, maxRetries = 5) {
     for (let i = 0; i < maxRetries; i++) {
         try {
@@ -467,27 +471,37 @@ export async function cover1Inch(
     market: any,
     adapter: ICometCover,
     signer: SignerWithAddress,
-    requestedCollateral: bigint
-) {
+    requestedBase: bigint,
+    baseFeed: string,
+    collateralFeed: string
+): Promise<bigint> {
     const comet = await getCometByAddress(market.comet);
     const borrowBalance = await comet.borrowBalanceOf(signer.address);
+    const baseAmount = requestedBase == ethers.MaxUint256 ? borrowBalance : requestedBase;
+    // Calculate expected collateral
+    const basePrice = await comet.getPrice(baseFeed);
+    const collateralPrice = await comet.getPrice(collateralFeed);
+    let expectedCollateral = ((baseAmount * basePrice) / collateralPrice) * BigInt(1e12); // Add 12 decimals to convert USDC to WETH
+    expectedCollateral += (expectedCollateral * 2n) / 100n; // Add 2% slippage
+    expectedCollateral += (expectedCollateral * 500n) / 1_000_000n; // Add flashloan fee
 
     return await executeWithRetry(async () => {
         const swapData =
-            requestedCollateral == 0n
+            expectedCollateral == 0n
                 ? "0x"
                 : await get1inchSwapData(
                       WETH_ADDRESS,
                       USDC_ADDRESS,
-                      requestedCollateral.toString(),
+                      expectedCollateral.toString(),
                       await adapter.getAddress()
                   );
 
-        return adapter
+        await adapter
             .connect(signer)
             [
                 "cover((address,address,address),uint256,address,uint256,bytes)"
-            ](market, borrowBalance, WETH_ADDRESS, requestedCollateral, swapData);
+            ](market, requestedBase, WETH_ADDRESS, expectedCollateral, swapData);
+        return expectedCollateral;
     });
 }
 
@@ -526,31 +540,39 @@ export async function coverLiFi(
     market: any,
     adapter: CometFoundation,
     signer: SignerWithAddress,
-    requestedCollateral: bigint
-) {
+    requestedBase: bigint,
+    baseFeed: string,
+    collateralFeed: string
+): Promise<bigint> {
     const comet = await getCometByAddress(market.comet);
     const borrowBalance = await comet.borrowBalanceOf(signer.address);
+    const baseAmount = requestedBase == ethers.MaxUint256 ? borrowBalance : requestedBase;
+    // Calculate expected collateral
+    const basePrice = await comet.getPrice(baseFeed);
+    const collateralPrice = await comet.getPrice(collateralFeed);
+    let expectedCollateral = ((baseAmount * basePrice) / collateralPrice) * BigInt(1e12); // Add 12 decimals to convert USDC to WETH
+    expectedCollateral += (expectedCollateral * 2n) / 100n; // Add 2% slippage
+    expectedCollateral += (expectedCollateral * 500n) / 1_000_000n; // Add flashloan fee
 
     return await executeWithRetry(async () => {
         const swapData =
-            requestedCollateral == 0n
+            expectedCollateral == 0n
                 ? "0x"
                 : await getQuote(
                       "1",
                       "1",
                       WETH_ADDRESS,
                       USDC_ADDRESS,
-                      requestedCollateral == MaxUint256
-                          ? (await comet.collateralBalanceOf(await signer.getAddress(), WETH_ADDRESS)).toString()
-                          : requestedCollateral.toString(),
+                      expectedCollateral.toString(),
                       await adapter.getAddress()
                   ).then((q) => q.swapCalldata);
 
-        return adapter
+        await adapter
             .connect(signer)
             [
                 "cover((address,address,address),uint256,address,uint256,bytes)"
-            ](market, borrowBalance, WETH_ADDRESS, requestedCollateral, swapData);
+            ](market, requestedBase, WETH_ADDRESS, expectedCollateral, swapData);
+        return expectedCollateral;
     });
 }
 
@@ -587,22 +609,33 @@ export async function coverOKX(
     market: any,
     adapter: ICometCover,
     signer: SignerWithAddress,
-    requestedCollateral: bigint,
-    treasury: SignerWithAddress
-) {
+    requestedBase: bigint,
+    treasury: SignerWithAddress,
+    baseFeed: string,
+    collateralFeed: string
+): Promise<bigint> {
     const comet = await getCometByAddress(market.comet);
     const borrowBalance = await comet.borrowBalanceOf(signer.address);
+    const baseAmount = requestedBase == ethers.MaxUint256 ? borrowBalance : requestedBase;
+    // Calculate expected collateral
+    const basePrice = await comet.getPrice(baseFeed);
+    const collateralPrice = await comet.getPrice(collateralFeed);
+    let expectedCollateral = ((baseAmount * basePrice) / collateralPrice) * BigInt(1e12); // Add 12 decimals to convert USDC to WETH
+    expectedCollateral += (expectedCollateral * 2n) / 100n; // Add 1% slippage
+    expectedCollateral += (expectedCollateral * 500n) / 1_000_000n; // Add flashloan fee
+    console.log("Borrow balance: ", borrowBalance);
+    console.log("Requested base: ", requestedBase);
+    console.log("Base amount: ", baseAmount);
+    console.log("Expected collateral: ", expectedCollateral);
 
     return await executeWithRetry(async () => {
         const swapData =
-            requestedCollateral == 0n
+            expectedCollateral == 0n
                 ? { swapData: "0x", amountOut: 0 }
                 : await getOKXSwapData(
                       WETH_ADDRESS,
                       USDC_ADDRESS,
-                      requestedCollateral == ethers.MaxUint256
-                          ? (await comet.collateralBalanceOf(await signer.getAddress(), WETH_ADDRESS)).toString()
-                          : requestedCollateral.toString(),
+                      expectedCollateral.toString(),
                       await adapter.getAddress(),
                       "1",
                       "1",
@@ -612,13 +645,14 @@ export async function coverOKX(
         // the optimistic quote. OKX swap data uses 1% slippage, so actual output >= 99% of quote.
         // Using the optimistic amountOut leaves zero margin and fails if the on-chain swap
         // returns even 1 wei less than quoted (due to fork state vs live API state differences).
-        const minAmountOut = (BigInt(swapData.amountOut) * 99n) / 100n;
-        const loanDebt = (minAmountOut * 1_000_000n) / (1_000_000n + 500n);
-        return adapter
+        // const minAmountOut = (BigInt(swapData.amountOut) * 99n) / 100n;
+        // const loanDebt = (minAmountOut * 1_000_000n) / (1_000_000n + 500n);
+        await adapter
             .connect(signer)
             [
                 "cover((address,address,address),uint256,address,uint256,bytes)"
-            ](market, loanDebt > borrowBalance ? borrowBalance : loanDebt, WETH_ADDRESS, requestedCollateral, swapData.swapData);
+            ](market, requestedBase, WETH_ADDRESS, expectedCollateral, swapData.swapData);
+        return expectedCollateral;
     });
 }
 

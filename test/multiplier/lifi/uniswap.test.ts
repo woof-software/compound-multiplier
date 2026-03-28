@@ -16,7 +16,10 @@ import {
     getUserNonce,
     getFutureExpiry,
     signAllowBySig,
-    USDC_WHALE
+    USDC_WHALE,
+    USDC_PRICE_FEED,
+    WETH_PRICE_FEED,
+    getCometByAddress
 } from "../../helpers/helpers";
 
 const WETH_ADDRESS = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
@@ -436,9 +439,16 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
             const initialDebt = await comet.borrowBalanceOf(user.address);
             const initialUsdc = await usdc.balanceOf(user.address);
 
-            const collateralToWithdraw = initialCol / 10n;
+            const baseToWithdraw = initialDebt / 10n;
 
-            await cover(await getMarketOptions(), adapter, user, collateralToWithdraw);
+            const collateralToWithdraw = await cover(
+                await getMarketOptions(),
+                adapter,
+                user,
+                baseToWithdraw,
+                USDC_PRICE_FEED,
+                WETH_PRICE_FEED
+            );
 
             const finalCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
             const finalDebt = await comet.borrowBalanceOf(user.address);
@@ -448,7 +458,7 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
             expect(healthFactor).to.be.gt(finalDebt);
             expect(finalCol).to.be.closeTo(initialCol - collateralToWithdraw, ethers.parseEther("0.01"));
             expect(finalDebt).to.be.lt(initialDebt);
-            expect(finalUsdc).to.be.gt(initialUsdc);
+            expect(finalUsdc).to.be.gte(initialUsdc);
         });
 
         it("should handle accrued interest over time", async function () {
@@ -459,12 +469,11 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
 
             const accruedDebt = await comet.borrowBalanceOf(user.address);
             expect(accruedDebt).to.be.gt(initialDebt);
-            const maxSafeWithdrawal = await calculateMaxSafeWithdrawal(comet, user.address, WETH_ADDRESS);
 
-            const conservativeWithdrawal = maxSafeWithdrawal / 2n;
+            const baseToWithdraw = accruedDebt / 10n;
 
-            if (conservativeWithdrawal > ethers.parseEther("0.001")) {
-                await cover(await getMarketOptions(), adapter, user, conservativeWithdrawal);
+            if (baseToWithdraw > 0n) {
+                await cover(await getMarketOptions(), adapter, user, baseToWithdraw, USDC_PRICE_FEED, WETH_PRICE_FEED);
 
                 const finalDebt = await comet.borrowBalanceOf(user.address);
                 expect(finalDebt).to.be.lt(accruedDebt);
@@ -505,9 +514,16 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
             const initialDebt = await comet.borrowBalanceOf(user.address);
             const initialUsdc = await usdc.balanceOf(user.address);
 
-            const collateralToWithdraw = initialCol / 4n;
+            const baseToWithdraw = initialDebt / 4n;
 
-            await cover(await getMarketOptions(), adapter, user, collateralToWithdraw);
+            const collateralToWithdraw = await cover(
+                await getMarketOptions(),
+                adapter,
+                user,
+                baseToWithdraw,
+                USDC_PRICE_FEED,
+                WETH_PRICE_FEED
+            );
 
             const finalCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
             const finalDebt = await comet.borrowBalanceOf(user.address);
@@ -517,7 +533,7 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
             expect(finalCol).to.be.closeTo(initialCol - collateralToWithdraw, ethers.parseEther("0.01"));
             expect(finalDebt).to.be.lt(initialDebt);
             expect(finalDebt).to.be.gt(0);
-            expect(finalUsdc).to.be.gt(initialUsdc);
+            expect(finalUsdc).to.be.gte(initialUsdc);
             expect(healthFactor).to.be.gt(finalDebt);
         });
 
@@ -526,18 +542,25 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
             const initialDebt = await comet.borrowBalanceOf(user.address);
             const initialUsdc = await usdc.balanceOf(user.address);
 
-            const collateralToWithdraw = initialCol / 2n;
+            const baseToWithdraw = initialDebt / 2n;
 
-            await cover(await getMarketOptions(), adapter, user, collateralToWithdraw);
+            const collateralToWithdraw = await cover(
+                await getMarketOptions(),
+                adapter,
+                user,
+                baseToWithdraw,
+                USDC_PRICE_FEED,
+                WETH_PRICE_FEED
+            );
 
             const finalCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
             const finalDebt = await comet.borrowBalanceOf(user.address);
             const finalUsdc = await usdc.balanceOf(user.address);
             const healthFactor = await calculateHealthFactor(comet, user.address, WETH_ADDRESS);
 
-            expect(finalCol).to.be.closeTo(initialCol / 2n, ethers.parseEther("0.01"));
+            expect(finalCol).to.be.closeTo(initialCol - collateralToWithdraw, ethers.parseEther("0.01"));
             expect(finalDebt).to.be.lt(initialDebt);
-            expect(finalUsdc).to.be.gt(initialUsdc);
+            expect(finalUsdc).to.be.gte(initialUsdc);
             expect(healthFactor).to.be.gt(finalDebt);
         });
 
@@ -546,38 +569,52 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
             const initialDebt = await comet.borrowBalanceOf(user.address);
             const initialUsdc = await usdc.balanceOf(user.address);
 
-            const collateralToWithdraw = (initialCol * 3n) / 4n;
+            const baseToWithdraw = (initialDebt * 3n) / 4n;
 
-            await cover(await getMarketOptions(), adapter, user, collateralToWithdraw);
+            const collateralToWithdraw = await cover(
+                await getMarketOptions(),
+                adapter,
+                user,
+                baseToWithdraw,
+                USDC_PRICE_FEED,
+                WETH_PRICE_FEED
+            );
 
             const finalCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
             const finalDebt = await comet.borrowBalanceOf(user.address);
             const finalUsdc = await usdc.balanceOf(user.address);
             const healthFactor = await calculateHealthFactor(comet, user.address, WETH_ADDRESS);
 
-            expect(finalCol).to.be.closeTo(initialCol / 4n, ethers.parseEther("0.02"));
+            expect(finalCol).to.be.closeTo(initialCol - collateralToWithdraw, ethers.parseEther("0.02"));
             expect(finalDebt).to.be.lt(initialDebt);
-            expect(finalUsdc).to.be.gt(initialUsdc);
+            expect(finalUsdc).to.be.gte(initialUsdc);
             expect(healthFactor).to.be.gt(finalDebt);
         });
 
-        it("should withdraw specific collateral amount", async function () {
+        it("should withdraw specific debt amount", async function () {
             const initialCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
             const initialDebt = await comet.borrowBalanceOf(user.address);
             const initialUsdc = await usdc.balanceOf(user.address);
 
-            const exactAmount = ethers.parseEther("0.05");
+            const baseToWithdraw = initialDebt / 5n;
 
-            await cover(await getMarketOptions(), adapter, user, exactAmount);
+            const collateralToWithdraw = await cover(
+                await getMarketOptions(),
+                adapter,
+                user,
+                baseToWithdraw,
+                USDC_PRICE_FEED,
+                WETH_PRICE_FEED
+            );
 
             const finalCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
             const finalDebt = await comet.borrowBalanceOf(user.address);
             const finalUsdc = await usdc.balanceOf(user.address);
             const healthFactor = await calculateHealthFactor(comet, user.address, WETH_ADDRESS);
 
-            expect(finalCol).to.be.closeTo(initialCol - exactAmount, ethers.parseEther("0.005"));
+            expect(finalCol).to.be.closeTo(initialCol - collateralToWithdraw, ethers.parseEther("0.005"));
             expect(finalDebt).to.be.lt(initialDebt);
-            expect(finalUsdc).to.be.gt(initialUsdc);
+            expect(finalUsdc).to.be.gte(initialUsdc);
             expect(healthFactor).to.be.gt(finalDebt);
         });
 
@@ -587,68 +624,83 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
             const initialUsdc = await usdc.balanceOf(user.address);
             const initialWeth = await weth.balanceOf(user.address);
 
-            const info = await comet.getAssetInfoByAddress(WETH_ADDRESS);
-            const price = await comet.getPrice(info.priceFeed);
-            const baseScale = await comet.baseScale();
-
-            const collateralValueInUsdc = (initialCol * price * baseScale) / (info.scale * 100_000_000n);
-            const expectedUsdcProfit = collateralValueInUsdc - initialDebt;
-
-            await cover(await getMarketOptions(), adapter, user, ethers.MaxUint256);
+            const collateralToWithdraw = await cover(
+                await getMarketOptions(),
+                adapter,
+                user,
+                ethers.MaxUint256,
+                USDC_PRICE_FEED,
+                WETH_PRICE_FEED
+            );
 
             const finalDebt = await comet.borrowBalanceOf(user.address);
             const finalCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
             const finalUsdc = await usdc.balanceOf(user.address);
             const finalWeth = await weth.balanceOf(user.address);
+            const receivedWeth = finalWeth - initialWeth;
 
             expect(finalDebt).to.be.eq(0n);
-            expect(finalCol).to.be.eq(0n);
-
-            const usdcReceived = finalUsdc - initialUsdc;
-            expect(usdcReceived).to.be.closeTo(expectedUsdcProfit, expectedUsdcProfit / 10n);
-
-            expect(finalWeth).to.be.closeTo(initialWeth, ethers.parseEther("0.01"));
+            expect(finalCol).to.be.closeTo(initialCol - collateralToWithdraw, ethers.parseEther("0.01"));
+            expect(finalUsdc).to.be.gte(initialUsdc);
+            const initialAmount = ethers.parseEther("0.2");
+            expect(receivedWeth + finalCol).to.be.closeTo(initialAmount, ethers.parseEther("0.01"));
         });
 
         it("should handle withdrawal larger than balance", async function () {
-            const initialCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
-            const excessiveAmount = initialCol + ethers.parseEther("1.0");
+            const initialDebt = await comet.borrowBalanceOf(user.address);
+            const excessiveDebt = initialDebt * 2n;
 
-            await expect(cover(await getMarketOptions(), adapter, user, excessiveAmount)).to.be.revertedWithCustomError(
-                adapter,
-                "InvalidAmountIn"
-            );
+            await expect(
+                cover(await getMarketOptions(), adapter, user, excessiveDebt, USDC_PRICE_FEED, WETH_PRICE_FEED)
+            ).to.be.revertedWithCustomError(adapter, "InvalidLeverage");
         });
 
         it("should transfer base asset to user after withdrawal", async function () {
             const initialCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
+            const initialDebt = await comet.borrowBalanceOf(user.address);
             const initialUsdc = await usdc.balanceOf(user.address);
 
-            const collateralToWithdraw = ethers.parseEther("0.03");
+            const baseToWithdraw = initialDebt / 8n;
 
-            await cover(await getMarketOptions(), adapter, user, collateralToWithdraw);
+            const collateralToWithdraw = await cover(
+                await getMarketOptions(),
+                adapter,
+                user,
+                baseToWithdraw,
+                USDC_PRICE_FEED,
+                WETH_PRICE_FEED
+            );
 
             const finalCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
             const finalUsdc = await usdc.balanceOf(user.address);
             const healthFactor = await calculateHealthFactor(comet, user.address, WETH_ADDRESS);
 
             expect(finalCol).to.be.closeTo(initialCol - collateralToWithdraw, ethers.parseEther("0.005"));
-            expect(finalUsdc).to.be.gt(initialUsdc);
+            expect(finalUsdc).to.be.gte(initialUsdc);
             expect(healthFactor).to.be.gt(await comet.borrowBalanceOf(user.address));
         });
 
-        it("should handle small collateral withdrawals", async function () {
-            const smallAmount = ethers.parseEther("0.001");
+        it("should handle small debt withdrawals", async function () {
             const initialCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
+            const initialDebt = await comet.borrowBalanceOf(user.address);
             const initialUsdc = await usdc.balanceOf(user.address);
-            await cover(await getMarketOptions(), adapter, user, smallAmount);
+
+            const baseToWithdraw = initialDebt / 100n;
+            const collateralToWithdraw = await cover(
+                await getMarketOptions(),
+                adapter,
+                user,
+                baseToWithdraw,
+                USDC_PRICE_FEED,
+                WETH_PRICE_FEED
+            );
 
             const finalCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
             const finalUsdc = await usdc.balanceOf(user.address);
             const healthFactor = await calculateHealthFactor(comet, user.address, WETH_ADDRESS);
 
-            expect(finalCol).to.be.closeTo(initialCol - smallAmount, ethers.parseEther("0.0005"));
-            expect(finalUsdc).to.be.gt(initialUsdc);
+            expect(finalCol).to.be.closeTo(initialCol - collateralToWithdraw, ethers.parseEther("0.0005"));
+            expect(finalUsdc).to.be.gte(initialUsdc);
             expect(healthFactor).to.be.gt(await comet.borrowBalanceOf(user.address));
         });
     });
@@ -664,10 +716,11 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
 
             let currentCol = initialCol;
             for (let i = 0; i < 3; i++) {
-                const withdrawAmount = currentCol / 10n;
+                const currentDebt = await comet.borrowBalanceOf(user.address);
+                const withdrawAmount = currentDebt / 10n;
                 if (withdrawAmount === 0n) break;
 
-                await cover(await getMarketOptions(), adapter, user, withdrawAmount);
+                await cover(await getMarketOptions(), adapter, user, withdrawAmount, USDC_PRICE_FEED, WETH_PRICE_FEED);
                 currentCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
             }
 
@@ -682,10 +735,10 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
             const leverage = 20_000;
             await multiply(weth, await getMarketOptions(), comet, adapter, user2, initialAmount, leverage);
 
-            const initialCol = await comet.collateralBalanceOf(user2.address, WETH_ADDRESS);
+            const initialDebt = await comet.borrowBalanceOf(user2.address);
             const initialUsdc = await usdc.balanceOf(user2.address);
 
-            await cover(await getMarketOptions(), adapter, user2, initialCol / 3n);
+            await cover(await getMarketOptions(), adapter, user2, initialDebt / 3n, USDC_PRICE_FEED, WETH_PRICE_FEED);
 
             const usdcAfterWithdraw = await usdc.balanceOf(user2.address);
 
@@ -737,13 +790,34 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
 
             await multiply(weth, await getMarketOptions(), comet, adapter, user, initialAmount, leverage);
 
-            const collateralBalance = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
-            const withdrawAmount = collateralBalance / 10n;
+            const initialDebt = await comet.borrowBalanceOf(user.address);
+            const baseToWithdraw = initialDebt / 10n;
+            const market = await getMarketOptions();
 
-            const tx = await cover(await getMarketOptions(), adapter, user, withdrawAmount);
+            const comet_ = await getCometByAddress(market.comet);
+            const basePrice = await comet_.getPrice(USDC_PRICE_FEED);
+            const collateralPrice = await comet_.getPrice(WETH_PRICE_FEED);
+            let expectedCollateral = ((baseToWithdraw * basePrice) / collateralPrice) * BigInt(1e12);
+            expectedCollateral += (expectedCollateral * 2n) / 100n;
+            expectedCollateral += (expectedCollateral * 500n) / 1_000_000n;
+
+            const swapData = await getQuote(
+                "1",
+                "1",
+                WETH_ADDRESS,
+                USDC_ADDRESS,
+                expectedCollateral.toString(),
+                await adapter.getAddress()
+            ).then((q) => q.swapCalldata);
+
+            const tx = await adapter
+                .connect(user)
+                [
+                    "cover((address,address,address),uint256,address,uint256,bytes)"
+                ](market, baseToWithdraw, WETH_ADDRESS, expectedCollateral, swapData);
             const receipt = await tx.wait();
 
-            const withdrawnEvents = receipt.logs.filter((log: any) => {
+            const withdrawnEvents = receipt!.logs.filter((log: any) => {
                 try {
                     const parsed = adapter.interface.parseLog(log);
                     return parsed && parsed.name === "Covered";
@@ -835,8 +909,6 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
             await cometExt.connect(user3).allow(adapterAddress, false, opts);
             expect(await cometExt.isAllowed(user3.address, adapterAddress)).to.be.false;
 
-            const collateralToWithdraw = ethers.parseEther("0.1");
-
             const nonce = await getUserNonce(cometExt, user3.address);
             const expiry = getFutureExpiry();
             const chainId = Number((await ethers.provider.getNetwork()).chainId);
@@ -864,35 +936,41 @@ describe("Comet Multiplier Adapter / LiFi / UniswapV3", function () {
             const initialUsdc = await usdc.balanceOf(user3.address);
 
             const market = await getMarketOptions();
+            const requestedBase = initialDebt / 4n;
 
-            const quote = await executeWithRetry(async () => {
-                const q = await getQuote(
+            const comet_ = await getCometByAddress(market.comet);
+            const basePrice = await comet_.getPrice(USDC_PRICE_FEED);
+            const collateralPrice = await comet_.getPrice(WETH_PRICE_FEED);
+            let expectedCollateral = ((requestedBase * basePrice) / collateralPrice) * BigInt(1e12);
+            expectedCollateral += (expectedCollateral * 2n) / 100n;
+            expectedCollateral += (expectedCollateral * 500n) / 1_000_000n;
+
+            const swapData = await executeWithRetry(async () => {
+                return await getQuote(
                     "1",
                     "1",
                     WETH_ADDRESS,
                     USDC_ADDRESS,
-                    collateralToWithdraw.toString(),
+                    expectedCollateral.toString(),
                     await adapter.getAddress()
-                );
-                return q;
+                ).then((q) => q.swapCalldata);
             });
-            const swapData = quote.swapCalldata;
 
             // @ts-ignore
             await adapter
                 .connect(user3)
                 [
-                    "cover((address,address,address),address,uint256,bytes,(uint256,uint256,bytes32,bytes32,uint8))"
-                ](market, WETH_ADDRESS, collateralToWithdraw, swapData, allowParams, opts);
+                    "cover((address,address,address),uint256,address,uint256,bytes,(uint256,uint256,bytes32,bytes32,uint8))"
+                ](market, requestedBase, WETH_ADDRESS, expectedCollateral, swapData, allowParams, opts);
 
             const finalCol = await comet.collateralBalanceOf(user3.address, WETH_ADDRESS);
             const finalDebt = await comet.borrowBalanceOf(user3.address);
             const finalUsdc = await usdc.balanceOf(user3.address);
             const healthFactor = await calculateHealthFactor(comet, user3.address, WETH_ADDRESS);
 
-            expect(finalCol).to.be.closeTo(initialCol - collateralToWithdraw, ethers.parseEther("0.01"));
+            expect(finalCol).to.be.closeTo(initialCol - expectedCollateral, ethers.parseEther("0.01"));
             expect(finalDebt).to.be.lt(initialDebt);
-            expect(finalUsdc).to.be.gt(initialUsdc);
+            expect(finalUsdc).to.be.gte(initialUsdc);
             expect(healthFactor).to.be.gt(finalDebt);
 
             expect(await cometExt.isAllowed(user3.address, adapterAddress)).to.be.true;

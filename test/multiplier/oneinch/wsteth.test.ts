@@ -66,62 +66,33 @@ describe.skip("Comet Multiplier Adapter / 1inch / wstETH", function () {
             ](market, WSTETH_ADDRESS, collateralAmount, leverageBps, "0x");
     }
 
-    async function cover(signer: SignerWithAddress, collateralAmount: bigint, minAmountOut: bigint = 1n) {
-        const blockTag = await ethers.provider.getBlockNumber();
-        let take = await previewTake(comet, signer.address, WSTETH_ADDRESS, collateralAmount, blockTag);
+    async function cover(signer: SignerWithAddress, requestedBase: bigint): Promise<bigint> {
         const market = await getMarketOptions(false);
+        const borrowBalance = await comet.borrowBalanceOf(signer.address);
+        const baseAmount = requestedBase == ethers.MaxUint256 ? borrowBalance : requestedBase;
+
+        // For wstETH/WETH market, both 18 decimals. wstETH ≈ 1.15-1.2 WETH.
+        // Use 1:1 ratio + 5% buffer to ensure enough collateral is withdrawn.
+        let expectedCollateral = baseAmount + (baseAmount * 5n) / 100n;
 
         return executeWithRetry(async () => {
-            const swapData = await get1inchSwapData(
-                WSTETH_ADDRESS,
-                WETH_ADDRESS,
-                take.toString(),
-                await adapter.getAddress()
-            );
+            const swapData =
+                expectedCollateral == 0n
+                    ? "0x"
+                    : await get1inchSwapData(
+                          WSTETH_ADDRESS,
+                          WETH_ADDRESS,
+                          expectedCollateral.toString(),
+                          await adapter.getAddress()
+                      );
 
-            return adapter
+            await adapter
                 .connect(signer)
                 [
-                    "cover((address,address,address),address,uint256,bytes)"
-                ](market, WSTETH_ADDRESS, collateralAmount, swapData);
+                    "cover((address,address,address),uint256,address,uint256,bytes)"
+                ](market, requestedBase, WSTETH_ADDRESS, expectedCollateral, swapData);
+            return expectedCollateral;
         });
-    }
-
-    async function previewTake(
-        comet: any,
-        user: string,
-        collateral: string,
-        requestedCollateral: bigint,
-        blockTag?: number
-    ): Promise<bigint> {
-        const tag = blockTag ?? (await ethers.provider.getBlockNumber());
-
-        const [info, baseScale, userCol, repayAmount] = await Promise.all([
-            comet.getAssetInfoByAddress(collateral, { blockTag: tag }),
-            comet.baseScale({ blockTag: tag }),
-            comet.collateralBalanceOf(user, collateral, { blockTag: tag }),
-            comet.borrowBalanceOf(user, { blockTag: tag })
-        ]);
-
-        const price = await comet.getPrice(info.priceFeed, { blockTag: tag });
-        const priceFeed = await ethers.getContractAt("AggregatorV3Interface", info.priceFeed);
-        const decs = await priceFeed.decimals({ blockTag: tag });
-        const num = BigInt(price) * BigInt(baseScale) * BigInt(info.borrowCollateralFactor);
-        const den = 10n ** BigInt(decs) * BigInt(info.scale) * 10n ** 18n;
-
-        const req = requestedCollateral;
-        const debtFromRequested = req === ethers.MaxUint256 ? repayAmount : (req * num) / den;
-
-        const loanDebt = debtFromRequested < repayAmount ? debtFromRequested : repayAmount;
-
-        if (loanDebt === 0n) return 0n;
-
-        let unlocked = (loanDebt * den) / num;
-
-        const reqCap = req === ethers.MaxUint256 ? BigInt(userCol) : req < BigInt(userCol) ? req : BigInt(userCol);
-        const take = unlocked < reqCap ? unlocked : reqCap;
-
-        return take > 0n ? take : 0n;
     }
 
     before(async function () {
