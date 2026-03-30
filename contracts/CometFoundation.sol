@@ -549,6 +549,7 @@ contract CometFoundation is
             _dust(user, data.asset, IComet(address(0)), dust);
 
             uint256 totalSupply = params.supplyAmount + amountOut;
+            uint256 previousDebt = comet.borrowBalanceOf(user);
 
             params.supplyAsset.safeIncreaseAllowance(address(comet), totalSupply);
             comet.supplyTo(user, params.supplyAsset, totalSupply);
@@ -557,13 +558,12 @@ contract CometFoundation is
             if (mode == ICS.Mode.MULTIPLY) {
                 emit ICE.Multiplied(user, address(comet), address(params.supplyAsset), totalSupply, data.debt);
             } else {
-                uint256 debt = comet.borrowBalanceOf(user);
                 emit ICE.Adjusted(
                     user,
                     address(comet),
                     address(params.supplyAsset),
-                    debt - repaymentAmount,
-                    debt,
+                    previousDebt,
+                    comet.borrowBalanceOf(user),
                     amountOut
                 );
             }
