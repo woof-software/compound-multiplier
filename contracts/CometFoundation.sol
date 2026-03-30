@@ -779,12 +779,15 @@ contract CometFoundation is
             ICA.InvalidSwapParameters()
         );
 
+        IERC20 fromAssetToken = IERC20(fromAsset);
+        require(fromAmount <= comet.collateralBalanceOf(msg.sender, fromAssetToken), ICA.InvalidAmountIn());
+
         require(
             Math.mulDiv(
-                _calculateLiquidity(comet, fromAmount, comet.getAssetInfoByAddress(IERC20(fromAsset))),
+                _calculateLiquidity(comet, fromAmount, comet.getAssetInfoByAddress(fromAssetToken)),
                 (PRECISION - maxHealthFactorDrop),
                 PRECISION
-            ) < _calculateLiquidity(comet, minAmountOut, comet.getAssetInfoByAddress(IERC20(toAsset))),
+            ) < _calculateLiquidity(comet, minAmountOut, comet.getAssetInfoByAddress(fromAssetToken)),
             ICA.InsufficientLiquidity()
         );
     }
