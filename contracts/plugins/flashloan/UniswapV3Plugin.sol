@@ -111,7 +111,7 @@ contract UniswapV3Plugin is ICometFlashLoanPlugin {
         address asset = address(_data.asset);
 
         uint256 fee = (token0 == asset) ? fee0 : ((token1 == asset) ? fee1 : type(uint256).max);
-        require(fee != type(uint256).max && fee != 0, ICA.InvalidFlashLoanData());
+        require(fee != type(uint256).max, ICA.InvalidFlashLoanData());
 
         _data.fee = fee;
         _data.flp = flp;
