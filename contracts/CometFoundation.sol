@@ -708,8 +708,7 @@ contract CometFoundation is
      * @param asset The ERC20 token to handle
      * @param comet The Comet market instance (or address(0) if supply not needed)
      * @param amount Amount of tokens to handle
-     * @dev If comet is address(0), tokens are always transferred to user.
-     * Otherwise, if asset is baseAsset, tokens are transferred; if collateral, they are supplied to Comet.
+     * @dev If comet is address(0), tokens are always transferred to user. Otherwise, they are supplied to Comet.
      */
     function _dust(address user, IERC20 asset, IComet comet, uint256 amount) internal {
         if (amount == 0) return;
