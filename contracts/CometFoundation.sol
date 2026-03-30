@@ -677,7 +677,7 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
                 _calculateLiquidity(comet, fromAmount, comet.getAssetInfoByAddress(fromAssetToken)),
                 (PRECISION - healthBuffer),
                 PRECISION
-            ) < _calculateLiquidity(comet, minAmountOut, comet.getAssetInfoByAddress(fromAssetToken)),
+            ) < _calculateLiquidity(comet, minAmountOut, comet.getAssetInfoByAddress(IERC20(toAsset))),
             ICA.InsufficientLiquidity()
         );
     }
