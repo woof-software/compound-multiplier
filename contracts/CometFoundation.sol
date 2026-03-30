@@ -18,8 +18,6 @@ import { ICometFlashLoanPlugin } from "./interfaces/ICometFlashLoanPlugin.sol";
 import { ICometExchange } from "./interfaces/ICometExchange.sol";
 import { ICometMultiplier } from "./interfaces/ICometMultiplier.sol";
 import { ICometCover } from "./interfaces/ICometCover.sol";
-import { ICometAdjust } from "./interfaces/ICometAdjust.sol";
-
 import { ICometStructs as ICS } from "./interfaces/ICometStructs.sol";
 import { ICometAlerts as ICA } from "./interfaces/ICometAlerts.sol";
 import { ICometEvents as ICE } from "./interfaces/ICometEvents.sol";
@@ -34,14 +32,7 @@ import { ICometFoundation } from "./interfaces/ICometFoundation.sol";
  * The contract provides internal functions to validate and interact with these plugins, ensuring secure and modular integration with various DeFi protocols.
  */
 // aderyn-fp-next-line(locked-ether)
-contract CometFoundation is
-    ICometFoundation,
-    ICometExchange,
-    ICometMultiplier,
-    ICometCover,
-    ICometAdjust,
-    ReentrancyGuard
-{
+contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, ICometCover, ReentrancyGuard {
     using SafeERC20 for IERC20;
     /// @dev The scale for factors
     uint64 public constant FACTOR_SCALE = 1e18;
@@ -119,13 +110,6 @@ contract CometFoundation is
                 withdrawAsset: data.asset,
                 withdrawAmount: data.debt + data.fee
             });
-        } else if (mode == ICS.Mode.ADJUST) {
-            params = ICS.ProcessParams({
-                supplyAsset: collateral,
-                supplyAmount: 0,
-                withdrawAsset: data.asset,
-                withdrawAmount: data.debt + data.fee
-            });
         } else {
             params = ICS.ProcessParams({
                 supplyAsset: data.asset,
@@ -197,10 +181,10 @@ contract CometFoundation is
         IERC20 toAsset,
         uint256 fromAmount,
         uint256 minAmountOut,
-        uint256 maxHealthFactorDrop,
+        uint256 healthBuffer,
         bytes calldata swapData
     ) external nonReentrant {
-        _exchange(opts, fromAsset, toAsset, fromAmount, minAmountOut, maxHealthFactorDrop, swapData);
+        _exchange(opts, fromAsset, toAsset, fromAmount, minAmountOut, healthBuffer, swapData);
     }
 
     /**
@@ -213,12 +197,12 @@ contract CometFoundation is
         IERC20 toAsset,
         uint256 fromAmount,
         uint256 minAmountOut,
-        uint256 maxHealthFactorDrop,
+        uint256 healthBuffer,
         bytes calldata swapData,
         ICS.AllowParams calldata allowParams
     ) external nonReentrant {
         _allow(opts.comet, allowParams);
-        _exchange(opts, fromAsset, toAsset, fromAmount, minAmountOut, maxHealthFactorDrop, swapData);
+        _exchange(opts, fromAsset, toAsset, fromAmount, minAmountOut, healthBuffer, swapData);
     }
 
     /**
@@ -230,10 +214,10 @@ contract CometFoundation is
         IERC20 collateral,
         uint256 collateralAmount,
         uint256 baseAmount,
-        uint256 maxHealthFactorDrop,
+        uint256 healthBuffer,
         bytes calldata swapData
     ) external payable nonReentrant {
-        _multiply(opts, collateral, collateralAmount, baseAmount, maxHealthFactorDrop, swapData);
+        _multiply(opts, collateral, collateralAmount, baseAmount, healthBuffer, swapData);
     }
 
     /**
@@ -245,12 +229,12 @@ contract CometFoundation is
         IERC20 collateral,
         uint256 collateralAmount,
         uint256 baseAmount,
-        uint256 maxHealthFactorDrop,
+        uint256 healthBuffer,
         bytes calldata swapData,
         ICS.AllowParams calldata allowParams
     ) external payable nonReentrant {
         _allow(opts.comet, allowParams);
-        _multiply(opts, collateral, collateralAmount, baseAmount, maxHealthFactorDrop, swapData);
+        _multiply(opts, collateral, collateralAmount, baseAmount, healthBuffer, swapData);
     }
 
     /**
@@ -281,36 +265,6 @@ contract CometFoundation is
     ) external nonReentrant {
         _allow(opts.comet, allowParams);
         _cover(opts, loanDebt, collateral, collateralAmount, swapData);
-    }
-
-    /**
-     * @inheritdoc ICometAdjust
-     */
-    //  aderyn-fp-next-line(state-change-without-event)
-    function adjust(
-        ICS.Options calldata opts,
-        IERC20 collateral,
-        uint256 debtDelta,
-        uint256 maxHealthFactorDrop,
-        bytes calldata swapData
-    ) external nonReentrant {
-        _adjust(opts, collateral, debtDelta, maxHealthFactorDrop, swapData);
-    }
-
-    /**
-     * @inheritdoc ICometAdjust
-     */
-    //  aderyn-fp-next-line(state-change-without-event)
-    function adjust(
-        ICS.Options calldata opts,
-        IERC20 collateral,
-        uint256 debtDelta,
-        uint256 maxHealthFactorDrop,
-        bytes calldata swapData,
-        ICS.AllowParams calldata allowParams
-    ) external nonReentrant {
-        _allow(opts.comet, allowParams);
-        _adjust(opts, collateral, debtDelta, maxHealthFactorDrop, swapData);
     }
 
     /**
@@ -340,12 +294,12 @@ contract CometFoundation is
         IERC20 toAsset,
         uint256 fromAmount,
         uint256 minAmountOut,
-        uint256 maxHealthFactorDrop,
+        uint256 healthBuffer,
         bytes calldata swapData
     ) internal {
         IComet comet = opts.comet;
 
-        _validateExchange(comet, address(fromAsset), address(toAsset), fromAmount, minAmountOut, maxHealthFactorDrop);
+        _validateExchange(comet, address(fromAsset), address(toAsset), fromAmount, minAmountOut, healthBuffer);
 
         address loanPlugin = opts.loanPlugin;
 
@@ -367,38 +321,31 @@ contract CometFoundation is
     }
 
     /**
-     * @notice Internal implementation of multiply
+     * @notice Internal implementation of multiply (also handles leverage adjustment when collateralAmount == 0)
      */
     function _multiply(
         ICS.Options calldata opts,
         IERC20 collateral,
         uint256 collateralAmount,
         uint256 baseAmount,
-        uint256 maxHealthFactorDrop,
+        uint256 healthBuffer,
         bytes calldata swapData
     ) internal {
         IComet comet = opts.comet;
         require(address(comet) != address(0), ICA.InvalidComet());
-        require(maxHealthFactorDrop < PRECISION, ICA.InvalidMultiplyParameters());
+        require(healthBuffer < PRECISION, ICA.InvalidMultiplyParameters());
+        require(baseAmount > 0, ICA.InvalidAmountIn());
 
         if (msg.value > 0) {
             require(address(collateral) == wEth, ICA.InvalidWeth());
             collateralAmount = msg.value;
             IWEth(wEth).deposit{ value: msg.value }();
-        } else {
-            require(collateralAmount > 0, ICA.InvalidAmountIn());
+        } else if (collateralAmount > 0) {
             uint256 balanceBefore = collateral.balanceOf(address(this));
             collateral.safeTransferFrom(msg.sender, address(this), collateralAmount);
             collateralAmount = collateral.balanceOf(address(this)) - balanceBefore;
         }
 
-        uint256 leveraged = _leveraged(comet, collateral, collateralAmount);
-
-        require(
-            leveraged + baseAmount <=
-                Math.mulDiv(leveraged, _maxLeverage(comet, collateral, maxHealthFactorDrop), FACTOR_SCALE),
-            ICA.InvalidLeverage()
-        );
         IERC20 baseAsset = comet.baseToken();
         address loanPlugin = opts.loanPlugin;
 
@@ -423,6 +370,8 @@ contract CometFoundation is
                 swapData: swapData
             })
         );
+
+        _validateHealth(comet, collateral, healthBuffer);
     }
 
     /**
@@ -473,52 +422,6 @@ contract CometFoundation is
     }
 
     /**
-     * @notice Internal implementation of adjust (leverage increase only)
-     * @param opts Configuration options including market and plugin addresses
-     * @param collateral Address of the collateral token in the position
-     * @param debtDelta The additional amount of base asset to borrow
-     * @param maxHealthFactorDrop Maximum allowed health factor drop in basis points
-     * @param swapData Encoded swap parameters for the DEX aggregator
-     */
-    function _adjust(
-        ICS.Options calldata opts,
-        IERC20 collateral,
-        uint256 debtDelta,
-        uint256 maxHealthFactorDrop,
-        bytes calldata swapData
-    ) internal {
-        IComet comet = opts.comet;
-        require(address(comet) != address(0), ICA.InvalidComet());
-        require(maxHealthFactorDrop < PRECISION, ICA.InvalidMultiplyParameters());
-        require(debtDelta > 0, ICA.NoAdjustmentNeeded());
-        uint256 leveraged = _leveraged(comet, collateral, comet.collateralBalanceOf(msg.sender, collateral));
-        require(
-            comet.borrowBalanceOf(msg.sender) + debtDelta <=
-                Math.mulDiv(leveraged, _maxLeverage(comet, collateral, maxHealthFactorDrop), FACTOR_SCALE),
-            ICA.InvalidAdjustment()
-        );
-
-        IERC20 baseAsset = comet.baseToken();
-        address loanPlugin = opts.loanPlugin;
-
-        _tstore(
-            baseAsset.balanceOf(address(this)),
-            loanPlugin,
-            opts.swapPlugin,
-            comet,
-            collateral,
-            debtDelta,
-            msg.sender,
-            ICS.Mode.ADJUST
-        );
-
-        _loan(
-            loanPlugin,
-            ICS.CallbackData({ debt: debtDelta, fee: 0, flp: address(0), asset: baseAsset, swapData: swapData })
-        );
-    }
-
-    /**
      * @notice Processes a flash loan operation including optional token swaps and collateral management
      * @param comet The Comet market instance
      * @param user The address of the user performing the operation
@@ -544,29 +447,17 @@ contract CometFoundation is
         uint256 amountOut;
         uint256 dust;
 
-        if (mode == ICS.Mode.MULTIPLY || mode == ICS.Mode.ADJUST) {
+        if (mode == ICS.Mode.MULTIPLY) {
             (amountOut, dust) = _swap(swapPlugin, data.asset, params.supplyAsset, data.debt, data.swapData);
             _dust(user, data.asset, IComet(address(0)), dust);
 
             uint256 totalSupply = params.supplyAmount + amountOut;
-            uint256 previousDebt = comet.borrowBalanceOf(user);
 
             params.supplyAsset.safeIncreaseAllowance(address(comet), totalSupply);
             comet.supplyTo(user, params.supplyAsset, totalSupply);
             comet.withdrawFrom(user, address(this), data.asset, repaymentAmount);
 
-            if (mode == ICS.Mode.MULTIPLY) {
-                emit ICE.Multiplied(user, address(comet), address(params.supplyAsset), totalSupply, data.debt);
-            } else {
-                emit ICE.Adjusted(
-                    user,
-                    address(comet),
-                    address(params.supplyAsset),
-                    previousDebt,
-                    comet.borrowBalanceOf(user),
-                    amountOut
-                );
-            }
+            emit ICE.Multiplied(user, address(comet), address(params.supplyAsset), totalSupply, data.debt);
         } else {
             _supplyWithdraw(comet, user, params);
 
@@ -754,7 +645,7 @@ contract CometFoundation is
      * @param toAsset The collateral asset being swapped to
      * @param fromAmount The amount of fromAsset to swap
      * @param minAmountOut The minimum acceptable amount of toAsset to receive
-     * @param maxHealthFactorDrop The maximum allowed drop in health factor in basis points
+     * @param healthBuffer The maximum allowed drop in health factor in basis points
      * @dev Reverts if any parameter is invalid or if the swap would violate health factor constraints
      */
     function _validateExchange(
@@ -763,7 +654,7 @@ contract CometFoundation is
         address toAsset,
         uint256 fromAmount,
         uint256 minAmountOut,
-        uint256 maxHealthFactorDrop
+        uint256 healthBuffer
     ) internal view {
         address baseAsset = address(comet.baseToken());
 
@@ -774,7 +665,7 @@ contract CometFoundation is
                 toAsset != baseAsset &&
                 fromAsset != toAsset &&
                 minAmountOut > 0 &&
-                maxHealthFactorDrop < PRECISION,
+                healthBuffer < PRECISION,
             ICA.InvalidSwapParameters()
         );
 
@@ -784,7 +675,7 @@ contract CometFoundation is
         require(
             Math.mulDiv(
                 _calculateLiquidity(comet, fromAmount, comet.getAssetInfoByAddress(fromAssetToken)),
-                (PRECISION - maxHealthFactorDrop),
+                (PRECISION - healthBuffer),
                 PRECISION
             ) < _calculateLiquidity(comet, minAmountOut, comet.getAssetInfoByAddress(fromAssetToken)),
             ICA.InsufficientLiquidity()
@@ -814,42 +705,36 @@ contract CometFoundation is
     }
 
     /**
-     * @notice Calculates the required loan amount for a given leverage ratio
-     * @param comet The Comet comet interface
-     * @param collateral Address of the collateral token
-     * @param collateralAmount Amount of collateral being supplied
-     * @return Required loan amount in base asset terms
-     * @dev Formula: loan = (initialValue * (leverage - 1)) / PRECISION
+     * @notice Validates post-execution health of a leveraged position
+     * @param comet The Comet market instance
+     * @param collateral The collateral token used in the position
+     * @param healthBuffer Safety buffer in basis points above the liquidation threshold
+     * @dev Ensures finalDebt <= collateralValue * borrowCollateralFactor * (PRECISION - healthBuffer) / PRECISION.
+     *      A healthBuffer of 500 (5%) requires HF >= ~1.053, preventing positions too close to liquidation.
      */
-    function _leveraged(IComet comet, IERC20 collateral, uint256 collateralAmount) private view returns (uint256) {
+    function _validateHealth(IComet comet, IERC20 collateral, uint256 healthBuffer) internal view {
+        uint256 finalDebt = comet.borrowBalanceOf(msg.sender);
+        if (finalDebt == 0) return;
+
+        uint256 collateralBalance = comet.collateralBalanceOf(msg.sender, collateral);
         IComet.AssetInfo memory info = comet.getAssetInfoByAddress(collateral);
 
-        return
-            // collateral value in base asset
+        uint256 maxAllowedDebt = Math.mulDiv(
             Math.mulDiv(
-                Math.mulDiv(
-                    collateralAmount,
+                (Math.mulDiv(
+                    collateralBalance,
                     comet.getPrice(info.priceFeed),
                     // aderyn-fp-next-line(literal-instead-of-constant)
                     10 ** AggregatorV3Interface(info.priceFeed).decimals()
-                ),
-                comet.baseScale(),
-                info.scale
-            );
-    }
+                ) * comet.baseScale()) / info.scale,
+                uint256(info.borrowCollateralFactor),
+                FACTOR_SCALE
+            ),
+            PRECISION - healthBuffer,
+            PRECISION
+        );
 
-    function _maxLeverage(
-        IComet comet,
-        IERC20 collateral,
-        uint256 maxHealthFactorDrop
-    ) internal view returns (uint256) {
-        IComet.AssetInfo memory info = comet.getAssetInfoByAddress(collateral);
-        return
-            Math.mulDiv(
-                Math.mulDiv(FACTOR_SCALE, FACTOR_SCALE, FACTOR_SCALE - uint256(info.borrowCollateralFactor)),
-                PRECISION + maxHealthFactorDrop,
-                PRECISION
-            );
+        require(finalDebt <= maxAllowedDebt, ICA.InvalidLeverage());
     }
 
     /**
