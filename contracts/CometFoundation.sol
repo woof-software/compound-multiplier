@@ -386,6 +386,7 @@ contract CometFoundation is
             collateralAmount = msg.value;
             IWEth(wEth).deposit{ value: msg.value }();
         } else {
+            require(collateralAmount > 0, ICA.InvalidAmountIn());
             uint256 balanceBefore = collateral.balanceOf(address(this));
             collateral.safeTransferFrom(msg.sender, address(this), collateralAmount);
             collateralAmount = collateral.balanceOf(address(this)) - balanceBefore;
