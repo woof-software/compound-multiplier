@@ -436,13 +436,12 @@ contract CometFoundation is
     ) internal {
         IComet comet = opts.comet;
         require(address(comet) != address(0), ICA.InvalidComet());
-        uint256 borrowBalance = comet.borrowBalanceOf(msg.sender);
-        require(borrowBalance > 0, ICA.NothingToDeleverage());
         if (loanDebt == type(uint256).max) {
             comet.accrueAccount(msg.sender);
-            loanDebt = borrowBalance;
+            loanDebt = comet.borrowBalanceOf(msg.sender);
+            require(loanDebt > 0, ICA.NothingToDeleverage());
         } else {
-            require(loanDebt > 0 && loanDebt <= borrowBalance, ICA.InvalidLeverage());
+            require(loanDebt > 0 && loanDebt <= comet.borrowBalanceOf(msg.sender), ICA.InvalidLeverage());
             require(collateralAmount <= comet.collateralBalanceOf(msg.sender, collateral), ICA.InvalidAmountIn());
         }
 
