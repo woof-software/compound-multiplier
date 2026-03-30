@@ -87,6 +87,7 @@ contract OKXPlugin is ICometSwapPlugin {
 
         amountOut = IERC20(dstToken).balanceOf(address(this)) - balBefore;
         require(amountOut >= minReturn, ICA.InvalidAmountOut());
+        IERC20(srcToken).forceApprove(approveProxy, 0);
 
         emit ICE.Swap(router, srcToken, dstToken, amountOut);
     }

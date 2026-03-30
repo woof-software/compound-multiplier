@@ -57,6 +57,7 @@ contract LiFiPlugin is ICometSwapPlugin {
 
         amountOut = IERC20(dstToken).balanceOf(address(this)) - balBefore;
         require(amountOut >= minAmountOut, ICA.InvalidAmountOut());
+        IERC20(srcToken).forceApprove(router, 0);
 
         emit ICE.Swap(router, srcToken, dstToken, amountOut);
     }

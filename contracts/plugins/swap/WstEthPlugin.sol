@@ -66,6 +66,7 @@ contract WstEthPlugin is ICometSwapPlugin {
         require(IWstEth(wstEth).wrap(stAmount) > 0, ICA.InvalidAmountOut());
         amountOut = IERC20(wstEth).balanceOf(address(this)) - initial;
         require(amountOut >= minAmountOut, ICA.InvalidAmountOut());
+        IERC20(stEth).forceApprove(wstEth, 0);
         emit ICE.Swap(wstEth, wEth, wstEth, amountOut);
     }
 
