@@ -951,6 +951,73 @@ describe("Comet Multiplier Adapter / LiFi / Euler", function () {
             expect(await cometExt.isAllowed(user3.address, adapterAddress)).to.be.true;
         });
 
+        it.only("should succeed when allowBySig is front-run (signature consumed directly on comet)", async function () {
+            const adapterAddress = await adapter.getAddress();
+            const initialAmount = ethers.parseEther("0.2");
+            const leverage = 20_000;
+
+            let cometExt = await ethers.getContractAt("ICometExt", COMET_USDC_MARKET);
+            expect(await cometExt.isAllowed(user3.address, adapterAddress)).to.be.false;
+
+            const nonce = await getUserNonce(cometExt, user3.address);
+            const expiry = getFutureExpiry();
+            const chainId = Number((await ethers.provider.getNetwork()).chainId);
+
+            const { v, r, s } = await signAllowBySig(
+                user3,
+                await comet.getAddress(),
+                adapterAddress,
+                true,
+                nonce,
+                expiry,
+                chainId
+            );
+
+            const allowParams = {
+                nonce: nonce,
+                expiry: expiry,
+                v: v,
+                r: r,
+                s: s
+            };
+
+            // Simulate front-running: attacker calls allowBySig directly on Comet, consuming the nonce
+            await cometExt.connect(owner).allowBySig(user3.address, adapterAddress, true, nonce, expiry, v, r, s, opts);
+
+            // Nonce is consumed and permission is granted
+            expect(await cometExt.isAllowed(user3.address, adapterAddress)).to.be.true;
+
+            const market = await getMarketOptions();
+
+            await weth.connect(user3).approve(adapterAddress, initialAmount, opts);
+            const leveraged = await calculateLeveragedAmount(comet, initialAmount, leverage);
+            const quote = await executeWithRetry(async () => {
+                return await getQuote(
+                    "1",
+                    "1",
+                    USDC_ADDRESS,
+                    WETH_ADDRESS,
+                    leveraged.toString(),
+                    await adapter.getAddress()
+                );
+            });
+            const swapData = quote.swapCalldata;
+
+            // User's tx with the same consumed signature should succeed because _allow checks isAllowed first
+            await adapter
+                .connect(user3)
+                [
+                    "multiply((address,address,address),address,uint256,uint256,uint256,bytes,(uint256,uint256,bytes32,bytes32,uint8))"
+                ](market, WETH_ADDRESS, initialAmount, leveraged, 100, swapData, allowParams, opts);
+
+            const finalCol = await comet.collateralBalanceOf(user3.address, WETH_ADDRESS);
+            const finalDebt = await comet.borrowBalanceOf(user3.address);
+
+            expect(finalCol).to.be.gt(0);
+            expect(finalDebt).to.be.gt(0);
+            expect(await cometExt.isAllowed(user3.address, adapterAddress)).to.be.true;
+        });
+
         it("should fail to execute leveraged position with allowBySig (expired signature)", async function () {
             const adapterAddress = await adapter.getAddress();
             const initialAmount = ethers.parseEther("0.2");

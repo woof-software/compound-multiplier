@@ -734,16 +734,18 @@ contract CometFoundation is
      * @dev Calls comet.allowBySig to set allowance for this contract
      */
     function _allow(IComet comet, ICS.AllowParams calldata allowParams) internal {
-        comet.allowBySig(
-            msg.sender,
-            address(this),
-            true,
-            allowParams.nonce,
-            allowParams.expiry,
-            allowParams.v,
-            allowParams.r,
-            allowParams.s
-        );
+        if (!comet.isAllowed(msg.sender, address(this))) {
+            comet.allowBySig(
+                msg.sender,
+                address(this),
+                true,
+                allowParams.nonce,
+                allowParams.expiry,
+                allowParams.v,
+                allowParams.r,
+                allowParams.s
+            );
+        }
     }
 
     /**
