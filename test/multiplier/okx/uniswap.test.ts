@@ -27,7 +27,7 @@ const WETH_WHALE = "0xF04a5cC80B1E94C69B48f5ee68a08CD2F09A7c3E";
 
 const opts = { maxFeePerGas: 5_000_000_000 };
 
-describe.only("Comet Multiplier Adapter / OKX / UniswapV3", function () {
+describe("Comet Multiplier Adapter / OKX / UniswapV3", function () {
     let adapter: CometFoundation;
     let loanPlugin: UniswapV3Plugin;
     let swapPlugin: OKXPlugin;
@@ -745,6 +745,36 @@ describe.only("Comet Multiplier Adapter / OKX / UniswapV3", function () {
             expect(collateralBalance).to.be.gt(initialAmount);
             expect(borrowBalance).to.be.gt(0);
             expect(healthFactor).to.be.gt(borrowBalance);
+        });
+
+        it.only("should succeed with 0% health buffer at near-max leverage", async function () {
+            const initialAmount = ethers.parseEther("0.05");
+            const maxLeverage = await calculateMaxLeverage(comet);
+            const healthBuffer = 0;
+
+            await weth.connect(user).approve(await adapter.getAddress(), initialAmount);
+            const baseAmount = await calculateLeveragedAmount(comet, initialAmount, maxLeverage);
+
+            const { swapData } = await executeWithRetry(async () => {
+                return await getOKXSwapData(
+                    USDC_ADDRESS,
+                    WETH_ADDRESS,
+                    baseAmount.toString(),
+                    await adapter.getAddress()
+                );
+            });
+
+            await adapter
+                .connect(user)
+                [
+                    "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                ](await getMarketOptions(), WETH_ADDRESS, initialAmount, baseAmount, healthBuffer, swapData);
+
+            const collateralBalance = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
+            const borrowBalance = await comet.borrowBalanceOf(user.address);
+
+            expect(collateralBalance).to.be.gt(initialAmount);
+            expect(borrowBalance).to.be.gt(0);
         });
 
         it("should revert with InvalidLeverage at 5x leverage with 5% health buffer", async function () {
