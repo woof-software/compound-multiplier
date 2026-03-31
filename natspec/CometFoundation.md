@@ -158,7 +158,7 @@ _Each plugin must have a valid non-zero callback selector_
 ### exchange
 
 ```solidity
-function exchange(struct ICometStructs.Options opts, contract IERC20 fromAsset, contract IERC20 toAsset, uint256 fromAmount, uint256 minAmountOut, uint256 maxHealthFactorDrop, bytes swapData) external
+function exchange(struct ICometStructs.Options opts, contract IERC20 fromAsset, contract IERC20 toAsset, uint256 fromAmount, uint256 minAmountOut, uint256 healthBuffer, bytes swapData) external
 ```
 
 Executes a collateral swap using flash loans
@@ -168,20 +168,20 @@ This function: 1. Validates swap parameters and health factor impact 2. Initiate
 
 #### Parameters
 
-| Name                | Type                         | Description                                                                         |
-| ------------------- | ---------------------------- | ----------------------------------------------------------------------------------- |
-| opts                | struct ICometStructs.Options | Configuration options including market, selectors, and flash loan provider          |
-| fromAsset           | contract IERC20              | The address of the collateral asset to swap from (must be a valid Comet collateral) |
-| toAsset             | contract IERC20              | The address of the collateral asset to swap to (must be a valid Comet collateral)   |
-| fromAmount          | uint256                      | The amount of fromAsset to swap (must be <= user's collateral balance)              |
-| minAmountOut        | uint256                      | The minimum amount of toAsset expected from the swap (slippage protection)          |
-| maxHealthFactorDrop | uint256                      | Maximum allowed drop in health factor in basis points (10000 = 100%)                |
-| swapData            | bytes                        | Encoded swap parameters for the DEX aggregator                                      |
+| Name         | Type                         | Description                                                                                  |
+| ------------ | ---------------------------- | -------------------------------------------------------------------------------------------- |
+| opts         | struct ICometStructs.Options | Configuration options including market, selectors, and flash loan provider                   |
+| fromAsset    | contract IERC20              | The address of the collateral asset to swap from (must be a valid Comet collateral)          |
+| toAsset      | contract IERC20              | The address of the collateral asset to swap to (must be a valid Comet collateral)            |
+| fromAmount   | uint256                      | The amount of fromAsset to swap (must be <= user's collateral balance)                       |
+| minAmountOut | uint256                      | The minimum amount of toAsset expected from the swap (slippage protection)                   |
+| healthBuffer | uint256                      | Minimum health factor safety buffer in basis points (e.g. 500 = 5% buffer above liquidation) |
+| swapData     | bytes                        | Encoded swap parameters for the DEX aggregator                                               |
 
 ### exchange
 
 ```solidity
-function exchange(struct ICometStructs.Options opts, contract IERC20 fromAsset, contract IERC20 toAsset, uint256 fromAmount, uint256 minAmountOut, uint256 maxHealthFactorDrop, bytes swapData, struct ICometStructs.AllowParams allowParams) external
+function exchange(struct ICometStructs.Options opts, contract IERC20 fromAsset, contract IERC20 toAsset, uint256 fromAmount, uint256 minAmountOut, uint256 healthBuffer, bytes swapData, struct ICometStructs.AllowParams allowParams) external
 ```
 
 Executes a collateral swap with signature-based authorization in a single transaction
@@ -195,21 +195,21 @@ eliminating the need for a separate approve transaction.
 
 #### Parameters
 
-| Name                | Type                             | Description                                                                         |
-| ------------------- | -------------------------------- | ----------------------------------------------------------------------------------- |
-| opts                | struct ICometStructs.Options     | Configuration options including market, selectors, and flash loan provider          |
-| fromAsset           | contract IERC20                  | The address of the collateral asset to swap from (must be a valid Comet collateral) |
-| toAsset             | contract IERC20                  | The address of the collateral asset to swap to (must be a valid Comet collateral)   |
-| fromAmount          | uint256                          | The amount of fromAsset to swap (must be <= user's collateral balance)              |
-| minAmountOut        | uint256                          | The minimum amount of toAsset expected from the swap (slippage protection)          |
-| maxHealthFactorDrop | uint256                          | Maximum allowed drop in health factor in basis points (10000 = 100%)                |
-| swapData            | bytes                            | Encoded swap parameters for the DEX aggregator                                      |
-| allowParams         | struct ICometStructs.AllowParams | EIP-712 signature parameters for Comet authorization                                |
+| Name         | Type                             | Description                                                                                  |
+| ------------ | -------------------------------- | -------------------------------------------------------------------------------------------- |
+| opts         | struct ICometStructs.Options     | Configuration options including market, selectors, and flash loan provider                   |
+| fromAsset    | contract IERC20                  | The address of the collateral asset to swap from (must be a valid Comet collateral)          |
+| toAsset      | contract IERC20                  | The address of the collateral asset to swap to (must be a valid Comet collateral)            |
+| fromAmount   | uint256                          | The amount of fromAsset to swap (must be <= user's collateral balance)                       |
+| minAmountOut | uint256                          | The minimum amount of toAsset expected from the swap (slippage protection)                   |
+| healthBuffer | uint256                          | Minimum health factor safety buffer in basis points (e.g. 500 = 5% buffer above liquidation) |
+| swapData     | bytes                            | Encoded swap parameters for the DEX aggregator                                               |
+| allowParams  | struct ICometStructs.AllowParams | EIP-712 signature parameters for Comet authorization                                         |
 
 ### multiply
 
 ```solidity
-function multiply(struct ICometStructs.Options opts, contract IERC20 collateral, uint256 collateralAmount, uint256 baseAmount, uint256 maxHealthFactorDrop, bytes swapData) external payable
+function multiply(struct ICometStructs.Options opts, contract IERC20 collateral, uint256 collateralAmount, uint256 baseAmount, uint256 healthBuffer, bytes swapData) external payable
 ```
 
 Creates a leveraged position by borrowing against supplied collateral
@@ -223,19 +223,19 @@ Creates a leveraged position by borrowing against supplied collateral
 
 #### Parameters
 
-| Name                | Type                         | Description                                                                |
-| ------------------- | ---------------------------- | -------------------------------------------------------------------------- |
-| opts                | struct ICometStructs.Options | Configuration options including market, selectors, and flash loan provider |
-| collateral          | contract IERC20              | Address of the collateral token to supply                                  |
-| collateralAmount    | uint256                      | Amount of collateral tokens to supply                                      |
-| baseAmount          | uint256                      | Amount of base asset to borrow for leverage                                |
-| maxHealthFactorDrop | uint256                      | Maximum allowed drop in health factor in basis points (10000 = 100%)       |
-| swapData            | bytes                        | Encoded swap parameters for the DEX aggregator                             |
+| Name             | Type                         | Description                                                                                  |
+| ---------------- | ---------------------------- | -------------------------------------------------------------------------------------------- |
+| opts             | struct ICometStructs.Options | Configuration options including market, selectors, and flash loan provider                   |
+| collateral       | contract IERC20              | Address of the collateral token to supply                                                    |
+| collateralAmount | uint256                      | Amount of collateral tokens to supply                                                        |
+| baseAmount       | uint256                      | Amount of base asset to borrow for leverage                                                  |
+| healthBuffer     | uint256                      | Minimum health factor safety buffer in basis points (e.g. 500 = 5% buffer above liquidation) |
+| swapData         | bytes                        | Encoded swap parameters for the DEX aggregator                                               |
 
 ### multiply
 
 ```solidity
-function multiply(struct ICometStructs.Options opts, contract IERC20 collateral, uint256 collateralAmount, uint256 baseAmount, uint256 maxHealthFactorDrop, bytes swapData, struct ICometStructs.AllowParams allowParams) external payable
+function multiply(struct ICometStructs.Options opts, contract IERC20 collateral, uint256 collateralAmount, uint256 baseAmount, uint256 healthBuffer, bytes swapData, struct ICometStructs.AllowParams allowParams) external payable
 ```
 
 Creates a leveraged position with EIP-712 signature authorization
@@ -244,15 +244,15 @@ _This function first authorizes the adapter via allowBySig, then executes the po
 
 #### Parameters
 
-| Name                | Type                             | Description                                                                |
-| ------------------- | -------------------------------- | -------------------------------------------------------------------------- |
-| opts                | struct ICometStructs.Options     | Configuration options including market, selectors, and flash loan provider |
-| collateral          | contract IERC20                  | Address of the collateral token to supply                                  |
-| collateralAmount    | uint256                          | Amount of collateral tokens to supply                                      |
-| baseAmount          | uint256                          | Amount of base asset to borrow for leverage                                |
-| maxHealthFactorDrop | uint256                          | Maximum allowed drop in health factor in basis points (10000 = 100%)       |
-| swapData            | bytes                            | Encoded swap parameters for the DEX aggregator                             |
-| allowParams         | struct ICometStructs.AllowParams | EIP-712 signature parameters for Comet authorization                       |
+| Name             | Type                             | Description                                                                                  |
+| ---------------- | -------------------------------- | -------------------------------------------------------------------------------------------- |
+| opts             | struct ICometStructs.Options     | Configuration options including market, selectors, and flash loan provider                   |
+| collateral       | contract IERC20                  | Address of the collateral token to supply                                                    |
+| collateralAmount | uint256                          | Amount of collateral tokens to supply                                                        |
+| baseAmount       | uint256                          | Amount of base asset to borrow for leverage                                                  |
+| healthBuffer     | uint256                          | Minimum health factor safety buffer in basis points (e.g. 500 = 5% buffer above liquidation) |
+| swapData         | bytes                            | Encoded swap parameters for the DEX aggregator                                               |
+| allowParams      | struct ICometStructs.AllowParams | EIP-712 signature parameters for Comet authorization                                         |
 
 ### cover
 
@@ -299,48 +299,6 @@ _This function first authorizes the adapter via allowBySig, then withdraws the p
 | swapData         | bytes                            | Encoded swap parameters for converting collateral to base asset                                                                                                                                                         |
 | allowParams      | struct ICometStructs.AllowParams | EIP-712 signature parameters for Comet authorization                                                                                                                                                                    |
 
-### adjust
-
-```solidity
-function adjust(struct ICometStructs.Options opts, contract IERC20 collateral, uint256 debtDelta, uint256 maxHealthFactorDrop, bytes swapData) external
-```
-
-Increases the leverage of an existing position by borrowing additional debt
-
-_Flow: flash loan base → swap to collateral → supply collateral → borrow to repay flash loan
-To decrease leverage, users should use cover() or repay debt directly via comet.supply()_
-
-#### Parameters
-
-| Name                | Type                         | Description                                                       |
-| ------------------- | ---------------------------- | ----------------------------------------------------------------- |
-| opts                | struct ICometStructs.Options | Configuration options including market and plugin addresses       |
-| collateral          | contract IERC20              | Address of the collateral token in the position                   |
-| debtDelta           | uint256                      |                                                                   |
-| maxHealthFactorDrop | uint256                      | Maximum allowed health factor drop in basis points (10000 = 100%) |
-| swapData            | bytes                        | Encoded swap parameters for the DEX aggregator                    |
-
-### adjust
-
-```solidity
-function adjust(struct ICometStructs.Options opts, contract IERC20 collateral, uint256 debtDelta, uint256 maxHealthFactorDrop, bytes swapData, struct ICometStructs.AllowParams allowParams) external
-```
-
-Increases leverage with EIP-712 signature authorization
-
-_This function first authorizes the adapter via allowBySig, then executes the adjustment_
-
-#### Parameters
-
-| Name                | Type                             | Description                                                       |
-| ------------------- | -------------------------------- | ----------------------------------------------------------------- |
-| opts                | struct ICometStructs.Options     | Configuration options including market and plugin addresses       |
-| collateral          | contract IERC20                  | Address of the collateral token in the position                   |
-| debtDelta           | uint256                          |                                                                   |
-| maxHealthFactorDrop | uint256                          | Maximum allowed health factor drop in basis points (10000 = 100%) |
-| swapData            | bytes                            | Encoded swap parameters for the DEX aggregator                    |
-| allowParams         | struct ICometStructs.AllowParams | EIP-712 signature parameters for Comet authorization              |
-
 ### rescue
 
 ```solidity
@@ -358,7 +316,7 @@ Sweeps all of a given token from the contract to the treasury
 ### \_exchange
 
 ```solidity
-function _exchange(struct ICometStructs.Options opts, contract IERC20 fromAsset, contract IERC20 toAsset, uint256 fromAmount, uint256 minAmountOut, uint256 maxHealthFactorDrop, bytes swapData) internal
+function _exchange(struct ICometStructs.Options opts, contract IERC20 fromAsset, contract IERC20 toAsset, uint256 fromAmount, uint256 minAmountOut, uint256 healthBuffer, bytes swapData) internal
 ```
 
 Internal implementation of exchange
@@ -366,10 +324,10 @@ Internal implementation of exchange
 ### \_multiply
 
 ```solidity
-function _multiply(struct ICometStructs.Options opts, contract IERC20 collateral, uint256 collateralAmount, uint256 baseAmount, uint256 maxHealthFactorDrop, bytes swapData) internal
+function _multiply(struct ICometStructs.Options opts, contract IERC20 collateral, uint256 collateralAmount, uint256 baseAmount, uint256 healthBuffer, bytes swapData) internal
 ```
 
-Internal implementation of multiply
+Internal implementation of multiply (also handles leverage adjustment when collateralAmount == 0)
 
 ### \_cover
 
@@ -378,24 +336,6 @@ function _cover(struct ICometStructs.Options opts, uint256 loanDebt, contract IE
 ```
 
 Internal implementation of cover
-
-### \_adjust
-
-```solidity
-function _adjust(struct ICometStructs.Options opts, contract IERC20 collateral, uint256 debtDelta, uint256 maxHealthFactorDrop, bytes swapData) internal
-```
-
-Internal implementation of adjust (leverage increase only)
-
-#### Parameters
-
-| Name                | Type                         | Description                                                 |
-| ------------------- | ---------------------------- | ----------------------------------------------------------- |
-| opts                | struct ICometStructs.Options | Configuration options including market and plugin addresses |
-| collateral          | contract IERC20              | Address of the collateral token in the position             |
-| debtDelta           | uint256                      | The additional amount of base asset to borrow               |
-| maxHealthFactorDrop | uint256                      | Maximum allowed health factor drop in basis points          |
-| swapData            | bytes                        | Encoded swap parameters for the DEX aggregator              |
 
 ### \_process
 
@@ -518,8 +458,7 @@ function _dust(address user, contract IERC20 asset, contract IComet comet, uint2
 
 Handles any leftover tokens by either supplying to Comet or transferring to the user
 
-_If comet is address(0), tokens are always transferred to user.
-Otherwise, if asset is baseAsset, tokens are transferred; if collateral, they are supplied to Comet._
+_If comet is address(0), tokens are always transferred to user. Otherwise, they are supplied to Comet._
 
 #### Parameters
 
@@ -550,7 +489,7 @@ _Calls comet.allowBySig to set allowance for this contract_
 ### \_validateExchange
 
 ```solidity
-function _validateExchange(contract IComet comet, address fromAsset, address toAsset, uint256 fromAmount, uint256 minAmountOut, uint256 maxHealthFactorDrop) internal view
+function _validateExchange(contract IComet comet, address fromAsset, address toAsset, uint256 fromAmount, uint256 minAmountOut, uint256 healthBuffer) internal view
 ```
 
 Validates parameters for a collateral swap to ensure health factor is maintained
@@ -559,20 +498,33 @@ _Reverts if any parameter is invalid or if the swap would violate health factor 
 
 #### Parameters
 
-| Name                | Type            | Description                                               |
-| ------------------- | --------------- | --------------------------------------------------------- |
-| comet               | contract IComet | The Comet comet interface                                 |
-| fromAsset           | address         | The collateral asset being swapped from                   |
-| toAsset             | address         | The collateral asset being swapped to                     |
-| fromAmount          | uint256         | The amount of fromAsset to swap                           |
-| minAmountOut        | uint256         | The minimum acceptable amount of toAsset to receive       |
-| maxHealthFactorDrop | uint256         | The maximum allowed drop in health factor in basis points |
+| Name         | Type            | Description                                               |
+| ------------ | --------------- | --------------------------------------------------------- |
+| comet        | contract IComet | The Comet comet interface                                 |
+| fromAsset    | address         | The collateral asset being swapped from                   |
+| toAsset      | address         | The collateral asset being swapped to                     |
+| fromAmount   | uint256         | The amount of fromAsset to swap                           |
+| minAmountOut | uint256         | The minimum acceptable amount of toAsset to receive       |
+| healthBuffer | uint256         | The maximum allowed drop in health factor in basis points |
 
-### \_maxLeverage
+### \_validateHealth
 
 ```solidity
-function _maxLeverage(contract IComet comet, contract IERC20 collateral, uint256 maxHealthFactorDrop) internal view returns (uint256)
+function _validateHealth(contract IComet comet, contract IERC20 collateral, uint256 healthBuffer) internal view
 ```
+
+Validates post-execution health of a leveraged position
+
+_Ensures finalDebt <= collateralValue * borrowCollateralFactor * (PRECISION - healthBuffer) / PRECISION.
+A healthBuffer of 500 (5%) requires HF >= ~1.053, preventing positions too close to liquidation._
+
+#### Parameters
+
+| Name         | Type            | Description                                                   |
+| ------------ | --------------- | ------------------------------------------------------------- |
+| comet        | contract IComet | The Comet market instance                                     |
+| collateral   | contract IERC20 | The collateral token used in the position                     |
+| healthBuffer | uint256         | Safety buffer in basis points above the liquidation threshold |
 
 ### \_config
 
