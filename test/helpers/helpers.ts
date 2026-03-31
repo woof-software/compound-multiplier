@@ -673,66 +673,35 @@ export async function calculateHealthFactor(
 }
 
 /**
- * Adjusts leverage on an existing position using LiFi
+ * Increases leverage on an existing position using LiFi (multiply with collateralAmount=0)
  * @param market Market options
  * @param adapter CometFoundation adapter
- * @param comet Comet contract
  * @param signer User signer
- * @param targetDebt Target debt amount after adjustment
+ * @param additionalDebt Amount of additional base asset to borrow
  * @param collateralAddress Address of the collateral token
  */
-export async function adjustLiFi(
+export async function increaseLeverageLiFi(
     market: any,
     adapter: CometFoundation,
-    comet: IComet,
     signer: SignerWithAddress,
-    targetDebt: bigint,
+    additionalDebt: bigint,
     collateralAddress: string = WETH_ADDRESS
 ) {
-    const currentDebt = await comet.borrowBalanceOf(await signer.getAddress());
-    const isLeverageUp = targetDebt > currentDebt;
-
     return await executeWithRetry(async () => {
-        let swapData: string;
-
-        if (isLeverageUp) {
-            // Leverage UP: we'll receive base and swap to collateral
-            const additionalDebt = targetDebt - currentDebt;
-            swapData = await getQuote(
-                "1",
-                "1",
-                USDC_ADDRESS,
-                collateralAddress,
-                additionalDebt.toString(),
-                await adapter.getAddress()
-            ).then((q) => q.swapCalldata);
-        } else {
-            // Leverage DOWN: we'll withdraw collateral and swap to base
-            const debtToRepay = currentDebt - targetDebt;
-            // Estimate collateral needed (with some buffer for price fluctuations)
-            const info = await comet.getAssetInfoByAddress(collateralAddress);
-            const price = await comet.getPrice(info.priceFeed);
-            const baseScale = await comet.baseScale();
-            // collateral = (debtToRepay * info.scale * priceFeedScale) / (price * baseScale)
-            const estimatedCollateral = (debtToRepay * info.scale * 100_000_000n) / (price * baseScale);
-            // Add 5% buffer
-            const collateralWithBuffer = (estimatedCollateral * 105n) / 100n;
-
-            swapData = await getQuote(
-                "1",
-                "1",
-                collateralAddress,
-                USDC_ADDRESS,
-                collateralWithBuffer.toString(),
-                await adapter.getAddress()
-            ).then((q) => q.swapCalldata);
-        }
+        const swapData = await getQuote(
+            "1",
+            "1",
+            USDC_ADDRESS,
+            collateralAddress,
+            additionalDebt.toString(),
+            await adapter.getAddress()
+        ).then((q) => q.swapCalldata);
 
         return adapter
             .connect(signer)
             [
-                "adjust((address,address,address),address,uint256,uint16,bytes)"
-            ](market, collateralAddress, targetDebt, 500, swapData);
+                "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+            ](market, collateralAddress, 0, additionalDebt, 500, swapData);
     });
 }
 
