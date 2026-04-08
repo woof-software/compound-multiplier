@@ -515,7 +515,8 @@ function _validateHealth(contract IComet comet, contract IERC20 collateral, uint
 
 Validates post-execution health of a leveraged position
 
-_Ensures finalDebt <= collateralValue * borrowCollateralFactor * (PRECISION - healthBuffer) / PRECISION.
+_Ensures finalDebtUSD <= collateralValueUSD * borrowCollateralFactor * (PRECISION - healthBuffer) / PRECISION.
+Both sides are converted to USD via their respective price oracles.
 A healthBuffer of 500 (5%) requires HF >= ~1.053, preventing positions too close to liquidation._
 
 #### Parameters
