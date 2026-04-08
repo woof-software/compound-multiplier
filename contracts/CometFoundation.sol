@@ -7,8 +7,6 @@ import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.s
 import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 
-import { AggregatorV3Interface } from "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
-
 import { IComet } from "./external/compound/IComet.sol";
 import { IWEth } from "./external/weth/IWEth.sol";
 
@@ -709,7 +707,8 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
      * @param comet The Comet market instance
      * @param collateral The collateral token used in the position
      * @param healthBuffer Safety buffer in basis points above the liquidation threshold
-     * @dev Ensures finalDebt <= collateralValue * borrowCollateralFactor * (PRECISION - healthBuffer) / PRECISION.
+     * @dev Ensures finalDebtUSD <= collateralValueUSD * borrowCollateralFactor * (PRECISION - healthBuffer) / PRECISION.
+     *      Both sides are converted to USD via their respective price oracles.
      *      A healthBuffer of 500 (5%) requires HF >= ~1.053, preventing positions too close to liquidation.
      */
     function _validateHealth(IComet comet, IERC20 collateral, uint256 healthBuffer) internal view {
@@ -721,12 +720,7 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
 
         uint256 maxAllowedDebt = Math.mulDiv(
             Math.mulDiv(
-                (Math.mulDiv(
-                    collateralBalance,
-                    comet.getPrice(info.priceFeed),
-                    // aderyn-fp-next-line(literal-instead-of-constant)
-                    10 ** AggregatorV3Interface(info.priceFeed).decimals()
-                ) * comet.baseScale()) / info.scale,
+                Math.mulDiv(collateralBalance, comet.getPrice(info.priceFeed), info.scale),
                 uint256(info.borrowCollateralFactor),
                 FACTOR_SCALE
             ),
@@ -734,7 +728,9 @@ contract CometFoundation is ICometFoundation, ICometExchange, ICometMultiplier, 
             PRECISION
         );
 
-        require(finalDebt <= maxAllowedDebt, ICA.InvalidLeverage());
+        uint256 finalDebtUSD = Math.mulDiv(finalDebt, comet.getPrice(comet.baseTokenPriceFeed()), comet.baseScale());
+
+        require(finalDebtUSD <= maxAllowedDebt, ICA.InvalidLeverage());
     }
 
     /**
