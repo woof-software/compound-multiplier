@@ -1,7 +1,7 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
 import { CometFoundation, EulerV2Plugin, IComet, IERC20, WstEthPlugin } from "../../../typechain-types";
-import { executeWithRetry, getQuote, LIFI_ROUTER, USDC_ADDRESS, USDC_EVAULT, WETH_WHALE } from "../../helpers/helpers";
+import { executeWithRetry, getQuote, LIFI_ROUTER, WETH_WHALE } from "../../helpers/helpers";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 
 import { LiFiPlugin } from "../../../typechain-types";
@@ -40,30 +40,45 @@ describe("Comet Multiplier Adapter / LiFI / wstETH", function () {
         };
     }
 
+    async function calculateBaseAmount(collateralAmount: bigint, leverageBps: number): Promise<bigint> {
+        const info = await comet.getAssetInfoByAddress(WSTETH_ADDRESS);
+        const collateralPrice = await comet.getPrice(info.priceFeed);
+        const basePrice = await comet.getPrice(await comet.baseTokenPriceFeed());
+        const baseScale = await comet.baseScale();
+
+        const collateralValueInBase = (collateralAmount * collateralPrice * baseScale) / (basePrice * info.scale);
+        const delta = BigInt(leverageBps - 10_000);
+        return (collateralValueInBase * delta) / 10_000n;
+    }
+
     async function multiply(signer: SignerWithAddress, collateralAmount: bigint, leverageBps: number) {
         await wsteth.connect(signer).approve(await adapter.getAddress(), collateralAmount);
 
         const market = await getMarketOptions(true);
+        const baseAmount = await calculateBaseAmount(collateralAmount, leverageBps);
 
         // @ts-ignore
         return adapter
             .connect(signer)
             [
                 "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
-            ](market, WETH_ADDRESS, collateralAmount, leverageBps, 100, ethers.AbiCoder.defaultAbiCoder().encode(["uint256"], [1]));
+            ](market, WSTETH_ADDRESS, collateralAmount, baseAmount, 100, ethers.AbiCoder.defaultAbiCoder().encode(["uint256"], [1]));
     }
 
     async function multiplyFake(signer: SignerWithAddress, collateralAmount: bigint, leverageBps: number) {
-        await wsteth.connect(signer).approve(await adapter.getAddress(), collateralAmount);
+        // Approve and pass WETH (the base asset) as collateral so the wstETH plugin
+        // is invoked with srcToken == dstToken == WETH and reverts with InvalidSwapParameters.
+        await weth.connect(signer).approve(await adapter.getAddress(), collateralAmount);
 
         const market = await getMarketOptions(true);
+        const baseAmount = await calculateBaseAmount(collateralAmount, leverageBps);
 
         // @ts-ignore
         return adapter
             .connect(signer)
             [
                 "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
-            ](market, USDC_ADDRESS, collateralAmount, leverageBps, 100, ethers.AbiCoder.defaultAbiCoder().encode(["uint256"], [1]));
+            ](market, WETH_ADDRESS, collateralAmount, baseAmount, 100, ethers.AbiCoder.defaultAbiCoder().encode(["uint256"], [1]));
     }
 
     async function cover(signer: SignerWithAddress, requestedBase: bigint): Promise<bigint> {
@@ -124,7 +139,7 @@ describe("Comet Multiplier Adapter / LiFI / wstETH", function () {
                 endpoint: await loanPlugin.getAddress(),
                 config: ethers.AbiCoder.defaultAbiCoder().encode(
                     ["tuple(address token, address pool)[]"],
-                    [[{ token: USDC_ADDRESS, pool: USDC_EVAULT }]]
+                    [[{ token: WETH_ADDRESS, pool: WETH_EVAULT }]]
                 )
             },
             { endpoint: await swapPlugin.getAddress(), config: "0x" },
@@ -141,6 +156,7 @@ describe("Comet Multiplier Adapter / LiFI / wstETH", function () {
 
         const whale = await ethers.getImpersonatedSigner(WETH_WHALE);
         const wstethWhale = await ethers.getImpersonatedSigner(WSTETH_WHALE);
+        await ethers.provider.send("hardhat_setBalance", [WETH_WHALE, "0xffffffffffffffffffffff"]);
         await ethers.provider.send("hardhat_setBalance", [WSTETH_WHALE, "0xffffffffffffffffffffff"]);
 
         const fundAmount = ethers.parseEther("1.0");

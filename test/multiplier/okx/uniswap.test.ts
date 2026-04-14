@@ -747,7 +747,7 @@ describe("Comet Multiplier Adapter / OKX / UniswapV3", function () {
             expect(healthFactor).to.be.gt(borrowBalance);
         });
 
-        it.only("should succeed with 0% health buffer at near-max leverage", async function () {
+        it("should succeed with 0% health buffer at near-max leverage", async function () {
             const initialAmount = ethers.parseEther("0.05");
             const maxLeverage = await calculateMaxLeverage(comet);
             const healthBuffer = 0;
