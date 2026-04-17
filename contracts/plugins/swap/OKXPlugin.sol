@@ -87,6 +87,7 @@ contract OKXPlugin is ICometSwapPlugin {
 
         amountOut = IERC20(dstToken).balanceOf(address(this)) - balBefore;
         require(amountOut >= minReturn, ICA.InvalidAmountOut());
+        IERC20(srcToken).forceApprove(approveProxy, 0);
 
         emit ICE.Swap(router, srcToken, dstToken, amountOut);
     }
@@ -299,9 +300,12 @@ contract OKXPlugin is ICometSwapPlugin {
                 tokenWord := calldataload(add(swapData.offset, sub(swapData.length, 0x40)))
             }
             referrerNum = (tokenWord & _COMMISSION_LENGTH_MASK) >> 240;
+            if (referrerNum < 3 || referrerNum > 8) return 0;
         } else {
             return 0;
         }
+
+        if (swapData.length < 0x24 + referrerNum * 0x20) return 0;
 
         totalRate = (lastWord & _COMMISSION_RATE_MASK) >> 160;
 

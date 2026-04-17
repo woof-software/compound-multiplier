@@ -48,6 +48,8 @@ interface IComet is ICometExt {
 
     function baseScale() external view returns (uint);
 
+    function baseTokenPriceFeed() external view returns (address);
+
     function decimals() external view returns (uint8);
 
     function hasPermission(address owner, address manager) external view returns (bool);

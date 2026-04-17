@@ -59,24 +59,6 @@ interface ICometEvents {
         uint256 amountOut
     );
 
-    /**
-     * @notice Emitted when a position's leverage is adjusted
-     * @param user The address of the user performing the adjustment
-     * @param comet The address of the Compound V3 Comet market
-     * @param collateral The address of the collateral asset
-     * @param previousDebt The debt amount before adjustment
-     * @param newDebt The debt amount after adjustment
-     * @param collateralDelta The change in collateral (positive = added, negative = removed)
-     */
-    event Adjusted(
-        address indexed user,
-        address indexed comet,
-        address indexed collateral,
-        uint256 previousDebt,
-        uint256 newDebt,
-        uint256 collateralDelta
-    );
-
     //COLLATERAL SWAP
 
     /**

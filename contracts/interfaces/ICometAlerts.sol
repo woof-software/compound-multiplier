@@ -109,15 +109,4 @@ interface ICometAlerts {
      * @notice Thrown when amount in is zero
      */
     error InvalidAmountIn();
-
-    //ADJUST
-    /**
-     * @notice Emitted if target debt equals current debt (no adjustment needed)
-     */
-    error NoAdjustmentNeeded();
-
-    /**
-     * @notice Emitted if adjustment would result in invalid health factor
-     */
-    error InvalidAdjustment();
 }

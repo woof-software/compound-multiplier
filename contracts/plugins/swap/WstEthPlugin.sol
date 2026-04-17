@@ -61,11 +61,15 @@ contract WstEthPlugin is ICometSwapPlugin {
     ) internal returns (uint256 amountOut) {
         uint256 initial = IERC20(wstEth).balanceOf(address(this));
         IWEth(wEth).withdraw(amountIn);
-        uint256 stAmount = IStEth(stEth).submit{ value: amountIn }(address(this));
-        IERC20(stEth).safeIncreaseAllowance(wstEth, stAmount);
+        IERC20 stEthToken = IERC20(stEth);
+        uint256 stBefore = stEthToken.balanceOf(address(this));
+        IStEth(stEth).submit{ value: amountIn }(address(this));
+        uint256 stAmount = stEthToken.balanceOf(address(this)) - stBefore;
+        stEthToken.safeIncreaseAllowance(wstEth, stAmount);
         require(IWstEth(wstEth).wrap(stAmount) > 0, ICA.InvalidAmountOut());
         amountOut = IERC20(wstEth).balanceOf(address(this)) - initial;
         require(amountOut >= minAmountOut, ICA.InvalidAmountOut());
+        stEthToken.forceApprove(wstEth, 0);
         emit ICE.Swap(wstEth, wEth, wstEth, amountOut);
     }
 

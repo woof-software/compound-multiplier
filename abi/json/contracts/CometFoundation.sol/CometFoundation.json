@@ -39,11 +39,6 @@
     },
     {
         "inputs": [],
-        "name": "InvalidAdjustment",
-        "type": "error"
-    },
-    {
-        "inputs": [],
         "name": "InvalidAmountIn",
         "type": "error"
     },
@@ -89,11 +84,6 @@
     },
     {
         "inputs": [],
-        "name": "NoAdjustmentNeeded",
-        "type": "error"
-    },
-    {
-        "inputs": [],
         "name": "NothingToDeleverage",
         "type": "error"
     },
@@ -117,49 +107,6 @@
         "inputs": [],
         "name": "UnknownPlugin",
         "type": "error"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": true,
-                "internalType": "address",
-                "name": "user",
-                "type": "address"
-            },
-            {
-                "indexed": true,
-                "internalType": "address",
-                "name": "comet",
-                "type": "address"
-            },
-            {
-                "indexed": true,
-                "internalType": "address",
-                "name": "collateral",
-                "type": "address"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "previousDebt",
-                "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "newDebt",
-                "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "collateralDelta",
-                "type": "uint256"
-            }
-        ],
-        "name": "Adjusted",
-        "type": "event"
     },
     {
         "anonymous": false,
@@ -389,138 +336,6 @@
                 "type": "tuple"
             },
             {
-                "internalType": "contract IERC20",
-                "name": "collateral",
-                "type": "address"
-            },
-            {
-                "internalType": "uint256",
-                "name": "debtDelta",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "maxHealthFactorDrop",
-                "type": "uint256"
-            },
-            {
-                "internalType": "bytes",
-                "name": "swapData",
-                "type": "bytes"
-            }
-        ],
-        "name": "adjust",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "components": [
-                    {
-                        "internalType": "contract IComet",
-                        "name": "comet",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "address",
-                        "name": "loanPlugin",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "address",
-                        "name": "swapPlugin",
-                        "type": "address"
-                    }
-                ],
-                "internalType": "struct ICometStructs.Options",
-                "name": "opts",
-                "type": "tuple"
-            },
-            {
-                "internalType": "contract IERC20",
-                "name": "collateral",
-                "type": "address"
-            },
-            {
-                "internalType": "uint256",
-                "name": "debtDelta",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "maxHealthFactorDrop",
-                "type": "uint256"
-            },
-            {
-                "internalType": "bytes",
-                "name": "swapData",
-                "type": "bytes"
-            },
-            {
-                "components": [
-                    {
-                        "internalType": "uint256",
-                        "name": "nonce",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "expiry",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "bytes32",
-                        "name": "r",
-                        "type": "bytes32"
-                    },
-                    {
-                        "internalType": "bytes32",
-                        "name": "s",
-                        "type": "bytes32"
-                    },
-                    {
-                        "internalType": "uint8",
-                        "name": "v",
-                        "type": "uint8"
-                    }
-                ],
-                "internalType": "struct ICometStructs.AllowParams",
-                "name": "allowParams",
-                "type": "tuple"
-            }
-        ],
-        "name": "adjust",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "components": [
-                    {
-                        "internalType": "contract IComet",
-                        "name": "comet",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "address",
-                        "name": "loanPlugin",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "address",
-                        "name": "swapPlugin",
-                        "type": "address"
-                    }
-                ],
-                "internalType": "struct ICometStructs.Options",
-                "name": "opts",
-                "type": "tuple"
-            },
-            {
                 "internalType": "uint256",
                 "name": "loanDebt",
                 "type": "uint256"
@@ -674,7 +489,7 @@
             },
             {
                 "internalType": "uint256",
-                "name": "maxHealthFactorDrop",
+                "name": "healthBuffer",
                 "type": "uint256"
             },
             {
@@ -734,7 +549,7 @@
             },
             {
                 "internalType": "uint256",
-                "name": "maxHealthFactorDrop",
+                "name": "healthBuffer",
                 "type": "uint256"
             },
             {
@@ -821,7 +636,7 @@
             },
             {
                 "internalType": "uint256",
-                "name": "maxHealthFactorDrop",
+                "name": "healthBuffer",
                 "type": "uint256"
             },
             {
@@ -908,7 +723,7 @@
             },
             {
                 "internalType": "uint256",
-                "name": "maxHealthFactorDrop",
+                "name": "healthBuffer",
                 "type": "uint256"
             },
             {
