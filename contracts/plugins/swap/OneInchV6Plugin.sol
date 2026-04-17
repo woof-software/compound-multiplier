@@ -55,6 +55,7 @@ contract OneInchV6SwapPlugin is ICometSwapPlugin {
 
         amountOut = IERC20(dstToken).balanceOf(address(this)) - balBefore;
         require(amountOut >= desc.minReturnAmount, ICA.InvalidAmountOut());
+        IERC20(srcToken).forceApprove(router, 0);
 
         emit ICE.Swap(router, srcToken, dstToken, amountOut);
     }

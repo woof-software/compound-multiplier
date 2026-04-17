@@ -27,7 +27,7 @@ interface ICometStructs {
      * @param toAsset The address of the collateral asset to swap to (must be a valid Comet collateral)
      * @param fromAmount The amount of fromAsset to swap (must be <= user's collateral balance)
      * @param minAmountOut The minimum amount of toAsset expected from the swap (slippage protection)
-     * @param maxHealthFactorDrop Maximum allowed drop in health factor in basis points (10000 = 100%)
+     * @param healthBuffer Minimum health factor safety buffer in basis points (e.g. 500 = 5% buffer above liquidation)
      * @param callbackSelector The bytes4 selector identifying which flash loan plugin to use
      * @param swapCalldata The encoded calldata for the swap router to execute the asset exchange
      */
@@ -37,7 +37,7 @@ interface ICometStructs {
         IERC20 toAsset;
         uint256 fromAmount;
         uint256 minAmountOut;
-        uint256 maxHealthFactorDrop;
+        uint256 healthBuffer;
         bytes swapCalldata;
     }
 

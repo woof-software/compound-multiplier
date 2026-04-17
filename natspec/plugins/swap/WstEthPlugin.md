@@ -36,6 +36,8 @@ function swap(address srcToken, address dstToken, uint256 amountIn, bytes, bytes
 
 Executes a token swap between two assets
 
+_Execution of the swap relies on the corretness of swapData provided by Swap Provider (Such as LiFi, OKX)_
+
 #### Parameters
 
 | Name     | Type    | Description                                            |

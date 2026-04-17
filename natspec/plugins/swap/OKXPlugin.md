@@ -62,6 +62,8 @@ function swap(address srcToken, address dstToken, uint256 amountIn, bytes config
 
 Executes a token swap between two assets
 
+_Execution of the swap relies on the corretness of swapData provided by Swap Provider (Such as LiFi, OKX)_
+
 #### Parameters
 
 | Name     | Type    | Description                                            |
@@ -204,6 +206,30 @@ _Validates receiver, amounts for Unxswap operations_
 | Name      | Type    | Description                                |
 | --------- | ------- | ------------------------------------------ |
 | minReturn | uint256 | Minimum return amount from swap parameters |
+
+### \_extractFromTokenCommissionRate
+
+```solidity
+function _extractFromTokenCommissionRate(bytes swapData) internal pure returns (uint256 totalRate)
+```
+
+Extracts the total from-token commission rate from OKX-appended calldata
+
+_OKX appends commission data at the end of swap calldata. This function
+reads the trailing bytes to detect and sum all from-token commission rates.
+The commission rate is in units of DENOMINATOR (1e9), e.g. 10_000_000 = 1%._
+
+#### Parameters
+
+| Name     | Type  | Description                                                    |
+| -------- | ----- | -------------------------------------------------------------- |
+| swapData | bytes | The full swap calldata including any appended commission bytes |
+
+#### Return Values
+
+| Name      | Type    | Description                                                     |
+| --------- | ------- | --------------------------------------------------------------- |
+| totalRate | uint256 | The sum of all from-token commission rates (0 if no commission) |
 
 ### supportsInterface
 

@@ -28,7 +28,7 @@ interface ICometExchange {
      * @param toAsset The address of the collateral asset to swap to (must be a valid Comet collateral)
      * @param fromAmount The amount of fromAsset to swap (must be <= user's collateral balance)
      * @param minAmountOut The minimum amount of toAsset expected from the swap (slippage protection)
-     * @param maxHealthFactorDrop Maximum allowed drop in health factor in basis points (10000 = 100%)
+     * @param healthBuffer Minimum health factor safety buffer in basis points (e.g. 500 = 5% buffer above liquidation)
      * @param swapData Encoded swap parameters for the DEX aggregator
      * @custom:security Protected by reentrancy guard and validates health factor impact
      */
@@ -39,7 +39,7 @@ interface ICometExchange {
         IERC20 toAsset,
         uint256 fromAmount,
         uint256 minAmountOut,
-        uint256 maxHealthFactorDrop,
+        uint256 healthBuffer,
         bytes calldata swapData
     ) external;
 
@@ -57,7 +57,7 @@ interface ICometExchange {
      * @param toAsset The address of the collateral asset to swap to (must be a valid Comet collateral)
      * @param fromAmount The amount of fromAsset to swap (must be <= user's collateral balance)
      * @param minAmountOut The minimum amount of toAsset expected from the swap (slippage protection)
-     * @param maxHealthFactorDrop Maximum allowed drop in health factor in basis points (10000 = 100%)
+     * @param healthBuffer Minimum health factor safety buffer in basis points (e.g. 500 = 5% buffer above liquidation)
      * @param swapData Encoded swap parameters for the DEX aggregator
      * @param allowParams EIP-712 signature parameters for Comet authorization
      * @custom:security Signature must be valid and not expired; protected by reentrancy guard
@@ -68,7 +68,7 @@ interface ICometExchange {
         IERC20 toAsset,
         uint256 fromAmount,
         uint256 minAmountOut,
-        uint256 maxHealthFactorDrop,
+        uint256 healthBuffer,
         bytes calldata swapData,
         ICS.AllowParams calldata allowParams
     ) external;

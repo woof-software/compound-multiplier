@@ -8,6 +8,7 @@ interface ICometSwapPlugin is IERC165 {
 
     /**
      * @notice Executes a token swap between two assets
+     * @dev Execution of the swap relies on the corretness of swapData provided by Swap Provider (Such as LiFi, OKX)
      * @param srcToken Address of the source token to swap from
      * @param dstToken Address of the destination token to swap to
      * @param amountIn Amount of source tokens to swap

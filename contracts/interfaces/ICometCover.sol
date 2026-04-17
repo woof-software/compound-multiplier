@@ -12,30 +12,34 @@ interface ICometCover {
     /**
      * @notice Reduces or closes a leveraged position by withdrawing collateral and repaying debt
      * @param opts Configuration options including market, selectors, and flash loan provider
+     * @param loanDebt The amount of base asset to borrow via flash loan to repay user's debt.
+     *        Capped at the user's current borrow balance. The caller should derive this from
+     *        the actual swap quote to account for DEX fees and price impact.
      * @param collateral Address of the collateral token to withdraw
      * @param collateralAmount Amount of collateral tokens to withdraw (or type(uint256).max for maximum)
-     * @param slippageBps Slippage in basis points (10000 = 100%) to apply as discount in _convert.
      * @param swapData Encoded swap parameters for converting collateral to base asset
      * @dev This function:
      * 1. Checks that the user has an outstanding borrow balance
-     * 2. Calculates the maximum withdrawable amount based on collateralization
+     * 2. Caps loanDebt at repayAmount and sets collateralAmount for max withdrawals
      * 3. Initiates a flash loan to temporarily repay debt and withdraw collateral
      * @custom:security Protected by reentrancy guard and validates borrow balance exists
      */
     function cover(
         ICS.Options memory opts,
+        uint256 loanDebt,
         IERC20 collateral,
         uint256 collateralAmount,
-        uint16 slippageBps,
         bytes calldata swapData
     ) external;
 
     /**
      * @notice Reduces or closes a leveraged position with EIP-712 signature authorization
      * @param opts Configuration options including market, selectors, and flash loan provider
+     * @param loanDebt The amount of base asset to borrow via flash loan to repay user's debt.
+     *        Capped at the user's current borrow balance. The caller should derive this from
+     *        the actual swap quote to account for DEX fees and price impact.
      * @param collateral Address of the collateral token to withdraw
      * @param collateralAmount Amount of collateral tokens to withdraw (or type(uint256).max for maximum)
-     * @param slippageBps Slippage in basis points (10000 = 100%) to apply as discount in _convert.
      * @param swapData Encoded swap parameters for converting collateral to base asset
      * @param allowParams EIP-712 signature parameters for Comet authorization
      * @dev This function first authorizes the adapter via allowBySig, then withdraws the position
@@ -43,9 +47,9 @@ interface ICometCover {
      */
     function cover(
         ICS.Options memory opts,
+        uint256 loanDebt,
         IERC20 collateral,
         uint256 collateralAmount,
-        uint16 slippageBps,
         bytes calldata swapData,
         ICS.AllowParams calldata allowParams
     ) external;

@@ -198,8 +198,8 @@ describe("Comet Multiplier Adapter / Misc", function () {
                 adapter2
                     .connect(user2)
                     [
-                        "cover((address,address,address),address,uint256,bytes)"
-                    ](market1, WETH_ADDRESS, ethers.parseEther("0.01"), "0x")
+                        "cover((address,address,address),uint256,address,uint256,bytes)"
+                    ](market1, ethers.MaxUint256, WETH_ADDRESS, ethers.parseEther("0.01"), "0x")
             ).to.be.revertedWithCustomError(adapter2, "InvalidAmountOut");
         });
 

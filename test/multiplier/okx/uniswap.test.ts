@@ -13,18 +13,21 @@ import {
     calculateExpectedCollateral,
     calculateHealthFactor,
     calculateMaxSafeWithdrawal,
-    OKX_ROUTER
+    OKX_ROUTER,
+    USDC_ADDRESS
 } from "../../helpers/helpers";
 
 const WETH_ADDRESS = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
 const USDC_ADDRESS = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
 const COMET_USDC_MARKET = "0xc3d688B66703497DAA19211EEdff47f25384cdc3";
+const USDC_PRICE_FEED = "0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6";
+const WETH_PRICE_FEED = "0xc0053f3FBcCD593758258334Dfce24C2A9A673aD";
 
 const WETH_WHALE = "0xF04a5cC80B1E94C69B48f5ee68a08CD2F09A7c3E";
 
 const opts = { maxFeePerGas: 5_000_000_000 };
 
-describe.only("Comet Multiplier Adapter / OKX / UniswapV3", function () {
+describe("Comet Multiplier Adapter / OKX / UniswapV3", function () {
     let adapter: CometFoundation;
     let loanPlugin: UniswapV3Plugin;
     let swapPlugin: OKXPlugin;
@@ -47,17 +50,14 @@ describe.only("Comet Multiplier Adapter / OKX / UniswapV3", function () {
     }
 
     before(async function () {
-        await ethers.provider.send("hardhat_reset", [
-            {
-                forking: { jsonRpcUrl: process.env.FORKING_URL! }
-            }
-        ]);
-
+        // await ethers.provider.send("hardhat_reset", [
+        //     {
+        //         forking: { jsonRpcUrl: process.env.FORKING_URL! }
+        //     }
+        // ]);
         [owner, user, user2, treasury] = await ethers.getSigners();
-
         const LoanFactory = await ethers.getContractFactory("UniswapV3Plugin", owner);
         loanPlugin = await LoanFactory.deploy(opts);
-
         const SwapFactory = await ethers.getContractFactory("OKXPlugin", owner);
         swapPlugin = await SwapFactory.deploy(opts);
 
@@ -86,13 +86,12 @@ describe.only("Comet Multiplier Adapter / OKX / UniswapV3", function () {
         comet = await ethers.getContractAt("IComet", COMET_USDC_MARKET);
 
         adapter = await Adapter.deploy(plugins, await weth.getAddress(), await treasury.getAddress(), opts);
-
         const whale = await ethers.getImpersonatedSigner(WETH_WHALE);
         await ethers.provider.send("hardhat_setBalance", [whale.address, "0xffffffffffffffffffffff"]);
         await weth.connect(whale).transfer(user.address, ethers.parseEther("20"), opts);
         await weth.connect(whale).transfer(user2.address, ethers.parseEther("20"), opts);
-
         const allowAbi = ["function allow(address, bool)"];
+
         const cometAsUser = new ethers.Contract(COMET_USDC_MARKET, allowAbi, user);
         const cometAsUser2 = new ethers.Contract(COMET_USDC_MARKET, allowAbi, user2);
         await cometAsUser.allow(await adapter.getAddress(), true);
@@ -227,9 +226,17 @@ describe.only("Comet Multiplier Adapter / OKX / UniswapV3", function () {
             const initialDebt = await comet.borrowBalanceOf(user.address);
             const initialUsdc = await usdc.balanceOf(user.address);
 
-            const collateralToWithdraw = initialCol / 10n;
+            const baseToWithdraw = initialDebt / 10n;
 
-            await cover(await getMarketOptions(), adapter, user, collateralToWithdraw);
+            const collateralToWithdraw = await cover(
+                await getMarketOptions(),
+                adapter,
+                user,
+                baseToWithdraw,
+                treasury,
+                USDC_PRICE_FEED,
+                WETH_PRICE_FEED
+            );
 
             const finalCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
             const finalDebt = await comet.borrowBalanceOf(user.address);
@@ -255,9 +262,17 @@ describe.only("Comet Multiplier Adapter / OKX / UniswapV3", function () {
             const initialDebt = await comet.borrowBalanceOf(user.address);
             const initialUsdc = await usdc.balanceOf(user.address);
 
-            const collateralToWithdraw = initialCol / 4n;
+            const baseToWithdraw = initialDebt / 4n;
 
-            await cover(await getMarketOptions(), adapter, user, collateralToWithdraw);
+            const collateralToWithdraw = await cover(
+                await getMarketOptions(),
+                adapter,
+                user,
+                baseToWithdraw,
+                treasury,
+                USDC_PRICE_FEED,
+                WETH_PRICE_FEED
+            );
 
             const finalCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
             const finalDebt = await comet.borrowBalanceOf(user.address);
@@ -267,7 +282,7 @@ describe.only("Comet Multiplier Adapter / OKX / UniswapV3", function () {
             expect(finalCol).to.be.closeTo(initialCol - collateralToWithdraw, ethers.parseEther("0.01"));
             expect(finalDebt).to.be.lt(initialDebt);
             expect(finalDebt).to.be.gt(0);
-            expect(finalUsdc).to.be.gt(initialUsdc);
+            expect(finalUsdc).to.be.gte(initialUsdc);
             expect(healthFactor).to.be.gt(finalDebt);
         });
 
@@ -276,18 +291,26 @@ describe.only("Comet Multiplier Adapter / OKX / UniswapV3", function () {
             const initialDebt = await comet.borrowBalanceOf(user.address);
             const initialUsdc = await usdc.balanceOf(user.address);
 
-            const collateralToWithdraw = initialCol / 2n;
+            const baseToWithdraw = initialDebt / 2n;
 
-            await cover(await getMarketOptions(), adapter, user, collateralToWithdraw);
+            const collateralToWithdraw = await cover(
+                await getMarketOptions(),
+                adapter,
+                user,
+                baseToWithdraw,
+                treasury,
+                USDC_PRICE_FEED,
+                WETH_PRICE_FEED
+            );
 
             const finalCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
             const finalDebt = await comet.borrowBalanceOf(user.address);
             const finalUsdc = await usdc.balanceOf(user.address);
             const healthFactor = await calculateHealthFactor(comet, user.address, WETH_ADDRESS);
 
-            expect(finalCol).to.be.closeTo(initialCol / 2n, ethers.parseEther("0.01"));
+            expect(finalCol).to.be.closeTo(initialCol - collateralToWithdraw, ethers.parseEther("0.01"));
             expect(finalDebt).to.be.lt(initialDebt);
-            expect(finalUsdc).to.be.gt(initialUsdc);
+            expect(finalUsdc).to.be.gte(initialUsdc);
             expect(healthFactor).to.be.gt(finalDebt);
         });
 
@@ -297,28 +320,565 @@ describe.only("Comet Multiplier Adapter / OKX / UniswapV3", function () {
             const initialUsdc = await usdc.balanceOf(user.address);
             const initialWeth = await weth.balanceOf(user.address);
 
-            const info = await comet.getAssetInfoByAddress(WETH_ADDRESS);
-            const price = await comet.getPrice(info.priceFeed);
-            const baseScale = await comet.baseScale();
-
-            const debtInCollateralTerms = (initialDebt * info.scale * 100_000_000n) / (price * baseScale);
-            const expectedExcessCollateral = initialCol - debtInCollateralTerms;
-
-            await cover(await getMarketOptions(), adapter, user, ethers.MaxUint256);
+            const collateralToWithdraw = await cover(
+                await getMarketOptions(),
+                adapter,
+                user,
+                ethers.MaxUint256,
+                treasury,
+                USDC_PRICE_FEED,
+                WETH_PRICE_FEED
+            );
 
             const finalDebt = await comet.borrowBalanceOf(user.address);
             const finalCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
             const finalUsdc = await usdc.balanceOf(user.address);
             const finalWeth = await weth.balanceOf(user.address);
+            const receivedWeth = finalWeth - initialWeth;
+
+            expect(finalDebt).to.be.eq(0n);
+            expect(finalCol).to.be.closeTo(initialCol - collateralToWithdraw, ethers.parseEther("0.01"));
+            expect(finalUsdc).to.be.gte(initialUsdc);
+            const usdcReceived = finalUsdc - initialUsdc;
+            // const collateralValueInUsdc = (initialCol * price * baseScale) / (info.scale * 100_000_000n);
+            // const expectedUsdcProfit = collateralValueInUsdc - initialDebt;
+            // expect(usdcReceived).to.be.closeTo(expectedUsdcProfit, expectedUsdcProfit / 10n);
+            console.log("USDC Received: ", usdcReceived);
+            console.log("Weth Received: ", receivedWeth);
+            const initialAmount = ethers.parseEther("0.2");
+            expect(receivedWeth + finalCol).to.be.closeTo(initialAmount, ethers.parseEther("0.01"));
+            console.log("Initial col balance: ", initialCol);
+            console.log("Initial borrow balance: ", initialDebt);
+            console.log("Leftover col balance: ", finalCol);
+            console.log("Leftover borrow balance: ", finalDebt);
+        });
+
+        it("should close entire max-leverage position with MaxUint256 and custom fee", async function () {
+            // Create a separate max-leverage position for user2
+            const maxLeverage = await calculateMaxLeverage(comet);
+            const maxAmount = ethers.parseEther("0.05");
+            await multiply(weth, await getMarketOptions(), comet, adapter, user2, maxAmount, maxLeverage);
+
+            const initialCol = await comet.collateralBalanceOf(user2.address, WETH_ADDRESS);
+            const initialDebt = await comet.borrowBalanceOf(user2.address);
+            const initialUsdc = await usdc.balanceOf(user2.address);
+
+            expect(initialDebt).to.be.gt(0);
+            expect(initialCol).to.be.gt(0);
+
+            await cover(
+                await getMarketOptions(),
+                adapter,
+                user2,
+                ethers.MaxUint256,
+                treasury,
+                USDC_PRICE_FEED,
+                WETH_PRICE_FEED
+            );
+
+            const finalDebt = await comet.borrowBalanceOf(user2.address);
+            const finalCol = await comet.collateralBalanceOf(user2.address, WETH_ADDRESS);
+            const finalUsdc = await usdc.balanceOf(user2.address);
 
             expect(finalDebt).to.be.eq(0n);
             expect(finalCol).to.be.eq(0n);
-            expect(finalUsdc).to.be.gt(initialUsdc);
-            const usdcReceived = finalUsdc - initialUsdc;
-            const collateralValueInUsdc = (initialCol * price * baseScale) / (info.scale * 100_000_000n);
-            const expectedUsdcProfit = collateralValueInUsdc - initialDebt;
-            expect(usdcReceived).to.be.closeTo(expectedUsdcProfit, expectedUsdcProfit / 10n);
-            expect(finalWeth).to.be.closeTo(initialWeth, ethers.parseEther("0.01"));
+            expect(finalUsdc).to.be.gte(initialUsdc);
+
+            console.log("Max leverage used: ", maxLeverage);
+            console.log("Initial col balance: ", initialCol);
+            console.log("Initial borrow balance: ", initialDebt);
+            console.log("Leftover col balance: ", finalCol);
+            console.log("Leftover borrow balance: ", finalDebt);
+        });
+    });
+
+    describe("Increase Leverage", function () {
+        beforeEach(async function () {
+            // Create initial position with 2x leverage
+            const initialAmount = ethers.parseEther("0.2");
+            const leverage = 20_000;
+            await multiply(weth, await getMarketOptions(), comet, adapter, user, initialAmount, leverage);
+        });
+
+        it("should increase leverage from 2x to ~2.5x with custom fee", async function () {
+            const initialCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
+            const market = await getMarketOptions();
+
+            const currentDebt = await comet.borrowBalanceOf(user.address);
+            // 25% increase for ~2.5x leverage
+            const debtDelta = currentDebt / 4n;
+
+            const { swapData } = await executeWithRetry(async () => {
+                return await getOKXSwapData(
+                    USDC_ADDRESS,
+                    WETH_ADDRESS,
+                    debtDelta.toString(),
+                    await adapter.getAddress(),
+                    "1",
+                    "1",
+                    treasury.address
+                );
+            });
+
+            await adapter
+                .connect(user)
+                [
+                    "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                ](market, WETH_ADDRESS, 0, debtDelta, 500, swapData);
+
+            const finalCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
+            const finalDebt = await comet.borrowBalanceOf(user.address);
+            const healthFactor = await calculateHealthFactor(comet, user.address, WETH_ADDRESS);
+            const expectedDebt = currentDebt + debtDelta;
+
+            expect(finalDebt).to.be.closeTo(expectedDebt, expectedDebt / 20n);
+            expect(finalCol).to.be.gt(initialCol);
+            expect(healthFactor).to.be.gt(finalDebt);
+        });
+
+        it("should increase leverage with small debtDelta and custom fee", async function () {
+            const initialCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
+            const market = await getMarketOptions();
+
+            const currentDebt = await comet.borrowBalanceOf(user.address);
+            // 10% increase
+            const debtDelta = currentDebt / 10n;
+
+            const { swapData } = await executeWithRetry(async () => {
+                return await getOKXSwapData(
+                    USDC_ADDRESS,
+                    WETH_ADDRESS,
+                    debtDelta.toString(),
+                    await adapter.getAddress(),
+                    "1",
+                    "1",
+                    treasury.address
+                );
+            });
+
+            await adapter
+                .connect(user)
+                [
+                    "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                ](market, WETH_ADDRESS, 0, debtDelta, 500, swapData);
+
+            const finalCol = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
+            const finalDebt = await comet.borrowBalanceOf(user.address);
+            const healthFactor = await calculateHealthFactor(comet, user.address, WETH_ADDRESS);
+            const expectedDebt = currentDebt + debtDelta;
+
+            expect(finalDebt).to.be.closeTo(expectedDebt, expectedDebt / 20n);
+            expect(finalCol).to.be.gt(initialCol);
+            expect(healthFactor).to.be.gt(finalDebt);
+        });
+
+        it("should revert when baseAmount is zero", async function () {
+            const market = await getMarketOptions();
+
+            await expect(
+                adapter
+                    .connect(user)
+                    [
+                        "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                    ](market, WETH_ADDRESS, 0, 0, 500, "0x")
+            ).to.be.revertedWithCustomError(adapter, "InvalidAmountIn");
+        });
+
+        it("should revert when leverage increase violates health buffer", async function () {
+            const market = await getMarketOptions();
+            const currentDebt = await comet.borrowBalanceOf(user.address);
+            const debtDelta = currentDebt / 4n;
+
+            const { swapData } = await executeWithRetry(async () => {
+                return await getOKXSwapData(
+                    USDC_ADDRESS,
+                    WETH_ADDRESS,
+                    debtDelta.toString(),
+                    await adapter.getAddress(),
+                    "1",
+                    "1",
+                    treasury.address
+                );
+            });
+
+            await expect(
+                adapter
+                    .connect(user)
+                    [
+                        "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                    ](market, WETH_ADDRESS, 0, debtDelta, 5000, swapData)
+            ).to.be.revertedWithCustomError(adapter, "InvalidLeverage");
+        });
+
+        it("should revert with invalid comet address", async function () {
+            const currentDebt = await comet.borrowBalanceOf(user.address);
+            const debtDelta = currentDebt / 4n;
+            const market = {
+                comet: ethers.ZeroAddress,
+                loanPlugin: await loanPlugin.getAddress(),
+                swapPlugin: await swapPlugin.getAddress()
+            };
+
+            await expect(
+                adapter
+                    .connect(user)
+                    [
+                        "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                    ](market, WETH_ADDRESS, 0, debtDelta, 500, "0x")
+            ).to.be.revertedWithCustomError(adapter, "InvalidComet");
+        });
+
+        it("should maintain healthy position after multiple leverage increases with custom fee", async function () {
+            const market = await getMarketOptions();
+
+            // First increase: 20% more debt
+            const initialDebt = await comet.borrowBalanceOf(user.address);
+            const debtDelta1 = initialDebt / 5n;
+
+            const { swapData: swapData1 } = await executeWithRetry(async () => {
+                return await getOKXSwapData(
+                    USDC_ADDRESS,
+                    WETH_ADDRESS,
+                    debtDelta1.toString(),
+                    await adapter.getAddress(),
+                    "1",
+                    "1",
+                    treasury.address
+                );
+            });
+
+            await adapter
+                .connect(user)
+                [
+                    "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                ](market, WETH_ADDRESS, 0, debtDelta1, 500, swapData1);
+
+            const midDebt = await comet.borrowBalanceOf(user.address);
+            const expectedMidDebt = initialDebt + debtDelta1;
+            expect(midDebt).to.be.closeTo(expectedMidDebt, expectedMidDebt / 20n);
+
+            // Second increase: 10% more debt
+            const debtDelta2 = midDebt / 10n;
+
+            const { swapData: swapData2 } = await executeWithRetry(async () => {
+                return await getOKXSwapData(
+                    USDC_ADDRESS,
+                    WETH_ADDRESS,
+                    debtDelta2.toString(),
+                    await adapter.getAddress(),
+                    "1",
+                    "1",
+                    treasury.address
+                );
+            });
+
+            await adapter
+                .connect(user)
+                [
+                    "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                ](market, WETH_ADDRESS, 0, debtDelta2, 500, swapData2);
+
+            const finalDebt = await comet.borrowBalanceOf(user.address);
+            const healthFactor = await calculateHealthFactor(comet, user.address, WETH_ADDRESS);
+
+            expect(finalDebt).to.be.gt(midDebt);
+            expect(healthFactor).to.be.gt(finalDebt);
+        });
+
+        it("should not leave dust in the adapter after leverage increase", async function () {
+            const market = await getMarketOptions();
+            const adapterAddress = await adapter.getAddress();
+
+            const currentDebt = await comet.borrowBalanceOf(user.address);
+            const debtDelta = currentDebt / 4n;
+
+            const { swapData } = await executeWithRetry(async () => {
+                return await getOKXSwapData(
+                    USDC_ADDRESS,
+                    WETH_ADDRESS,
+                    debtDelta.toString(),
+                    adapterAddress,
+                    "1",
+                    "1",
+                    treasury.address
+                );
+            });
+
+            await adapter
+                .connect(user)
+                [
+                    "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                ](market, WETH_ADDRESS, 0, debtDelta, 500, swapData);
+
+            const adapterWeth = await weth.balanceOf(adapterAddress);
+            const adapterUsdc = await usdc.balanceOf(adapterAddress);
+
+            expect(adapterWeth).to.be.eq(0n);
+            expect(adapterUsdc).to.be.eq(0n);
+        });
+    });
+
+    describe("Health Buffer", function () {
+        it("should succeed with 5% health buffer at 2x leverage", async function () {
+            const initialAmount = ethers.parseEther("0.1");
+            const leverage = 20_000;
+            const healthBuffer = 500;
+
+            await weth.connect(user).approve(await adapter.getAddress(), initialAmount);
+            const baseAmount = await calculateLeveragedAmount(comet, initialAmount, leverage);
+
+            const { swapData } = await executeWithRetry(async () => {
+                return await getOKXSwapData(
+                    USDC_ADDRESS,
+                    WETH_ADDRESS,
+                    baseAmount.toString(),
+                    await adapter.getAddress()
+                );
+            });
+
+            await adapter
+                .connect(user)
+                [
+                    "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                ](await getMarketOptions(), WETH_ADDRESS, initialAmount, baseAmount, healthBuffer, swapData);
+
+            const collateralBalance = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
+            const borrowBalance = await comet.borrowBalanceOf(user.address);
+            const healthFactor = await calculateHealthFactor(comet, user.address, WETH_ADDRESS);
+
+            expect(collateralBalance).to.be.gt(initialAmount);
+            expect(borrowBalance).to.be.gt(0);
+            expect(healthFactor).to.be.gt(borrowBalance);
+        });
+
+        it("should succeed with 10% health buffer at 2x leverage", async function () {
+            const initialAmount = ethers.parseEther("0.1");
+            const leverage = 20_000;
+            const healthBuffer = 1000;
+
+            await weth.connect(user).approve(await adapter.getAddress(), initialAmount);
+            const baseAmount = await calculateLeveragedAmount(comet, initialAmount, leverage);
+
+            const { swapData } = await executeWithRetry(async () => {
+                return await getOKXSwapData(
+                    USDC_ADDRESS,
+                    WETH_ADDRESS,
+                    baseAmount.toString(),
+                    await adapter.getAddress()
+                );
+            });
+
+            await adapter
+                .connect(user)
+                [
+                    "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                ](await getMarketOptions(), WETH_ADDRESS, initialAmount, baseAmount, healthBuffer, swapData);
+
+            const collateralBalance = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
+            const borrowBalance = await comet.borrowBalanceOf(user.address);
+            const healthFactor = await calculateHealthFactor(comet, user.address, WETH_ADDRESS);
+
+            expect(collateralBalance).to.be.gt(initialAmount);
+            expect(borrowBalance).to.be.gt(0);
+            expect(healthFactor).to.be.gt(borrowBalance);
+        });
+
+        it("should succeed with 15% health buffer at 2x leverage", async function () {
+            const initialAmount = ethers.parseEther("0.1");
+            const leverage = 20_000;
+            const healthBuffer = 1500;
+
+            await weth.connect(user).approve(await adapter.getAddress(), initialAmount);
+            const baseAmount = await calculateLeveragedAmount(comet, initialAmount, leverage);
+
+            const { swapData } = await executeWithRetry(async () => {
+                return await getOKXSwapData(
+                    USDC_ADDRESS,
+                    WETH_ADDRESS,
+                    baseAmount.toString(),
+                    await adapter.getAddress()
+                );
+            });
+
+            await adapter
+                .connect(user)
+                [
+                    "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                ](await getMarketOptions(), WETH_ADDRESS, initialAmount, baseAmount, healthBuffer, swapData);
+
+            const collateralBalance = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
+            const borrowBalance = await comet.borrowBalanceOf(user.address);
+            const healthFactor = await calculateHealthFactor(comet, user.address, WETH_ADDRESS);
+
+            expect(collateralBalance).to.be.gt(initialAmount);
+            expect(borrowBalance).to.be.gt(0);
+            expect(healthFactor).to.be.gt(borrowBalance);
+        });
+
+        it("should succeed with 20% health buffer at 2x leverage", async function () {
+            const initialAmount = ethers.parseEther("0.1");
+            const leverage = 20_000;
+            const healthBuffer = 2000;
+
+            await weth.connect(user).approve(await adapter.getAddress(), initialAmount);
+            const baseAmount = await calculateLeveragedAmount(comet, initialAmount, leverage);
+
+            const { swapData } = await executeWithRetry(async () => {
+                return await getOKXSwapData(
+                    USDC_ADDRESS,
+                    WETH_ADDRESS,
+                    baseAmount.toString(),
+                    await adapter.getAddress()
+                );
+            });
+
+            await adapter
+                .connect(user)
+                [
+                    "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                ](await getMarketOptions(), WETH_ADDRESS, initialAmount, baseAmount, healthBuffer, swapData);
+
+            const collateralBalance = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
+            const borrowBalance = await comet.borrowBalanceOf(user.address);
+            const healthFactor = await calculateHealthFactor(comet, user.address, WETH_ADDRESS);
+
+            expect(collateralBalance).to.be.gt(initialAmount);
+            expect(borrowBalance).to.be.gt(0);
+            expect(healthFactor).to.be.gt(borrowBalance);
+        });
+
+        it("should succeed with 0% health buffer at near-max leverage", async function () {
+            const initialAmount = ethers.parseEther("0.05");
+            const maxLeverage = await calculateMaxLeverage(comet);
+            const healthBuffer = 0;
+
+            await weth.connect(user).approve(await adapter.getAddress(), initialAmount);
+            const baseAmount = await calculateLeveragedAmount(comet, initialAmount, maxLeverage);
+
+            const { swapData } = await executeWithRetry(async () => {
+                return await getOKXSwapData(
+                    USDC_ADDRESS,
+                    WETH_ADDRESS,
+                    baseAmount.toString(),
+                    await adapter.getAddress()
+                );
+            });
+
+            await adapter
+                .connect(user)
+                [
+                    "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                ](await getMarketOptions(), WETH_ADDRESS, initialAmount, baseAmount, healthBuffer, swapData);
+
+            const collateralBalance = await comet.collateralBalanceOf(user.address, WETH_ADDRESS);
+            const borrowBalance = await comet.borrowBalanceOf(user.address);
+
+            expect(collateralBalance).to.be.gt(initialAmount);
+            expect(borrowBalance).to.be.gt(0);
+        });
+
+        it("should revert with InvalidLeverage at 5x leverage with 5% health buffer", async function () {
+            const initialAmount = ethers.parseEther("0.05");
+            const leverage = 50_000;
+            const healthBuffer = 500;
+
+            await weth.connect(user).approve(await adapter.getAddress(), initialAmount);
+            const baseAmount = await calculateLeveragedAmount(comet, initialAmount, leverage);
+
+            const { swapData } = await executeWithRetry(async () => {
+                return await getOKXSwapData(
+                    USDC_ADDRESS,
+                    WETH_ADDRESS,
+                    baseAmount.toString(),
+                    await adapter.getAddress()
+                );
+            });
+
+            await expect(
+                adapter
+                    .connect(user)
+                    [
+                        "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                    ](await getMarketOptions(), WETH_ADDRESS, initialAmount, baseAmount, healthBuffer, swapData)
+            ).to.be.revertedWithCustomError(adapter, "InvalidLeverage");
+        });
+
+        it("should revert with InvalidLeverage at 4.5x leverage with 10% health buffer", async function () {
+            const initialAmount = ethers.parseEther("0.05");
+            const leverage = 45_000;
+            const healthBuffer = 1000;
+
+            await weth.connect(user).approve(await adapter.getAddress(), initialAmount);
+            const baseAmount = await calculateLeveragedAmount(comet, initialAmount, leverage);
+
+            const { swapData } = await executeWithRetry(async () => {
+                return await getOKXSwapData(
+                    USDC_ADDRESS,
+                    WETH_ADDRESS,
+                    baseAmount.toString(),
+                    await adapter.getAddress()
+                );
+            });
+
+            await expect(
+                adapter
+                    .connect(user)
+                    [
+                        "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                    ](await getMarketOptions(), WETH_ADDRESS, initialAmount, baseAmount, healthBuffer, swapData)
+            ).to.be.revertedWithCustomError(adapter, "InvalidLeverage");
+        });
+
+        it("should revert with InvalidLeverage at 4x leverage with 15% health buffer", async function () {
+            const initialAmount = ethers.parseEther("0.05");
+            const leverage = 40_000;
+            const healthBuffer = 1500;
+
+            await weth.connect(user).approve(await adapter.getAddress(), initialAmount);
+            const baseAmount = await calculateLeveragedAmount(comet, initialAmount, leverage);
+
+            const { swapData } = await executeWithRetry(async () => {
+                return await getOKXSwapData(
+                    USDC_ADDRESS,
+                    WETH_ADDRESS,
+                    baseAmount.toString(),
+                    await adapter.getAddress()
+                );
+            });
+
+            await expect(
+                adapter
+                    .connect(user)
+                    [
+                        "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                    ](await getMarketOptions(), WETH_ADDRESS, initialAmount, baseAmount, healthBuffer, swapData)
+            ).to.be.revertedWithCustomError(adapter, "InvalidLeverage");
+        });
+
+        it("should revert with InvalidLeverage at 3.5x leverage with 20% health buffer", async function () {
+            const initialAmount = ethers.parseEther("0.05");
+            const leverage = 35_000;
+            const healthBuffer = 2000;
+
+            await weth.connect(user).approve(await adapter.getAddress(), initialAmount);
+            const baseAmount = await calculateLeveragedAmount(comet, initialAmount, leverage);
+
+            const { swapData } = await executeWithRetry(async () => {
+                return await getOKXSwapData(
+                    USDC_ADDRESS,
+                    WETH_ADDRESS,
+                    baseAmount.toString(),
+                    await adapter.getAddress()
+                );
+            });
+
+            await expect(
+                adapter
+                    .connect(user)
+                    [
+                        "multiply((address,address,address),address,uint256,uint256,uint256,bytes)"
+                    ](await getMarketOptions(), WETH_ADDRESS, initialAmount, baseAmount, healthBuffer, swapData)
+            ).to.be.revertedWithCustomError(adapter, "InvalidLeverage");
         });
     });
 });
