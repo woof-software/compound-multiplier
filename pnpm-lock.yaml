@@ -121,8 +121,8 @@ importers:
         specifier: 2.11.0
         version: 2.11.0(hardhat@2.23.0(ts-node@10.9.2(@types/node@22.15.2)(typescript@5.8.3))(typescript@5.8.3))
       hardhat-contract-sizer:
-        specifier: 2.10.0
-        version: 2.10.0(hardhat@2.23.0(ts-node@10.9.2(@types/node@22.15.2)(typescript@5.8.3))(typescript@5.8.3))
+        specifier: 2.10.1
+        version: 2.10.1(hardhat@2.23.0(ts-node@10.9.2(@types/node@22.15.2)(typescript@5.8.3))(typescript@5.8.3))
       hardhat-exposed:
         specifier: 0.3.19
         version: 0.3.19(hardhat@2.23.0(ts-node@10.9.2(@types/node@22.15.2)(typescript@5.8.3))(typescript@5.8.3))
@@ -2511,8 +2511,8 @@ packages:
     peerDependencies:
       hardhat: ^2.0.0
 
-  hardhat-contract-sizer@2.10.0:
-    resolution: {integrity: sha512-QiinUgBD5MqJZJh1hl1jc9dNnpJg7eE/w4/4GEnrcmZJJTDbVFNe3+/3Ep24XqISSkYxRz36czcPHKHd/a0dwA==}
+  hardhat-contract-sizer@2.10.1:
+    resolution: {integrity: sha512-/PPQQbUMgW6ERzk8M0/DA8/v2TEM9xRRAnF9qKPNMYF6FX5DFWcnxBsQvtp8uBz+vy7rmLyV9Elti2wmmhgkbg==}
     peerDependencies:
       hardhat: ^2.0.0
 
@@ -7354,7 +7354,7 @@ snapshots:
       delete-empty: 3.0.0
       hardhat: 2.23.0(ts-node@10.9.2(@types/node@22.15.2)(typescript@5.8.3))(typescript@5.8.3)
 
-  hardhat-contract-sizer@2.10.0(hardhat@2.23.0(ts-node@10.9.2(@types/node@22.15.2)(typescript@5.8.3))(typescript@5.8.3)):
+  hardhat-contract-sizer@2.10.1(hardhat@2.23.0(ts-node@10.9.2(@types/node@22.15.2)(typescript@5.8.3))(typescript@5.8.3)):
     dependencies:
       chalk: 4.1.2
       cli-table3: 0.6.5
